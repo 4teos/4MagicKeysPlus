@@ -311,7 +311,7 @@ NTSTATUS InternalIoctlComplete(IN PDEVICE_OBJECT fido, IN PIRP irp, IN PVOID con
 				if (buf && size == 11)
 				{
 					DebugPrintBuffer("ProcessKeyBuffer(): <= ", buf, size);
-					ProcessKeyBuffer(buf + 2, 9);
+					//ProcessKeyBuffer(buf + 2, 9);
 					DebugPrintBuffer("ProcessKeyBuffer(): => ", buf, size);
 				}
 			}
@@ -328,7 +328,7 @@ NTSTATUS InternalIoctlComplete(IN PDEVICE_OBJECT fido, IN PIRP irp, IN PVOID con
 				if (buf && size == 10)
 				{
 					DebugPrintBuffer("ProcessKeyBuffer(): <= ", buf, size);
-					ProcessKeyBuffer(buf + 1, 9);
+					//ProcessKeyBuffer(buf + 1, 9);
 					DebugPrintBuffer("ProcessKeyBuffer(): => ", buf, size);
 				}
 			}

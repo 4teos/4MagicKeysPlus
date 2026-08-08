@@ -8,7 +8,7 @@ Provider=%Provider%
 CatalogFile=WinAppleKey.cat
 DriverPackageDisplayName="WinAppleKey"
 DriverPackageType=PlugAndPlay
-DriverVer=08/08/2026,1.0.9.4
+DriverVer=08/08/2026,1.0.9.5
 PnpLockdown=1
 
 [ControlFlags]
