@@ -27,7 +27,7 @@
     <ClCompile Include="Driver.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="A1644.c">
+    <ClCompile Include="KeyProcessor.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 18
+VisualStudioVersion = 18.8.12023.21 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinAppleKey", "WinAppleKey\WinAppleKey.vcxproj", "{66B51E72-5BBA-4FF2-85C5-3F923B98C156}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests\Tests.vcxproj", "{B2A1C4E0-5F3D-4A2B-9C8E-1D7F6A3B5E9C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A98F64D4-FB23-4B9F-A846-643547083C0F}"
 	ProjectSection(SolutionItems) = preProject
@@ -22,8 +24,15 @@ Global
 		{66B51E72-5BBA-4FF2-85C5-3F923B98C156}.Release|x64.ActiveCfg = Release|x64
 		{66B51E72-5BBA-4FF2-85C5-3F923B98C156}.Release|x64.Build.0 = Release|x64
 		{66B51E72-5BBA-4FF2-85C5-3F923B98C156}.Release|x64.Deploy.0 = Release|x64
+		{B2A1C4E0-5F3D-4A2B-9C8E-1D7F6A3B5E9C}.Debug|x64.ActiveCfg = Debug|x64
+		{B2A1C4E0-5F3D-4A2B-9C8E-1D7F6A3B5E9C}.Debug|x64.Build.0 = Debug|x64
+		{B2A1C4E0-5F3D-4A2B-9C8E-1D7F6A3B5E9C}.Release|x64.ActiveCfg = Release|x64
+		{B2A1C4E0-5F3D-4A2B-9C8E-1D7F6A3B5E9C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FF9E83A3-622C-4962-8BF5-6D11CCEB9739}
 	EndGlobalSection
 EndGlobal

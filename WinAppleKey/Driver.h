@@ -2,7 +2,7 @@
 
 #include <ntddk.h>
 #include <wdm.h>
-#include <initguid.h> 
+#include <initguid.h>
 #include <ntstrsafe.h>
 #include <bthdef.h>
 #include <ntintsafe.h>
@@ -19,30 +19,34 @@
 extern "C" {
 #endif
 
-	///////////////////////////////////////////////////////////////////////////////
-	// Macro definitions
-	//
-
 	#define DRIVERNAME "WinAppleKey"
+	#define MAX_KEYMAP_SIZE 128
+	#define VIRTUAL_EJECT 0xF0
+	#define VIRTUAL_FN    0xF1
 
 	#if defined(DBG)
-		#define DebugPrint(s, ...) DbgPrint(DRIVERNAME ": " s, __VA_ARGS__);
-		#define DebugPrintBuffer(text, buffer, length) KdPrintBuffer(DRIVERNAME ": " text, buffer, length);
-	#else 
-		#define DebugPrint
-		#define DebugPrintBuffer
+		#define DebugPrint(s, ...) DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL, DRIVERNAME ": " s, ##__VA_ARGS__)
+		#define DebugPrintBuffer(text, buffer, length) KdPrintBuffer(text, buffer, length)
+	#else
+		#define DebugPrint(...) ((void)0)
+		#define DebugPrintBuffer(...) ((void)0)
 	#endif
 
 	///////////////////////////////////////////////////////////////////////////////
 	// Globals
 
-	extern DWORD g_dwSwapAltCmd;
-	extern DWORD g_dwSwapFnCtrl;
+	#define MAX_MODMAP_SIZE 16
+
+	extern DWORD g_dwFnLock;
+	extern BYTE g_KeyMap[MAX_KEYMAP_SIZE];
+	extern ULONG g_KeyMapSize;
+	extern BYTE g_ModMap[MAX_MODMAP_SIZE];
+	extern ULONG g_ModMapSize;
 
 	enum HidCodes
 	{
-		HidKeyNone = 0x0, // No key pressed
-		HidKeyErrOvf = 0x1, //  Keyboard Error Roll Over - used for all slots if too many keys are pressed
+		HidKeyNone = 0x0,
+		HidKeyErrOvf = 0x1,
 		HidKeyB = 0x5,
 		HidKeyP = 0x13,
 		HidKeyS = 0x16,
@@ -95,12 +99,11 @@ extern "C" {
 		HidRShiftMask = 0x20
 	};
 
-	// Device extension structure
-	typedef struct tagDEVICE_EXTENSION 
+	typedef struct tagDEVICE_EXTENSION
 	{
-		PDEVICE_OBJECT DeviceObject; // device object this extension belongs to
-		PDEVICE_OBJECT LowerDeviceObject; // next lower driver in same stack
-		PDEVICE_OBJECT Pdo; // the PDO
+		PDEVICE_OBJECT DeviceObject;
+		PDEVICE_OBJECT LowerDeviceObject;
+		PDEVICE_OBJECT Pdo;
 		IO_REMOVE_LOCK RemoveLock;
 	} DEVICE_EXTENSION, *PDEVICE_EXTENSION;
 
@@ -123,8 +126,7 @@ extern "C" {
 	void KdPrintBuffer(PCHAR text, PUCHAR buffer, ULONG length);
 	NTSTATUS ReadDriverRegistryValue(PUNICODE_STRING registryPath, DWORD dwRegValeType, PCWSTR wcszValName, PVOID* pValue);
 
-	void ProcessA1314Block(PBRB pbrb);
-	void ProcessA1644Buffer(BYTE* pbuf, ULONG size);
+	void ProcessKeyBuffer(BYTE* pbuf, ULONG size);
 
 #ifdef __cplusplus
 }

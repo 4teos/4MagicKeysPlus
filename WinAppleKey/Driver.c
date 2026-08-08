@@ -11,8 +11,50 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Globals Initialisation
 //
-DWORD g_dwSwapAltCmd = 0;
-DWORD g_dwSwapFnCtrl = 0;
+DWORD g_dwFnLock = 0;
+BYTE g_KeyMap[MAX_KEYMAP_SIZE] = { 0 };
+ULONG g_KeyMapSize = 0;
+BYTE g_ModMap[MAX_MODMAP_SIZE] = { 0 };
+ULONG g_ModMapSize = 0;
+
+///////////////////////////////////////////////////////////////////////////////
+// Read REG_BINARY value from registry into a buffer
+//
+static NTSTATUS ReadBinaryRegistryValue(PUNICODE_STRING registryPath, PCWSTR wcszValName, BYTE* destBuf, ULONG destMaxSize, ULONG* pOutSize)
+{
+	PAGED_CODE();
+
+	HANDLE hKey;
+	OBJECT_ATTRIBUTES oa;
+	InitializeObjectAttributes(&oa, registryPath, OBJ_CASE_INSENSITIVE, NULL, NULL);
+
+	NTSTATUS status = ZwOpenKey(&hKey, KEY_READ, &oa);
+	if (!NT_SUCCESS(status))
+		return status;
+
+	UNICODE_STRING valname;
+	ULONG size = 0;
+	RtlInitUnicodeString(&valname, wcszValName);
+	status = ZwQueryValueKey(hKey, &valname, KeyValuePartialInformation, NULL, 0, &size);
+	if (status != STATUS_OBJECT_NAME_NOT_FOUND && size)
+	{
+		PKEY_VALUE_PARTIAL_INFORMATION vp = (PKEY_VALUE_PARTIAL_INFORMATION)ExAllocatePoolWithTag(PagedPool, size, '1gaT');
+		if (vp)
+		{
+			status = ZwQueryValueKey(hKey, &valname, KeyValuePartialInformation, vp, size, &size);
+			if (NT_SUCCESS(status) && vp->Type == REG_BINARY && vp->DataLength <= destMaxSize)
+			{
+				RtlCopyMemory(destBuf, vp->Data, vp->DataLength);
+				*pOutSize = vp->DataLength;
+				DebugPrint("%ws loaded: %lu bytes\n", wcszValName, *pOutSize);
+			}
+			ExFreePool(vp);
+		}
+	}
+
+	ZwClose(hKey);
+	return STATUS_SUCCESS;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Driver Entry
@@ -32,8 +74,17 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT driverObject, IN PUNICODE_STRING registry
 
 	driverObject->MajorFunction[IRP_MJ_INTERNAL_DEVICE_CONTROL] = DispatchInternalIoctl;
 
-	ReadDriverRegistryValue(registryPath, REG_DWORD, L"SwapAltCmd", (void*)&g_dwSwapAltCmd);
-	ReadDriverRegistryValue(registryPath, REG_DWORD, L"SwapFnCtrl", (void*)&g_dwSwapFnCtrl);
+	// Build Parameters subkey path
+	WCHAR paramPathBuf[512];
+	UNICODE_STRING paramPath;
+	RtlStringCbPrintfW(paramPathBuf, sizeof(paramPathBuf), L"%wZ\\Parameters", registryPath);
+	RtlInitUnicodeString(&paramPath, paramPathBuf);
+
+	ReadDriverRegistryValue(&paramPath, REG_DWORD, L"FnLock", (void*)&g_dwFnLock);
+	ReadBinaryRegistryValue(&paramPath, L"KeyMap", g_KeyMap, MAX_KEYMAP_SIZE, &g_KeyMapSize);
+	ReadBinaryRegistryValue(&paramPath, L"ModMap", g_ModMap, MAX_MODMAP_SIZE, &g_ModMapSize);
+
+	DebugPrint("FnLock=%d, KeyMapSize=%lu, ModMapSize=%lu\n", g_dwFnLock, g_KeyMapSize, g_ModMapSize);
 
 	return STATUS_SUCCESS;
 }
@@ -51,7 +102,6 @@ NTSTATUS AddDevice(IN PDRIVER_OBJECT driverObject, IN PDEVICE_OBJECT pdo)
 
 	DebugPrint("AddDevice(): driverObject: 0x%x, pdo: 0x%x\n", driverObject, pdo);
 
-	//Create the filter functional device object
 	PDEVICE_OBJECT fido;
 	ULONG type = GetLowerDeviceType(pdo);
 	NTSTATUS status = IoCreateDevice(driverObject, sizeof(DEVICE_EXTENSION), NULL, type, 0, FALSE, &fido);
@@ -61,7 +111,6 @@ NTSTATUS AddDevice(IN PDRIVER_OBJECT driverObject, IN PDEVICE_OBJECT pdo)
 		return status;
 	}
 
-	//Add extension data to the fido
 	PDEVICE_EXTENSION fidoExt = (PDEVICE_EXTENSION)fido->DeviceExtension;
 	do
 	{
@@ -69,7 +118,6 @@ NTSTATUS AddDevice(IN PDRIVER_OBJECT driverObject, IN PDEVICE_OBJECT pdo)
 		fidoExt->DeviceObject = fido;
 		fidoExt->Pdo = pdo;
 
-		//Add fido to the stack and propagate critical settings from the immediately lower device object
 		PDEVICE_OBJECT fdo = IoAttachDeviceToDeviceStack(fido, pdo);
 		if (!fdo)
 		{
@@ -79,11 +127,8 @@ NTSTATUS AddDevice(IN PDRIVER_OBJECT driverObject, IN PDEVICE_OBJECT pdo)
 		}
 		fidoExt->LowerDeviceObject = fdo;
 
-		//Copy the flags related to I/O buffering from the lower device object so the I/O manager
-		//will create the expected data structures for reads and writes.
 		fido->Flags |= fdo->Flags & (DO_DIRECT_IO | DO_BUFFERED_IO | DO_POWER_PAGABLE);
-
-		fido->Flags &= ~DO_DEVICE_INITIALIZING; // Clear the DO_DEVICE_INITIALIZING flag so that we can get IRPs
+		fido->Flags &= ~DO_DEVICE_INITIALIZING;
 
 	} while (FALSE);
 
@@ -134,33 +179,30 @@ NTSTATUS DispatchPower(IN PDEVICE_OBJECT fido, IN PIRP irp)
 {
 	PDEVICE_EXTENSION pdx = (PDEVICE_EXTENSION)fido->DeviceExtension;
 	PoStartNextPowerIrp(irp);
-	
+
 	NTSTATUS status = IoAcquireRemoveLock(&pdx->RemoveLock, irp);
 	if (!NT_SUCCESS(status))
 		return CompleteRequest(irp, status, 0);
 
 	IoSkipCurrentIrpStackLocation(irp);
-	
+
 	status = PoCallDriver(pdx->LowerDeviceObject, irp);
-	
+
 	IoReleaseRemoveLock(&pdx->RemoveLock, irp);
 
 	return status;
-}							
+}
 
 NTSTATUS DispatchPnp(IN PDEVICE_OBJECT fido, IN PIRP irp)
 {
 	PIO_STACK_LOCATION stack = IoGetCurrentIrpStackLocation(irp);
 	ULONG fcn = stack->MinorFunction;
 	PDEVICE_EXTENSION pdx = (PDEVICE_EXTENSION)fido->DeviceExtension;
-	
+
 	NTSTATUS status = IoAcquireRemoveLock(&pdx->RemoveLock, irp);
 	if (!NT_SUCCESS(status))
 		return CompleteRequest(irp, status, 0);
 
-	//Handle usage notification specially in order to track power pageable
-	//flag correctly. We need to avoid allowing a non-pageable handler to be
-	//layered on top of a pageable handler.
 	if (fcn == IRP_MN_DEVICE_USAGE_NOTIFICATION)
 	{
 		if (!fido->AttachedDevice || (fido->AttachedDevice->Flags & DO_POWER_PAGABLE))
@@ -172,7 +214,6 @@ NTSTATUS DispatchPnp(IN PDEVICE_OBJECT fido, IN PIRP irp)
 		return IoCallDriver(pdx->LowerDeviceObject, irp);
 	}
 
-	//Handle start device specially in order to correctly inherit FILE_REMOVABLE_MEDIA
 	if (fcn == IRP_MN_START_DEVICE)
 	{
 		IoCopyCurrentIrpStackLocationToNext(irp);
@@ -182,13 +223,12 @@ NTSTATUS DispatchPnp(IN PDEVICE_OBJECT fido, IN PIRP irp)
 		return IoCallDriver(pdx->LowerDeviceObject, irp);
 	}
 
-	//Handle remove device specially in order to cleanup device stack
 	if (fcn == IRP_MN_REMOVE_DEVICE)
 	{
 		IoSkipCurrentIrpStackLocation(irp);
 
 		status = IoCallDriver(pdx->LowerDeviceObject, irp);
-		
+
 		IoReleaseRemoveLockAndWait(&pdx->RemoveLock, irp);
 
 		RemoveDevice(fido);
@@ -196,7 +236,6 @@ NTSTATUS DispatchPnp(IN PDEVICE_OBJECT fido, IN PIRP irp)
 		return status;
 	}
 
-	//Simply forward any other type of PnP request
 	IoSkipCurrentIrpStackLocation(irp);
 	status = IoCallDriver(pdx->LowerDeviceObject, irp);
 
@@ -210,7 +249,6 @@ NTSTATUS StartDeviceCompletionRoutine(PDEVICE_OBJECT fido, PIRP irp, PDEVICE_EXT
 	if (irp->PendingReturned)
 		IoMarkIrpPending(irp);
 
-	// Inherit FILE_REMOVABLE_MEDIA flag from lower object.
 	if (pdx->LowerDeviceObject->Characteristics & FILE_REMOVABLE_MEDIA)
 		fido->Characteristics |= FILE_REMOVABLE_MEDIA;
 
@@ -223,19 +261,17 @@ NTSTATUS UsageNotificationCompletionRoutine(PDEVICE_OBJECT fido, PIRP irp, PDEVI
 	if (irp->PendingReturned)
 		IoMarkIrpPending(irp);
 
-	// If lower driver cleared pageable flag, we must do the same
 	if (!(pdx->LowerDeviceObject->Flags & DO_POWER_PAGABLE))
 		fido->Flags &= ~DO_POWER_PAGABLE;
 
 	IoReleaseRemoveLock(&pdx->RemoveLock, irp);
 
 	return STATUS_SUCCESS;
-}			
+}
 
 NTSTATUS DispatchAny(IN PDEVICE_OBJECT fido, IN PIRP irp)
 {
 	PDEVICE_EXTENSION devExt = (PDEVICE_EXTENSION)fido->DeviceExtension;
-	PIO_STACK_LOCATION currentIrpStack = IoGetCurrentIrpStackLocation(irp);
 	NTSTATUS status;
 
 	status = IoAcquireRemoveLock(&devExt->RemoveLock, irp);
@@ -254,6 +290,8 @@ NTSTATUS DispatchAny(IN PDEVICE_OBJECT fido, IN PIRP irp)
 
 NTSTATUS InternalIoctlComplete(IN PDEVICE_OBJECT fido, IN PIRP irp, IN PVOID context)
 {
+	UNREFERENCED_PARAMETER(fido);
+	UNREFERENCED_PARAMETER(context);
 	DebugPrint("InternalIoctlComplete()\n");
 
 	PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation(irp);
@@ -262,9 +300,9 @@ NTSTATUS InternalIoctlComplete(IN PDEVICE_OBJECT fido, IN PIRP irp, IN PVOID con
 		ULONG dwControlCode = irpSp->Parameters.DeviceIoControl.IoControlCode;
 		if (dwControlCode == IOCTL_INTERNAL_BTH_SUBMIT_BRB)
 		{
-			PBRB pbrb = (PBRB)irpSp->Parameters.Others.Argument1;			
+			PBRB pbrb = (PBRB)irpSp->Parameters.Others.Argument1;
 
-			if (pbrb->BrbHeader.Type == BRB_L2CA_ACL_TRANSFER)
+			if (pbrb && pbrb->BrbHeader.Type == BRB_L2CA_ACL_TRANSFER)
 			{
 				BYTE* buf = (BYTE*)pbrb->BrbL2caAclTransfer.Buffer;
 				ULONG size = pbrb->BrbL2caAclTransfer.BufferSize;
@@ -272,16 +310,16 @@ NTSTATUS InternalIoctlComplete(IN PDEVICE_OBJECT fido, IN PIRP irp, IN PVOID con
 
 				if (buf && size == 11)
 				{
-					DebugPrintBuffer("ProcessA1644Buffer(): <= ", buf, size);
-					ProcessA1644Buffer(buf + 2, 9);
-					DebugPrintBuffer("ProcessA1644Buffer(): => ", buf, size);
+					DebugPrintBuffer("ProcessKeyBuffer(): <= ", buf, size);
+					ProcessKeyBuffer(buf + 2, 9);
+					DebugPrintBuffer("ProcessKeyBuffer(): => ", buf, size);
 				}
 			}
 		}
 		else if (dwControlCode == IOCTL_INTERNAL_USB_SUBMIT_URB)
 		{
 			PURB purb = (PURB)irpSp->Parameters.Others.Argument1;
-			if (purb->UrbHeader.Function == URB_FUNCTION_BULK_OR_INTERRUPT_TRANSFER)
+			if (purb && purb->UrbHeader.Function == URB_FUNCTION_BULK_OR_INTERRUPT_TRANSFER)
 			{
 				BYTE* buf = (BYTE*)purb->UrbBulkOrInterruptTransfer.TransferBuffer;
 				ULONG size = purb->UrbBulkOrInterruptTransfer.TransferBufferLength;
@@ -289,17 +327,19 @@ NTSTATUS InternalIoctlComplete(IN PDEVICE_OBJECT fido, IN PIRP irp, IN PVOID con
 
 				if (buf && size == 10)
 				{
-					DebugPrintBuffer("ProcessA1644Buffer(): <= ", buf, size);
-					ProcessA1644Buffer(buf + 1, 9);
-					DebugPrintBuffer("ProcessA1644Buffer(): => ", buf, size);
+					DebugPrintBuffer("ProcessKeyBuffer(): <= ", buf, size);
+					ProcessKeyBuffer(buf + 1, 9);
+					DebugPrintBuffer("ProcessKeyBuffer(): => ", buf, size);
 				}
 			}
 		}
 	}
 
-	// Mark the Irp pending if required
 	if (irp->PendingReturned)
 		IoMarkIrpPending(irp);
+
+	PDEVICE_EXTENSION devExt = (PDEVICE_EXTENSION)fido->DeviceExtension;
+	IoReleaseRemoveLock(&devExt->RemoveLock, irp);
 
 	return irp->IoStatus.Status;
 }
@@ -309,6 +349,7 @@ NTSTATUS DispatchInternalIoctl(IN PDEVICE_OBJECT fido, IN PIRP irp)
 	PDEVICE_EXTENSION devExt = (PDEVICE_EXTENSION)fido->DeviceExtension;
 	PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation(irp);
 	ULONG dwControlCode = irpSp->Parameters.DeviceIoControl.IoControlCode;
+	BOOLEAN bCompletionSet = FALSE;
 
 	NTSTATUS status = IoAcquireRemoveLock(&devExt->RemoveLock, irp);
 	if (!NT_SUCCESS(status))
@@ -317,39 +358,47 @@ NTSTATUS DispatchInternalIoctl(IN PDEVICE_OBJECT fido, IN PIRP irp)
 	if (dwControlCode == IOCTL_INTERNAL_BTH_SUBMIT_BRB)
 	{
 		PBRB pbrb = (PBRB)irpSp->Parameters.Others.Argument1;
-		if (pbrb->BrbHeader.Type == BRB_L2CA_ACL_TRANSFER)
+		if (pbrb && pbrb->BrbHeader.Type == BRB_L2CA_ACL_TRANSFER)
 		{
-			//IoSkipCurrentIrpStackLocation(irp);
 			IoCopyCurrentIrpStackLocationToNext(irp);
 			IoSetCompletionRoutine(irp, InternalIoctlComplete, fido, TRUE, TRUE, TRUE);
+			bCompletionSet = TRUE;
 		}
-		//BRB_GET_DEVICE_INTERFACE_STRING
-		//BRB_L2CA_OPEN_CHANNEL
 		else
-			IoSkipCurrentIrpStackLocation(irp);	
+			IoSkipCurrentIrpStackLocation(irp);
 	}
 	else if (dwControlCode == IOCTL_INTERNAL_USB_SUBMIT_URB)
 	{
-		//IoSkipCurrentIrpStackLocation(irp);
-		IoCopyCurrentIrpStackLocationToNext(irp);
-		IoSetCompletionRoutine(irp, InternalIoctlComplete, fido, TRUE, TRUE, TRUE);
+		PURB purb = (PURB)irpSp->Parameters.Others.Argument1;
+		if (purb && purb->UrbHeader.Function == URB_FUNCTION_BULK_OR_INTERRUPT_TRANSFER)
+		{
+			IoCopyCurrentIrpStackLocationToNext(irp);
+			IoSetCompletionRoutine(irp, InternalIoctlComplete, fido, TRUE, TRUE, TRUE);
+			bCompletionSet = TRUE;
+		}
+		else
+			IoSkipCurrentIrpStackLocation(irp);
 	}
 	else
 		IoSkipCurrentIrpStackLocation(irp);
 
 	status = IoCallDriver(devExt->LowerDeviceObject, irp);
-	
-	IoReleaseRemoveLock(&devExt->RemoveLock, irp);
+
+	if (!bCompletionSet)
+	{
+		IoReleaseRemoveLock(&devExt->RemoveLock, irp);
+	}
 
 	return status;
 }
 
 void KdPrintBuffer(PCHAR text, PUCHAR buffer, ULONG length)
 {
-	KdPrint(("%s", text));
+	if (!buffer || length == 0) return;
+	DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL, DRIVERNAME ": %s", text ? text : "");
 	for (ULONG i = 0; i < length; ++i)
-		KdPrint(("%02X ", buffer[i]));
-	KdPrint(("\n"));
+		DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL, "%02X ", buffer[i]);
+	DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL, "\n");
 }
 
 NTSTATUS ReadDriverRegistryValue(PUNICODE_STRING registryPath, DWORD dwRegValeType, PCWSTR wcszValName, PVOID* pValue)
@@ -363,10 +412,10 @@ NTSTATUS ReadDriverRegistryValue(PUNICODE_STRING registryPath, DWORD dwRegValeTy
 	NTSTATUS status = ZwOpenKey(&hKey, KEY_READ, &oa);
 	if (!NT_SUCCESS(status))
 	{
-		DebugPrint("Can't open key %ws - %X\n", registryPath->Buffer, status);
+		DebugPrint("Can't open key %wZ - %X\n", registryPath, status);
 		return status;
 	}
-	
+
 	UNICODE_STRING valname;
 	ULONG size = 0;
 	RtlInitUnicodeString(&valname, wcszValName);
@@ -380,15 +429,22 @@ NTSTATUS ReadDriverRegistryValue(PUNICODE_STRING registryPath, DWORD dwRegValeTy
 			if (NT_SUCCESS(status))
 			{
 				if (dwRegValeType == REG_SZ)
-					RtlCopyUnicodeString((PUNICODE_STRING)pValue, vp->Data);
+				{
+					PUNICODE_STRING pDst = (PUNICODE_STRING)pValue;
+					UNICODE_STRING src;
+					src.Buffer = (PWSTR)vp->Data;
+					src.Length = (USHORT)vp->DataLength;
+					src.MaximumLength = (USHORT)vp->DataLength;
+					RtlCopyUnicodeString(pDst, &src);
+				}
 				else if (dwRegValeType == REG_DWORD)
-					*pValue = (void*)vp->Data[0];
+					*pValue = (void*)(ULONG_PTR)(*(DWORD*)vp->Data);
 				else
 				{
-					DebugPrint("Unsupporter registry value type.");
+					DebugPrint("Unsupported registry value type.");
 					status = STATUS_INVALID_PARAMETER;
 				}
-			}	
+			}
 			else
 				DebugPrint("ZwQueryValueKey(%ws) failed - %X\n", valname.Buffer, status);
 
@@ -403,4 +459,4 @@ NTSTATUS ReadDriverRegistryValue(PUNICODE_STRING registryPath, DWORD dwRegValeTy
 
 	ZwClose(hKey);
 	return status;
-}							
+}
