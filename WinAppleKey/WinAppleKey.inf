@@ -8,7 +8,7 @@ Provider=%Provider%
 CatalogFile=WinAppleKey.cat
 DriverPackageDisplayName="WinAppleKey"
 DriverPackageType=PlugAndPlay
-DriverVer=08/08/2026,1.0.9.5
+DriverVer=08/08/2026,1.0.9.6
 PnpLockdown=1
 
 [ControlFlags]
@@ -128,3 +128,4 @@ A1644.DevDesc = "Apple Magic Keyboard (A1644)"
 A1843.DevDesc = "Apple Magic Keyboard with Numeric Keypad (A1843)"
 HIDKbFlt.SvcDesc = "WinAppleKey"
 KBDiskName = "WinAppleKey Install Disk"
+

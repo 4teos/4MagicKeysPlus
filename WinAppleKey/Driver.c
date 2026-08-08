@@ -308,11 +308,13 @@ NTSTATUS InternalIoctlComplete(IN PDEVICE_OBJECT fido, IN PIRP irp, IN PVOID con
 				ULONG size = pbrb->BrbL2caAclTransfer.BufferSize;
 				DebugPrint("InternalIoctlComplete BRB_L2CA_ACL_TRANSFER: Buffer = 0x%x, BufferSize = %lu\n", buf, size);
 
-				if (buf && size == 11)
+				if (buf)
 				{
-					DebugPrintBuffer("ProcessKeyBuffer(): <= ", buf, size);
-					//ProcessKeyBuffer(buf + 2, 9);
-					DebugPrintBuffer("ProcessKeyBuffer(): => ", buf, size);
+					DebugPrintBuffer("ACL <= ", buf, size);
+					if (size == 11)
+					{
+						//ProcessKeyBuffer(buf + 2, 9);
+					}
 				}
 			}
 		}
@@ -325,11 +327,13 @@ NTSTATUS InternalIoctlComplete(IN PDEVICE_OBJECT fido, IN PIRP irp, IN PVOID con
 				ULONG size = purb->UrbBulkOrInterruptTransfer.TransferBufferLength;
 				DebugPrint("InternalIoctlComplete URB_FUNCTION_BULK_OR_INTERRUPT_TRANSFER: TransferBuffer = 0x%x, TransferBufferLength = %lu\n", buf, size);
 
-				if (buf && size == 10)
+				if (buf)
 				{
-					DebugPrintBuffer("ProcessKeyBuffer(): <= ", buf, size);
-					//ProcessKeyBuffer(buf + 1, 9);
-					DebugPrintBuffer("ProcessKeyBuffer(): => ", buf, size);
+					DebugPrintBuffer("INT <= ", buf, size);
+					if (size == 10)
+					{
+						//ProcessKeyBuffer(buf + 1, 9);
+					}
 				}
 			}
 		}
@@ -460,3 +464,4 @@ NTSTATUS ReadDriverRegistryValue(PUNICODE_STRING registryPath, DWORD dwRegValeTy
 	ZwClose(hKey);
 	return status;
 }
+
