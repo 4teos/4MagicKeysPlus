@@ -8,7 +8,7 @@ Provider=%Provider%
 CatalogFile=WinAppleKey.cat
 DriverPackageDisplayName="WinAppleKey"
 DriverPackageType=PlugAndPlay
-DriverVer=08/08/2026,1.0.9.6
+DriverVer=08/08/2026,2.0.0.21
 PnpLockdown=1
 
 [ControlFlags]
@@ -54,7 +54,7 @@ Needs = HID_Inst.NT.Services
 AddService = WinAppleKey,,HIDKbFlt_Service_Inst
 
 [USBHIDKeyPadDevice.AddReg.NT]
-HKR,,"LowerFilters",0x00010000,"WinAppleKey"
+HKR,,"LowerFilters",0x00010000,"vhf","WinAppleKey"
 
 [Dri_HID_Inst.NT.Wdf]
 KmdfService = WinAppleKey, keyboard_wdfsect
@@ -70,7 +70,7 @@ Copyfiles = UKBMnt_Inst.CopyList
 WinAppleKey.sys
 
 [Dri_BTH_Inst.NT.HW.AddReg]
-HKR,,"LowerFilters",0x00010000,"WinAppleKey"
+HKR,,"LowerFilters",0x00010000,"vhf","WinAppleKey"
 
 [Dri_BTH_Inst.NT.Services]
 Include = hidbth.inf
@@ -87,10 +87,11 @@ AddReg = HIDKbFlt_Service_AddReg
 
 [HIDKbFlt_Service_AddReg]
 HKR,Parameters,FnLock,0x00010003, 0
-;HKR,Parameters,KeyMap,0x00000003, F0,4C
+; Example: HKR,Parameters,KeyMap,0x00000003, F0,4C
+HKR,Parameters,KeyMap,0x00000003, 0
 ; ModMap: modifier bit remapping, pairs of [source_bit, target_bit]
 ; Example Alt<->Cmd swap: 04,08,08,04,40,80,80,40
-;HKR,Parameters,ModMap,0x00000003, 04,08,08,04,40,80,80,40
+HKR,Parameters,ModMap,0x00000003, 0
 
 [Dri_BTH_Inst.NT.HW]
 Include = keyboard.inf
@@ -128,4 +129,3 @@ A1644.DevDesc = "Apple Magic Keyboard (A1644)"
 A1843.DevDesc = "Apple Magic Keyboard with Numeric Keypad (A1843)"
 HIDKbFlt.SvcDesc = "WinAppleKey"
 KBDiskName = "WinAppleKey Install Disk"
-

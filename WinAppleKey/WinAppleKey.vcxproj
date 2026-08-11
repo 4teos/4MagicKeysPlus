@@ -27,12 +27,10 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
     <ConfigurationType>Driver</ConfigurationType>
-    <DriverType>WDM</DriverType>
+    <DriverType>KMDF</DriverType>
     <SpectreMitigation>false</SpectreMitigation>
-    <KMDF_VERSION_MAJOR>
-    </KMDF_VERSION_MAJOR>
-    <KMDF_VERSION_MINOR>
-    </KMDF_VERSION_MINOR>
+    <KMDF_VERSION_MAJOR>1</KMDF_VERSION_MAJOR>
+    <KMDF_VERSION_MINOR>35</KMDF_VERSION_MINOR>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <TargetVersion>
@@ -40,12 +38,10 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
     <ConfigurationType>Driver</ConfigurationType>
-    <DriverType>WDM</DriverType>
+    <DriverType>KMDF</DriverType>
     <SpectreMitigation>false</SpectreMitigation>
-    <KMDF_VERSION_MAJOR>
-    </KMDF_VERSION_MAJOR>
-    <KMDF_VERSION_MINOR>
-    </KMDF_VERSION_MINOR>
+    <KMDF_VERSION_MAJOR>1</KMDF_VERSION_MAJOR>
+    <KMDF_VERSION_MINOR>35</KMDF_VERSION_MINOR>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -77,6 +73,9 @@
       <TreatWarningAsError>false</TreatWarningAsError>
       <PreprocessorDefinitions>DBG=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>vhfkm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
     <PostBuildEvent>
       <Command>
       </Command>
@@ -102,6 +101,9 @@
     <ClCompile>
       <TreatWarningAsError>false</TreatWarningAsError>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>vhfkm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
     <PostBuildEvent>
       <Command>
       </Command>
