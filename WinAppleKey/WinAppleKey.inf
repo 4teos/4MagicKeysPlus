@@ -8,7 +8,7 @@ Provider=%Provider%
 CatalogFile=WinAppleKey.cat
 DriverPackageDisplayName="WinAppleKey"
 DriverPackageType=PlugAndPlay
-DriverVer=08/08/2026,2.0.0.21
+DriverVer=08/08/2026,2.0.0.22
 PnpLockdown=1
 
 [ControlFlags]
@@ -92,6 +92,9 @@ HKR,Parameters,KeyMap,0x00000003, 0
 ; ModMap: modifier bit remapping, pairs of [source_bit, target_bit]
 ; Example Alt<->Cmd swap: 04,08,08,04,40,80,80,40
 HKR,Parameters,ModMap,0x00000003, 0
+; SpecialModMap: special keys <-> modifier bit remapping
+; Example Fn<->LeftCtrl swap: F0,01,01,F0
+HKR,Parameters,SpecialModMap,0x00000003, 0
 
 [Dri_BTH_Inst.NT.HW]
 Include = keyboard.inf

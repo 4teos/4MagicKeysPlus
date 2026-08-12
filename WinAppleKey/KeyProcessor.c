@@ -18,6 +18,16 @@ static void InjectKey(BYTE* buf, BYTE keyCode) {
     }
 }
 
+static BOOLEAN IsSpecialVirtualKey(BYTE keyCode) {
+    switch (keyCode) {
+        case VIRTUAL_FN:
+        case VIRTUAL_EJECT:
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
 static USHORT ConsumerUsageForKey(BYTE keyCode) {
     switch (keyCode) {
         case HidF1:
@@ -43,21 +53,87 @@ static USHORT ConsumerUsageForKey(BYTE keyCode) {
 
 // Apply modifiers remapping
 static void ProcessModifiers(BYTE* pModifier) {
-    if (g_ModMapSize >= 2) {
-        BYTE original = *pModifier;
-        BYTE mappedMask = 0;
-        for (ULONG i = 0; i + 1 < g_ModMapSize; i += 2)
-            mappedMask |= g_ModMap[i];
+    if (g_ModMapSize < 2) {
+        return;
+    }
 
-        *pModifier = original & ~mappedMask;
-        for (ULONG i = 0; i + 1 < g_ModMapSize; i += 2) {
-            if (original & g_ModMap[i])
-                *pModifier |= g_ModMap[i + 1];
-        }
+    BYTE original = *pModifier;
+    BYTE mappedMask = 0;
+    for (ULONG i = 0; i + 1 < g_ModMapSize; i += 2)
+        mappedMask |= g_ModMap[i];
 
-        if (original != *pModifier) {
-            DebugPrint("ModMap applied: 0x%02X -> 0x%02X\n", original, *pModifier);
+    *pModifier = original & ~mappedMask;
+    for (ULONG i = 0; i + 1 < g_ModMapSize; i += 2) {
+        if (original & g_ModMap[i])
+            *pModifier |= g_ModMap[i + 1];
+    }
+
+    if (original != *pModifier) {
+        DebugPrint("ModMap applied: 0x%02X -> 0x%02X\n", original, *pModifier);
+    }
+}
+
+// Apply remapping between real modifiers and the virtual Fn/Eject keys, in either
+// direction. Each g_SpecialModMap pair has exactly one real-modifier side and one
+// VIRTUAL_FN/VIRTUAL_EJECT side; IsSpecialVirtualKey tells them apart per pair.
+static void ProcessSpecialModifiers(BYTE* pModifier, BOOLEAN* pFnPressed, BOOLEAN* pEjectPressed) {
+    if (g_SpecialModMapSize < 2) {
+        return;
+    }
+
+    BYTE original = *pModifier;
+    BOOLEAN originalFn = *pFnPressed;
+    BOOLEAN originalEject = *pEjectPressed;
+
+    // Only the SOURCE side of a modifier->special rule gets cleared up front. A
+    // special->modifier TARGET bit must stay untouched here, otherwise an
+    // independent press of that same physical key would be wiped even when the
+    // Fn/Eject source isn't held.
+    BYTE consumedMask = 0;
+    for (ULONG i = 0; i + 1 < g_SpecialModMapSize; i += 2) {
+        if (!IsSpecialVirtualKey(g_SpecialModMap[i]) && IsSpecialVirtualKey(g_SpecialModMap[i + 1])) {
+            consumedMask |= g_SpecialModMap[i];
         }
+    }
+
+    BYTE result = original & ~consumedMask;
+    BOOLEAN newFn = originalFn;
+    BOOLEAN newEject = originalEject;
+
+    for (ULONG i = 0; i + 1 < g_SpecialModMapSize; i += 2) {
+        BYTE source = g_SpecialModMap[i];
+        BYTE target = g_SpecialModMap[i + 1];
+
+        if (!IsSpecialVirtualKey(source) && IsSpecialVirtualKey(target)) {
+            // modifier -> Fn/Eject
+            if (original & source) {
+                if (target == VIRTUAL_FN) {
+                    newFn = TRUE;
+                } else {
+                    newEject = TRUE;
+                }
+            }
+        } else if (IsSpecialVirtualKey(source) && !IsSpecialVirtualKey(target)) {
+            // Fn/Eject -> modifier
+            BOOLEAN sourcePressed = (source == VIRTUAL_FN) ? originalFn : originalEject;
+            if (sourcePressed) {
+                result |= target;
+                if (source == VIRTUAL_FN) {
+                    newFn = FALSE;
+                } else {
+                    newEject = FALSE;
+                }
+            }
+        }
+    }
+
+    *pModifier = result;
+    *pFnPressed = newFn;
+    *pEjectPressed = newEject;
+
+    if (original != *pModifier || originalFn != *pFnPressed || originalEject != *pEjectPressed) {
+        DebugPrint("SpecialModMap applied: mod 0x%02X -> 0x%02X, Fn %d -> %d, Eject %d -> %d\n",
+            original, *pModifier, originalFn, *pFnPressed, originalEject, *pEjectPressed);
     }
 }
 
@@ -100,7 +176,7 @@ static void ProcessHardcodedFnBehaviorForKey(BYTE* buf, ULONG pos, BOOLEAN fnPre
     }
 }
 
-// Apply F key behaviors. F keys contain extra functions (volume control, multimedia control, etc.) 
+// Apply F key behaviors. F keys contain extra functions (volume control, multimedia control, etc.)
 // and behave depending on the Fn key and FnLock behavior.
 static USHORT ProcessFKey(BYTE* buf, ULONG pos, BOOLEAN fnPressed, BOOLEAN fnLocked, USHORT currentConsumerUsage) {
     BYTE key = buf[pos];
@@ -203,6 +279,7 @@ void ProcessKeyBuffer(BYTE* buf, ULONG size, VHFHANDLE vhfHandle) {
     }
 
     ProcessModifiers(&buf[0]);
+    ProcessSpecialModifiers(&buf[0], &fnPressed, &ejectPressed);
 
     USHORT consumerUsage = CONSUMER_USAGE_NONE;
     for (int i = 2; i <= 7; i++) {
@@ -214,6 +291,6 @@ void ProcessKeyBuffer(BYTE* buf, ULONG size, VHFHANDLE vhfHandle) {
         consumerUsage = ProcessFKey(buf, i, fnPressed, g_dwFnLock != 0, consumerUsage);
         ProcessNormalKey(buf, i);
     }
-    
+
     SubmitConsumerUsageForMediaKey(consumerUsage, vhfHandle);
 }

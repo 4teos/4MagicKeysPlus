@@ -21,7 +21,11 @@ extern "C" {
 #endif
 
 #define DRIVERNAME "WinAppleKey"
+
 #define MAX_KEYMAP_SIZE 128
+#define MAX_MODMAP_SIZE 16
+#define MAX_SPECIAL_MODMAP_SIZE 4
+
 #define VIRTUAL_EJECT 0xF0
 #define VIRTUAL_FN    0xF1
 
@@ -33,7 +37,7 @@ extern "C" {
 #define DebugPrintBuffer(...) ((void)0)
 #endif
 
-#define MAX_MODMAP_SIZE 16
+
 
 // Consumer Control (usage page 0x0C) usage codes reported in the virtual
 // Consumer Control report - see g_ConsumerReportDescriptor (Driver.c),
@@ -59,6 +63,8 @@ extern "C" {
     extern ULONG g_KeyMapSize;
     extern BYTE g_ModMap[MAX_MODMAP_SIZE];
     extern ULONG g_ModMapSize;
+    extern BYTE g_SpecialModMap[MAX_SPECIAL_MODMAP_SIZE];
+    extern ULONG g_SpecialModMapSize;
 
     enum HidCodes {
         HidKeyNone = 0x0,

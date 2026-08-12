@@ -8,7 +8,8 @@ BYTE g_KeyMap[MAX_KEYMAP_SIZE] = {0};
 ULONG g_KeyMapSize = 0;
 BYTE g_ModMap[MAX_MODMAP_SIZE] = {0};
 ULONG g_ModMapSize = 0;
-
+BYTE g_SpecialModMap[MAX_SPECIAL_MODMAP_SIZE] = {0};
+ULONG g_SpecialModMapSize = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Read REG_BINARY value from registry into a buffer
@@ -69,6 +70,7 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT driverObject, IN PUNICODE_STRING registry
     ReadDriverRegistryValue(&paramPath, REG_DWORD, L"FnLock", (void*)&g_dwFnLock);
     ReadBinaryRegistryValue(&paramPath, L"KeyMap", g_KeyMap, MAX_KEYMAP_SIZE, &g_KeyMapSize);
     ReadBinaryRegistryValue(&paramPath, L"ModMap", g_ModMap, MAX_MODMAP_SIZE, &g_ModMapSize);
+    ReadBinaryRegistryValue(&paramPath, L"SpecialModMap", g_SpecialModMap, MAX_SPECIAL_MODMAP_SIZE, &g_SpecialModMapSize);
 
     DebugPrint("FnLock=%d, KeyMapSize=%lu, ModMapSize=%lu\n", g_dwFnLock, g_KeyMapSize, g_ModMapSize);
 
