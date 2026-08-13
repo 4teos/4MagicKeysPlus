@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.8.12023.21
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinAppleKey", "WinAppleKey\WinAppleKey.vcxproj", "{66B51E72-5BBA-4FF2-85C5-3F923B98C156}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KeyMagic", "KeyMagic\KeyMagic.vcxproj", "{66B51E72-5BBA-4FF2-85C5-3F923B98C156}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A98F64D4-FB23-4B9F-A846-643547083C0F}"
 	ProjectSection(SolutionItems) = preProject

@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-#define DRIVERNAME "WinAppleKey"
+#define DRIVERNAME "KeyMagic"
 
 #define MAX_KEYMAP_SIZE 128
 #define MAX_MODMAP_SIZE 16
@@ -48,11 +48,10 @@ extern "C" {
 #define CONSUMER_USAGE_PLAYPAUSE    0x00CD
 #define CONSUMER_USAGE_BRIGHT_UP    0x006F
 #define CONSUMER_USAGE_BRIGHT_DOWN  0x0070
-
-// Consumer volume control.
 #define CONSUMER_USAGE_MUTE         0x00E2
 #define CONSUMER_VOLUME_UP          0x00E9
 #define CONSUMER_VOLUME_DOWN        0x00EA
+#define CONSUMER_CALCULATOR         0x0192
 
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -165,6 +164,8 @@ extern "C" {
         0xC0                // END_COLLECTION
     };
 
+    static const BYTE g_SpecialKeyCodes[] = {VIRTUAL_EJECT, VIRTUAL_FN};
+
 
     ///////////////////////////////////////////////////////////////////////////////
     // Global functions
@@ -179,6 +180,8 @@ extern "C" {
 
     void ProcessKeyBuffer(BYTE* pbuf, ULONG size, VHFHANDLE vhfHandle);
     VOID EvtVhfReadyForNextReadReport(IN PVOID VhfClientContext);
+
+    BOOLEAN IsSpecialVirtualKey(BYTE keyCode);
 
 #ifdef __cplusplus
 }

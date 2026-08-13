@@ -17,7 +17,7 @@
     <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
     <Configuration>Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">Win32</Platform>
-    <RootNamespace>WinAppleKey</RootNamespace>
+    <RootNamespace>KeyMagic</RootNamespace>
     <WindowsTargetPlatformVersion>$(LatestTargetPlatformVersion)</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -56,14 +56,14 @@
     <TimeStampServer>http://timestamp.verisign.com/scripts/timstamp.dll</TimeStampServer>
     <DiagnosticMode>false</DiagnosticMode>
     <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
-    <TestCertificate>$(ProjectDir)WinAppleKey.pfx</TestCertificate>
+    <TestCertificate>$(ProjectDir)KeyMagic.pfx</TestCertificate>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
     <TimeStampServer>http://timestamp.verisign.com/scripts/timstamp.dll</TimeStampServer>
     <DiagnosticMode>false</DiagnosticMode>
     <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
-    <TestCertificate>$(ProjectDir)WinAppleKey.pfx</TestCertificate>
+    <TestCertificate>$(ProjectDir)KeyMagic.pfx</TestCertificate>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <DriverSign>
@@ -123,7 +123,7 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Inf Include="WinAppleKey.inf" />
+    <Inf Include="KeyMagic.inf" />
   </ItemGroup>
   <ItemGroup>
     <FilesToPackage Include="$(TargetPath)">
@@ -137,10 +137,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Driver.h" />
-    <ClInclude Include="resource.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="resource.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,4 +1,4 @@
-# WinAppleKey
+# KeyMagic+
 
 Windows driver for Apple Magic Keyboards.
 
@@ -13,18 +13,17 @@ Windows driver for Apple Magic Keyboards.
 
 - Configurable key remapping via registry (`KeyMap`) — remap any key to any other key, including Fn and Eject
 - Configurable modifier remapping via registry (`ModMap`) — swap or remap Alt, Cmd, Ctrl, Shift
-- Fn Lock mode — makes Fn-combinations (arrows to navigation, F1-F12 to F13-F24) permanent without holding Fn
-- Fn-key combinations for missing Windows keys (Delete, Insert, Print Screen, etc.)
+- Configurable Fn/Eject ↔ modifier remapping via registry (`SpecialModMap`) — e.g. swap Fn and Left Ctrl
+- Fn-key combinations for missing Windows keys (Home, End, Page Up/Down, Insert, Print Screen, Scroll Lock, Pause/Break)
+- F1-F12 act as media/brightness/volume keys by default, or as regular function keys with `FnLock` set (and vice versa while holding Fn)
 
 ### Technical Details
 
-WinAppleKey is a HIDCLASS LowerFilter WDM kernel mode driver. It intercepts HID input at the Bluetooth (L2CAP) or USB (URB) level and transforms the 9-byte keyboard report buffer before it reaches the HID class driver.
-
-![keyboard-driver-stack](keyboard-driver-stack.png)
+KeyMagic+ is a HIDCLASS LowerFilter WDM kernel mode driver. It intercepts HID input at the Bluetooth (L2CAP) or USB (URB) level and transforms the 9-byte keyboard report buffer before it reaches the HID class driver. For the F1-F12 media/brightness/volume actions it also exposes a virtual Consumer Control HID device (via VHF) that reports the corresponding usage code.
 
 ### Installation
 
-**DISCLAIMER:** This driver is signed with a self-signed (test/development) certificate. Windows will not allow the driver installation unless running in **TESTSIGNING** mode. Permanently running Windows in TESTSIGNING mode leaves your system open to potential security risks. Any consequence is solely your own responsibility. WinAppleKey is ***free software*** that you build and/or use completely ***at your own risk.*** If your system runs UEFI with **Secure Boot** enabled, you will need to disable **Secure Boot** in BIOS first.
+**DISCLAIMER:** This driver is signed with a self-signed (test/development) certificate. Windows will not allow the driver installation unless running in **TESTSIGNING** mode. Permanently running Windows in TESTSIGNING mode leaves your system open to potential security risks. Any consequence is solely your own responsibility. KeyMagic+ is ***free software*** that you build and/or use completely ***at your own risk.*** If your system runs UEFI with **Secure Boot** enabled, you will need to disable **Secure Boot** in BIOS first.
 
 1. Enable TESTSIGNING mode (Administrative command prompt), then reboot:
 
@@ -35,14 +34,14 @@ WinAppleKey is a HIDCLASS LowerFilter WDM kernel mode driver. It intercepts HID 
 2. Install the test certificate:
 
    ```
-   certutil -addstore "TrustedPublisher" WinAppleKey.cer
-   certutil -addstore "Root" WinAppleKey.cer
+   certutil -addstore "TrustedPublisher" KeyMagic.cer
+   certutil -addstore "Root" KeyMagic.cer
    ```
 
 3. Install the driver via Device Manager:
    - Find your Apple keyboard under **Human Interface Devices**
    - Right-click → **Update driver** → **Browse my computer** → **Let me pick from a list** → **Have Disk...**
-   - Point to the directory with `WinAppleKey.inf` and `WinAppleKey.sys`
+   - Point to the directory with `KeyMagic.inf` and `KeyMagic.sys`
 
 4. Disconnect and reconnect the keyboard (or reboot).
 
@@ -54,7 +53,7 @@ bcdedit.exe -set TESTSIGNING OFF
 
 ### Default Key Mappings
 
-These Fn-combinations are always active (built into the driver):
+These Fn-combinations are always active (built into the driver, independent of `FnLock`):
 
 ```
 Fn + Left       ->  Home
@@ -62,21 +61,36 @@ Fn + Right      ->  End
 Fn + Up         ->  Page Up
 Fn + Down       ->  Page Down
 Fn + Return     ->  Insert
-Fn + F1...F12   ->  F13...F24
 Fn + P          ->  Print Screen
 Fn + S          ->  Scroll Lock
 Fn + B          ->  Pause/Break
-Fn + LCtrl      ->  Right Ctrl
 ```
 
-The default `KeyMap` maps Eject → Delete.
+### Multimedia Keys (F1-F12)
+
+F1-F12 report a Consumer Control usage instead of their regular HID code by default; F3-F6 have no assigned action and always behave as regular function keys.
+
+```
+F1  ->  Brightness Down
+F2  ->  Brightness Up
+F7  ->  Previous Track
+F8  ->  Play/Pause
+F9  ->  Next Track
+F10 ->  Mute
+F11 ->  Volume Down
+F12 ->  Volume Up
+```
+
+Holding Fn while pressing an F-key sends the regular F1-F12 code instead. Setting `FnLock` to `1` swaps the default: F-keys behave as regular function keys, and holding Fn gives the media action.
+
+No default `KeyMap` is set out of the box (nothing to remap unless you configure one).
 
 ### Driver Settings
 
 All settings are in the registry at:
 
 ```
-HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinAppleKey\Parameters
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\KeyMagic\Parameters
 ```
 
 Settings are read once at driver load. After changing values, restart the device to reload the driver (Administrative command prompt):
@@ -89,7 +103,7 @@ Replace the device instance ID with the appropriate one for your keyboard model.
 
 #### FnLock (DWORD)
 
-When set to `1`, Fn-combinations are always active without holding the Fn key. Regular keys that don't have a Fn-combination still work normally. Default: `0`.
+Controls the default behavior of F1-F12 (see [Multimedia Keys](#multimedia-keys-f1-f12)). When `0` (default), F-keys act as media/brightness/volume controls by default and send their regular F1-F12 code while Fn is held. When set to `1`, this is reversed: F-keys act as regular function keys by default, and holding Fn gives the media action instead. Does not affect the other Fn-combinations (Home, End, Page Up/Down, etc.), which always require holding Fn. Default: `0`.
 
 #### KeyMap (REG_BINARY)
 
@@ -99,9 +113,9 @@ Special virtual codes for keys in the Apple-specific byte:
 - `F0` — Eject key
 - `F1` — Fn key
 
-When Fn is mapped to a key via KeyMap, it sends that key instead of acting as a modifier (Fn-combinations are still available via FnLock).
+When Fn is mapped to a key via KeyMap, it sends that key instead of acting as a modifier.
 
-Default: `F0 4C` (Eject → Delete).
+Default: none (empty).
 
 Example — remap F13/F14/F15 and Fn:
 ```
@@ -119,6 +133,18 @@ ModMap = hex:04,08,08,04,40,80,80,40
 ```
 
 Default: not set (no modifier remapping).
+
+#### SpecialModMap (REG_BINARY)
+
+Pairs of bytes `[source, target, ...]` that remap between a real modifier bit and the virtual Fn (`F1`) / Eject (`F0`) codes. Each pair has exactly one modifier-bit side and one virtual-code side; the direction is inferred per pair, so a bidirectional swap needs both pairs (modifier→virtual and virtual→modifier).
+
+Example — swap Fn and Left Ctrl (both directions):
+```
+SpecialModMap = hex:01,F1,F1,01
+```
+Means: Left Ctrl press acts as Fn, and Fn press acts as Left Ctrl.
+
+Default: not set (no remapping).
 
 ### HID Key Code Reference
 
@@ -189,9 +215,10 @@ F0=Eject    F1=Fn
 ### Build Instructions
 
 Requirements:
-- Visual Studio 2019+ with C++ desktop development workload
-- Windows Driver Kit (WDK) matching your Windows SDK version
+- Visual Studio 2026 with the **Desktop development with C++** workload
+- The **Windows Driver Kit** individual component (installed via the Visual Studio Installer — adds the driver project templates and build tooling)
+- A Windows SDK whose build number matches your installed WDK build number exactly (e.g. both `10.0.28000.x`)
 
-Build the `WinAppleKey` project for x64 (Debug or Release). The driver, INF and catalog will be in the output directory.
+This project currently targets KMDF 1.35, which ships with the latest WDK (`10.0.28000.x`, for Visual Studio 2026) — it won't build against an older WDK/SDK pair (e.g. the `10.0.26100.x` kit that ships for Visual Studio 2022) without changes. If you want to build on Visual Studio 2022 instead, either install the latest WDK/SDK alongside it, or lower `KMDF_VERSION_MAJOR`/`KMDF_VERSION_MINOR` in `KeyMagic\KeyMagic.vcxproj` to a version your installed WDK actually provides (check `C:\Program Files (x86)\Windows Kits\10\Lib\wdf\kmdf\x64\` for the KMDF versions installed on your machine).
 
-To run tests, build and run the `Tests` project — it validates `KeyProcessor.c` logic without requiring driver installation.
+Build the `KeyMagic` project for x64 (Debug or Release). The driver, INF and catalog will be in the output directory.

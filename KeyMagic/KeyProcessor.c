@@ -18,14 +18,10 @@ static void InjectKey(BYTE* buf, BYTE keyCode) {
     }
 }
 
-static BOOLEAN IsSpecialVirtualKey(BYTE keyCode) {
-    switch (keyCode) {
-        case VIRTUAL_FN:
-        case VIRTUAL_EJECT:
-            return TRUE;
-        default:
-            return FALSE;
-    }
+BOOLEAN IsSpecialVirtualKey(BYTE keyCode) {
+    char keyIndex = keyCode - VIRTUAL_EJECT;
+    size_t arraySize = ARRAYSIZE(g_SpecialKeyCodes);
+    return keyIndex >= 0 && keyIndex < arraySize;
 }
 
 static USHORT ConsumerUsageForKey(BYTE keyCode) {
@@ -219,7 +215,7 @@ static USHORT g_LastConsumerUsage = CONSUMER_USAGE_NONE;
 // ever sending that release report the action would repeat indefinitely, which
 // happened to be masked for Play/Pause only because it is a One-Shot Control
 // that fires once per transition regardless of how long the value stays set.
-static void SubmitConsumerUsageForMediaKey(USHORT usage, VHFHANDLE vhfHandle) {
+static void SubmitConsumerUsage(USHORT usage, VHFHANDLE vhfHandle) {
     if (!vhfHandle || usage == g_LastConsumerUsage) {
         return;
     }
@@ -292,5 +288,5 @@ void ProcessKeyBuffer(BYTE* buf, ULONG size, VHFHANDLE vhfHandle) {
         ProcessNormalKey(buf, i);
     }
 
-    SubmitConsumerUsageForMediaKey(consumerUsage, vhfHandle);
+    SubmitConsumerUsage(consumerUsage, vhfHandle);
 }
