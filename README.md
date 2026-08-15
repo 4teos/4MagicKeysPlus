@@ -228,7 +228,7 @@ Build the `4MagicKeysPlus` project for x64 (Debug or Release). The driver, INF a
 The build test-signs the driver using `4MagicKeysPlus\4MagicKeysPlus.pfx`, which is **not checked into git** (`.pfx` is gitignored, since it bundles the private key). If you get an MSBuild error like `Invalid argument <...4MagicKeysPlus.pfx> for property <TestCertificate>`, generate a new self-signed test certificate locally (PowerShell, run from the `4MagicKeysPlus\` folder):
 
 ```powershell
-$cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=4MagicKeysPlus" -CertStoreLocation Cert:\CurrentUser\My -HashAlgorithm SHA256 -KeyExportPolicy Exportable -NotAfter (Get-Date "2040-01-01")
+$cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=4MagicKeysPlus" -CertStoreLocation Cert:\CurrentUser\My -HashAlgorithm SHA256 -KeyExportPolicy Exportable -Provider "Microsoft Strong Cryptographic Provider" -NotAfter (Get-Date "2040-01-01")
 Export-Certificate -Cert $cert -FilePath 4MagicKeysPlus.cer
 [System.IO.File]::WriteAllBytes("4MagicKeysPlus.pfx", $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Pfx, ""))
 Remove-Item "Cert:\CurrentUser\My\$($cert.Thumbprint)" -Force
@@ -236,4 +236,5 @@ certutil -addstore "TrustedPublisher" 4MagicKeysPlus.cer
 certutil -addstore "Root" 4MagicKeysPlus.cer
 ```
 
-Note: the `-Subject` must not contain a `+` — it's a reserved separator character in X.509 Distinguished Names and gets silently stripped.
+Notes:
+- The `-Provider "Microsoft Strong Cryptographic Provider"` flag is required. Without it, `New-SelfSignedCertificate` defaults to a CNG key, and the resulting `.pfx` fails the build with `error : Invalid certificate or password` (from `WindowsDriver.common.targets`'s `SignTask`) even though the password is correct — the WDK's driver-signing tooling expects a legacy CAPI-backed key.

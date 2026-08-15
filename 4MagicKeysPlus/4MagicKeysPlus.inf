@@ -8,7 +8,7 @@ Provider=%Provider%
 CatalogFile=4MagicKeysPlus.cat
 DriverPackageDisplayName="4MagicKeys+"
 DriverPackageType=PlugAndPlay
-DriverVer=08/08/2026,2.0.0.27
+DriverVer=08/15/2026,2.0.0.28
 PnpLockdown=1
 
 [ControlFlags]
