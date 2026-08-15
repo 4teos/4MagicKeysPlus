@@ -2,6 +2,8 @@
 
 Windows driver for Apple Magic Keyboards.
 
+Originally forked from the [samartzidis/winAppleKey](https://github.com/samartzidis/winAppleKey) repository.
+
 ### Supported Keyboards
 
 | Model | Name | Connection |
