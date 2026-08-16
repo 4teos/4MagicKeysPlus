@@ -98,7 +98,7 @@ HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters
 Settings are read once at driver load. After changing values, restart the device to reload the driver (Administrative command prompt):
 
 ```
-pnputil /restart-device "BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&0001004c_PID&026C"
+pnputil /restart-device /deviceid "BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&0001004c_PID&026C"
 ```
 
 Replace the device instance ID with the appropriate one for your keyboard model. You can also disconnect/reconnect the keyboard or reboot.
