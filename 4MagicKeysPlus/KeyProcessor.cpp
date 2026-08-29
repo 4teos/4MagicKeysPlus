@@ -1,15 +1,45 @@
-#include "driver.h"
+#include "KeyProcessor.h"
 
-static BYTE LookupKeyMap(BYTE source) {
-    for (ULONG i = 0; i + 1 < g_KeyMapSize; i += 2) {
-        if (g_KeyMap[i] == source) {
-            return g_KeyMap[i + 1];
+// ntddk.h (pulled in by KeyProcessorTypes.h for KEYPROCESSOR_KERNEL_BUILD)
+// already makes memcpy available as a compiler intrinsic - <cstring> would
+// pull in vcruntime headers that clash with the kernel CRT headers next to it
+// on the include path.
+#if !defined(KEYPROCESSOR_KERNEL_BUILD)
+#include <cstring>
+#endif
+
+namespace {
+    ULONG ClampSize(ULONG size, ULONG maxSize) {
+        return size > maxSize ? maxSize : size;
+    }
+}
+
+void KeyProcessor::LoadConfig(DWORD fnLock,
+        const BYTE* keyMap, ULONG keyMapSize,
+        const BYTE* modMap, ULONG modMapSize,
+        const BYTE* specialModMap, ULONG specialModMapSize) {
+    m_FnLock = fnLock;
+
+    m_KeyMapSize = ClampSize(keyMapSize, MAX_KEYMAP_SIZE);
+    memcpy(m_KeyMap, keyMap, m_KeyMapSize);
+
+    m_ModMapSize = ClampSize(modMapSize, MAX_MODMAP_SIZE);
+    memcpy(m_ModMap, modMap, m_ModMapSize);
+
+    m_SpecialModMapSize = ClampSize(specialModMapSize, MAX_SPECIAL_MODMAP_SIZE);
+    memcpy(m_SpecialModMap, specialModMap, m_SpecialModMapSize);
+}
+
+BYTE KeyProcessor::LookupKeyMap(BYTE source) const {
+    for (ULONG i = 0; i + 1 < m_KeyMapSize; i += 2) {
+        if (m_KeyMap[i] == source) {
+            return m_KeyMap[i + 1];
         }
     }
     return 0;
 }
 
-static void InjectKey(BYTE* buf, BYTE keyCode) {
+void KeyProcessor::InjectKey(BYTE* buf, BYTE keyCode) {
     for (int i = 2; i <= 7; i++) {
         if (!buf[i]) {
             buf[i] = keyCode;
@@ -18,13 +48,13 @@ static void InjectKey(BYTE* buf, BYTE keyCode) {
     }
 }
 
-BOOLEAN IsSpecialVirtualKey(BYTE keyCode) {
+BOOLEAN KeyProcessor::IsSpecialVirtualKey(BYTE keyCode) {
     char keyIndex = keyCode - VIRTUAL_EJECT;
-    size_t arraySize = ARRAYSIZE(g_SpecialKeyCodes);
-    return keyIndex >= 0 && keyIndex < arraySize;
+    size_t arraySize = sizeof(g_SpecialKeyCodes) / sizeof(g_SpecialKeyCodes[0]);
+    return keyIndex >= 0 && (size_t)keyIndex < arraySize;
 }
 
-static USHORT ConsumerUsageForKey(BYTE keyCode) {
+USHORT KeyProcessor::ConsumerUsageForKey(BYTE keyCode) {
     switch (keyCode) {
         case HidF1:
             return CONSUMER_USAGE_BRIGHT_DOWN;
@@ -48,20 +78,20 @@ static USHORT ConsumerUsageForKey(BYTE keyCode) {
 }
 
 // Apply modifiers remapping
-static void ProcessModifiers(BYTE* pModifier) {
-    if (g_ModMapSize < 2) {
+void KeyProcessor::ProcessModifiers(BYTE* pModifier) const {
+    if (m_ModMapSize < 2) {
         return;
     }
 
     BYTE original = *pModifier;
     BYTE mappedMask = 0;
-    for (ULONG i = 0; i + 1 < g_ModMapSize; i += 2)
-        mappedMask |= g_ModMap[i];
+    for (ULONG i = 0; i + 1 < m_ModMapSize; i += 2)
+        mappedMask |= m_ModMap[i];
 
     *pModifier = original & ~mappedMask;
-    for (ULONG i = 0; i + 1 < g_ModMapSize; i += 2) {
-        if (original & g_ModMap[i])
-            *pModifier |= g_ModMap[i + 1];
+    for (ULONG i = 0; i + 1 < m_ModMapSize; i += 2) {
+        if (original & m_ModMap[i])
+            *pModifier |= m_ModMap[i + 1];
     }
 
     if (original != *pModifier) {
@@ -70,10 +100,10 @@ static void ProcessModifiers(BYTE* pModifier) {
 }
 
 // Apply remapping between real modifiers and the virtual Fn/Eject keys, in either
-// direction. Each g_SpecialModMap pair has exactly one real-modifier side and one
+// direction. Each m_SpecialModMap pair has exactly one real-modifier side and one
 // VIRTUAL_FN/VIRTUAL_EJECT side; IsSpecialVirtualKey tells them apart per pair.
-static void ProcessSpecialModifiers(BYTE* pModifier, BOOLEAN* pFnPressed, BOOLEAN* pEjectPressed) {
-    if (g_SpecialModMapSize < 2) {
+void KeyProcessor::ProcessSpecialModifiers(BYTE* pModifier, BOOLEAN* pFnPressed, BOOLEAN* pEjectPressed) const {
+    if (m_SpecialModMapSize < 2) {
         return;
     }
 
@@ -86,9 +116,9 @@ static void ProcessSpecialModifiers(BYTE* pModifier, BOOLEAN* pFnPressed, BOOLEA
     // independent press of that same physical key would be wiped even when the
     // Fn/Eject source isn't held.
     BYTE consumedMask = 0;
-    for (ULONG i = 0; i + 1 < g_SpecialModMapSize; i += 2) {
-        if (!IsSpecialVirtualKey(g_SpecialModMap[i]) && IsSpecialVirtualKey(g_SpecialModMap[i + 1])) {
-            consumedMask |= g_SpecialModMap[i];
+    for (ULONG i = 0; i + 1 < m_SpecialModMapSize; i += 2) {
+        if (!IsSpecialVirtualKey(m_SpecialModMap[i]) && IsSpecialVirtualKey(m_SpecialModMap[i + 1])) {
+            consumedMask |= m_SpecialModMap[i];
         }
     }
 
@@ -96,9 +126,9 @@ static void ProcessSpecialModifiers(BYTE* pModifier, BOOLEAN* pFnPressed, BOOLEA
     BOOLEAN newFn = originalFn;
     BOOLEAN newEject = originalEject;
 
-    for (ULONG i = 0; i + 1 < g_SpecialModMapSize; i += 2) {
-        BYTE source = g_SpecialModMap[i];
-        BYTE target = g_SpecialModMap[i + 1];
+    for (ULONG i = 0; i + 1 < m_SpecialModMapSize; i += 2) {
+        BYTE source = m_SpecialModMap[i];
+        BYTE target = m_SpecialModMap[i + 1];
 
         if (!IsSpecialVirtualKey(source) && IsSpecialVirtualKey(target)) {
             // modifier -> Fn/Eject
@@ -134,7 +164,7 @@ static void ProcessSpecialModifiers(BYTE* pModifier, BOOLEAN* pFnPressed, BOOLEA
 }
 
 // Apply hardcoded remappings with the Fn key pressed
-static void ProcessHardcodedFnBehaviorForKey(BYTE* buf, ULONG pos, BOOLEAN fnPressed) {
+void KeyProcessor::ProcessHardcodedFnBehaviorForKey(BYTE* buf, ULONG pos, BOOLEAN fnPressed) {
     if (!fnPressed) {
         return;
     }
@@ -174,10 +204,10 @@ static void ProcessHardcodedFnBehaviorForKey(BYTE* buf, ULONG pos, BOOLEAN fnPre
 
 // Apply F key behaviors. F keys contain extra functions (volume control, multimedia control, etc.)
 // and behave depending on the Fn key and FnLock behavior.
-static USHORT ProcessFKey(BYTE* buf, ULONG pos, BOOLEAN fnPressed, BOOLEAN fnLocked, USHORT currentConsumerUsage) {
+USHORT KeyProcessor::ProcessFKey(BYTE* buf, ULONG pos, BOOLEAN fnPressed, USHORT currentConsumerUsage) const {
     BYTE key = buf[pos];
 
-    if (key < HidF1 || key > HidF12 || fnLocked != fnPressed) {
+    if (key < HidF1 || key > HidF12 || (m_FnLock != 0) != (fnPressed != FALSE)) {
         // nothing to do because it is not an F key or it should act like a regular F key
         return CONSUMER_USAGE_NONE;
     }
@@ -196,7 +226,7 @@ static USHORT ProcessFKey(BYTE* buf, ULONG pos, BOOLEAN fnPressed, BOOLEAN fnLoc
 }
 
 // Apply normal key remappings
-static void ProcessNormalKey(BYTE* buf, ULONG pos) {
+void KeyProcessor::ProcessNormalKey(BYTE* buf, ULONG pos) const {
     BYTE key = buf[pos];
     BYTE targetKey = LookupKeyMap(key);
     if (targetKey) {
@@ -205,9 +235,7 @@ static void ProcessNormalKey(BYTE* buf, ULONG pos) {
     }
 }
 
-static USHORT g_LastConsumerUsage = CONSUMER_USAGE_NONE;
-
-// Submits the consumer usage action through the virtual Consumer Control device.
+// Decides whether the caller should submit a Consumer Control usage report.
 // Submits only on a state transition (including the transition back to
 // CONSUMER_USAGE_NONE) - Volume/Brightness/Scan Next/Previous are Re-Trigger
 // Controls, so the host keeps repeating the action for as long as the reported
@@ -215,30 +243,17 @@ static USHORT g_LastConsumerUsage = CONSUMER_USAGE_NONE;
 // ever sending that release report the action would repeat indefinitely, which
 // happened to be masked for Play/Pause only because it is a One-Shot Control
 // that fires once per transition regardless of how long the value stays set.
-static void SubmitConsumerUsage(USHORT usage, VHFHANDLE vhfHandle) {
-    if (!vhfHandle || usage == g_LastConsumerUsage) {
-        return;
+ConsumerUsageSubmission KeyProcessor::DecideConsumerUsageSubmission(USHORT usage) {
+    if (usage == m_LastConsumerUsage) {
+        return { false, usage };
     }
-    g_LastConsumerUsage = usage;
-
-    // reportBuffer must start with the report ID byte itself, followed by the report data.
-    UCHAR reportBuffer[3] = {2, (UCHAR)(usage & 0xFF), (UCHAR)(usage >> 8)};
-    HID_XFER_PACKET packet;
-    packet.reportBuffer = reportBuffer;
-    packet.reportBufferLen = sizeof(reportBuffer);
-    packet.reportId = 2;
-
-    NTSTATUS status = VhfReadReportSubmit(vhfHandle, &packet);
-    if (!NT_SUCCESS(status)) {
-        DebugPrint("Submit consumer usage: VhfReadReportSubmit failed: 0x%x\n", status);
-    } else {
-        DebugPrint("Submit consumer usage: Success. Usage 0x%04X\n", usage);
-    }
+    m_LastConsumerUsage = usage;
+    return { true, usage };
 }
 
-void ProcessKeyBuffer(BYTE* buf, ULONG size, VHFHANDLE vhfHandle) {
+ConsumerUsageSubmission KeyProcessor::Process(BYTE* buf, ULONG size) {
     if (!buf || size < 9) {
-        return;
+        return { false, CONSUMER_USAGE_NONE };
     }
 
     BYTE* pSpecialKey = &buf[8];
@@ -284,9 +299,9 @@ void ProcessKeyBuffer(BYTE* buf, ULONG size, VHFHANDLE vhfHandle) {
         }
 
         ProcessHardcodedFnBehaviorForKey(buf, i, fnPressed);
-        consumerUsage = ProcessFKey(buf, i, fnPressed, g_dwFnLock != 0, consumerUsage);
+        consumerUsage = ProcessFKey(buf, i, fnPressed, consumerUsage);
         ProcessNormalKey(buf, i);
     }
 
-    SubmitConsumerUsage(consumerUsage, vhfHandle);
+    return DecideConsumerUsageSubmission(consumerUsage);
 }

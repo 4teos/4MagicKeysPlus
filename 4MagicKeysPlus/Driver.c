@@ -112,6 +112,14 @@ NTSTATUS EvtDriverDeviceAdd(IN WDFDRIVER driver, IN PWDFDEVICE_INIT deviceInit) 
     PDEVICE_CONTEXT deviceContext = GetDeviceContext(hDevice);
     deviceContext->VhfHandle = NULL;
 
+    deviceContext->KeyProcessorHandle = KeyProcessorCreate();
+    if (!deviceContext->KeyProcessorHandle) {
+        DebugPrint("EvtDriverDeviceAdd(): KeyProcessorCreate failed\n");
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+    KeyProcessorLoadConfig(deviceContext->KeyProcessorHandle, g_dwFnLock,
+        g_KeyMap, g_KeyMapSize, g_ModMap, g_ModMapSize, g_SpecialModMap, g_SpecialModMapSize);
+
     VHF_CONFIG vhfConfig;
     VHF_CONFIG_INIT(&vhfConfig, WdfDeviceWdmGetDeviceObject(hDevice), sizeof(g_ConsumerReportDescriptor), (PUCHAR)g_ConsumerReportDescriptor);
     vhfConfig.VendorID = 0x0001;
@@ -147,6 +155,7 @@ VOID EvtVhfReadyForNextReadReport(IN PVOID VhfClientContext) {
 
 ///////////////////////////////////////////////////////////////////////////////
 // Called when the filter device object is torn down - releases the VHF device
+// and this device's KeyProcessor instance
 //
 void EvtDeviceContextCleanup(IN WDFOBJECT object) {
     PDEVICE_CONTEXT deviceContext = GetDeviceContext(object);
@@ -154,6 +163,10 @@ void EvtDeviceContextCleanup(IN WDFOBJECT object) {
         DebugPrint("EvtDeviceContextCleanup(): deleting virtual HID device\n");
         VhfDelete(deviceContext->VhfHandle, TRUE);
         deviceContext->VhfHandle = NULL;
+    }
+    if (deviceContext->KeyProcessorHandle) {
+        KeyProcessorDestroy(deviceContext->KeyProcessorHandle);
+        deviceContext->KeyProcessorHandle = NULL;
     }
 }
 
@@ -231,7 +244,7 @@ void InternalIoctlRequestCompletion(IN WDFREQUEST request, IN WDFIOTARGET target
                 if (buf) {
                     DebugPrintBuffer("ACL <= ", buf, size);
                     if (size == 11) {
-                        ProcessKeyBuffer(buf + 2, 9, deviceContext->VhfHandle);
+                        KeyProcessorProcess(deviceContext->KeyProcessorHandle, buf + 2, 9, deviceContext->VhfHandle);
                     }
                 }
             }
@@ -245,7 +258,7 @@ void InternalIoctlRequestCompletion(IN WDFREQUEST request, IN WDFIOTARGET target
                 if (buf) {
                     DebugPrintBuffer("INT <= ", buf, size);
                     if (size == 10) {
-                        ProcessKeyBuffer(buf + 1, 9, deviceContext->VhfHandle);
+                        KeyProcessorProcess(deviceContext->KeyProcessorHandle, buf + 1, 9, deviceContext->VhfHandle);
                     }
                 }
             }

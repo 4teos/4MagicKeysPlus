@@ -20,39 +20,18 @@
 extern "C" {
 #endif
 
-#define DRIVERNAME "4MagicKeysPlus"
-
-#define MAX_KEYMAP_SIZE 128
-#define MAX_MODMAP_SIZE 16
-#define MAX_SPECIAL_MODMAP_SIZE 4
-
-#define VIRTUAL_EJECT 0xF0
-#define VIRTUAL_FN    0xF1
+// DRIVERNAME and DebugPrint come from KeyProcessorTypes.h (its
+// KEYPROCESSOR_KERNEL_BUILD branch - defined project-wide by
+// 4MagicKeysPlus.vcxproj). It also carries the HID codes/enums, MAX_*_SIZE
+// limits, VIRTUAL_EJECT/FN and CONSUMER_USAGE_* constants, shared as-is with
+// the portable KeyProcessor class and its user-mode unit tests.
+#include "KeyProcessorTypes.h"
 
 #if defined(DBG)
-#define DebugPrint(s, ...) DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL, DRIVERNAME ": " s, ##__VA_ARGS__)
 #define DebugPrintBuffer(text, buffer, length) KdPrintBuffer(text, buffer, length)
 #else
-#define DebugPrint(...) ((void)0)
 #define DebugPrintBuffer(...) ((void)0)
 #endif
-
-
-
-// Consumer Control (usage page 0x0C) usage codes reported in the virtual
-// Consumer Control report - see g_ConsumerReportDescriptor (Driver.c),
-// which reports the currently pressed key as a single 16-bit usage value.
-#define CONSUMER_USAGE_NONE         0x0000
-#define CONSUMER_USAGE_NEXT         0x00B5
-#define CONSUMER_USAGE_PREV         0x00B6
-#define CONSUMER_USAGE_PLAYPAUSE    0x00CD
-#define CONSUMER_USAGE_BRIGHT_UP    0x006F
-#define CONSUMER_USAGE_BRIGHT_DOWN  0x0070
-#define CONSUMER_USAGE_MUTE         0x00E2
-#define CONSUMER_VOLUME_UP          0x00E9
-#define CONSUMER_VOLUME_DOWN        0x00EA
-#define CONSUMER_CALCULATOR         0x0192
-
 
     ///////////////////////////////////////////////////////////////////////////////
     // Globals
@@ -65,77 +44,15 @@ extern "C" {
     extern BYTE g_SpecialModMap[MAX_SPECIAL_MODMAP_SIZE];
     extern ULONG g_SpecialModMapSize;
 
-    enum HidCodes {
-        HidKeyNone = 0x0,
-        HidKeyErrOvf = 0x1,
-        HidEnter = 0x28,
-        
-        HidKeyB = 0x5,
-        HidKeyP = 0x13,
-        HidKeyS = 0x16,
-        HidKeyT = 0x17,
-
-        HidF1 = 0x3a,
-        HidF2 = 0x3b,
-        HidF3 = 0x3c,
-        HidF4 = 0x3d,
-        HidF5 = 0x3e,
-        HidF6 = 0x3f,
-        HidF7 = 0x40,
-        HidF8 = 0x41,
-        HidF9 = 0x42,
-        HidF10 = 0x43,
-        HidF11 = 0x44,
-        HidF12 = 0x45,
-        HidF13 = 0x68,
-        HidF14 = 0x69,
-        HidF15 = 0x6a,
-        HidF16 = 0x6b,
-        HidF17 = 0x6c,
-        HidF18 = 0x6d,
-        HidF19 = 0x6e,
-        HidF20 = 0x6f,
-        HidF21 = 0x70,
-        HidF22 = 0x71,
-        HidF23 = 0x72,
-        HidF24 = 0x73,
-       
-        HidLeft = 0x50,
-        HidRight = 0x4f,
-        HidUp = 0x52,
-        HidDown = 0x51,
-
-        HidInsert = 0x49,
-        HidDel = 0x4c,
-        HidHome = 0x4a,
-        HidEnd = 0x4d,
-        HidPgUp = 0x4b,
-        HidPgDown = 0x4e,
-
-        HidPrtScr = 0x46,
-        HidScrLck = 0x47,
-        HidPauseBreak = 0x48,
-    };
-
-    enum HidModifierMasks {
-        HidLeftCtrlMask = 0x1,
-        HidRightCtrlMask = 0x10,
-
-        HidLeftShiftMask = 0x2,
-        HidRightShiftMask = 0x20,
-
-        HidLeftAltMask = 0x4,
-        HidRightAltMask = 0x40,
-        
-        HidLeftCmdMask = 0x8,
-        HidRightCmdMask = 0x80
-    };
-
     ///////////////////////////////////////////////////////////////////////////////
-    // Per-device context - holds the handle to our virtual Consumer Control HID device
+    // Per-device context - holds the handle to our virtual Consumer Control HID
+    // device and to this device's own KeyProcessor instance (opaque handle -
+    // KeyProcessor is a C++ class defined in KeyProcessor.h/.cpp; kept as PVOID
+    // here so this header and Driver.c can stay plain C).
     //
     typedef struct _DEVICE_CONTEXT {
         VHFHANDLE VhfHandle;
+        PVOID KeyProcessorHandle;
     } DEVICE_CONTEXT, * PDEVICE_CONTEXT;
 
     WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, GetDeviceContext)
@@ -164,9 +81,6 @@ extern "C" {
         0xC0                // END_COLLECTION
     };
 
-    static const BYTE g_SpecialKeyCodes[] = {VIRTUAL_EJECT, VIRTUAL_FN};
-
-
     ///////////////////////////////////////////////////////////////////////////////
     // Global functions
 
@@ -178,10 +92,20 @@ extern "C" {
     void KdPrintBuffer(PCHAR text, PUCHAR buffer, ULONG length);
     NTSTATUS ReadDriverRegistryValue(PUNICODE_STRING registryPath, DWORD dwRegValeType, PCWSTR wcszValName, PVOID* pValue);
 
-    void ProcessKeyBuffer(BYTE* pbuf, ULONG size, VHFHANDLE vhfHandle);
     VOID EvtVhfReadyForNextReadReport(IN PVOID VhfClientContext);
 
-    BOOLEAN IsSpecialVirtualKey(BYTE keyCode);
+    ///////////////////////////////////////////////////////////////////////////////
+    // KeyProcessor - opaque C wrapper around the KeyProcessor C++ class
+    // (KeyProcessor.h/.cpp, wrapped for kernel use in KeyProcessorInterop.cpp).
+    // One instance per physical device, owned by that device's DEVICE_CONTEXT.
+    //
+    PVOID KeyProcessorCreate(void);
+    void KeyProcessorDestroy(PVOID handle);
+    void KeyProcessorLoadConfig(PVOID handle, DWORD fnLock,
+        const BYTE* keyMap, ULONG keyMapSize,
+        const BYTE* modMap, ULONG modMapSize,
+        const BYTE* specialModMap, ULONG specialModMapSize);
+    void KeyProcessorProcess(PVOID handle, BYTE* buf, ULONG size, VHFHANDLE vhfHandle);
 
 #ifdef __cplusplus
 }
