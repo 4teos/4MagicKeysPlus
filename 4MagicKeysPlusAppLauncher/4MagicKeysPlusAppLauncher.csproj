@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>_4MagicKeysPlusAppLauncher</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>2.0.1</Version>
+    <AssemblyVersion>2.0.1.4</AssemblyVersion>
+    <FileVersion>2.0.1.4</FileVersion>
+	<Copyright>© 2026 4teos https://github.com/4teos</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="4MagicKeysPlusAppLauncherTests" />
+    <!-- Moq generates mock proxies for internal types in this dynamically-created assembly. -->
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
+</Project>
