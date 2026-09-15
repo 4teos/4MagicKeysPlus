@@ -1,7 +1,7 @@
 using Moq;
-using _4MagicKeysPlusAppLauncher;
+using _4MagicKeysPlusAgent;
 
-namespace _4MagicKeysPlusAppLauncherTests;
+namespace _4MagicKeysPlusAgentTests;
 
 public class AppLaunchConfigTests {
     private const uint VkF16 = 0x7F;

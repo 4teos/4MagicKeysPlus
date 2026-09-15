@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace _4MagicKeysPlusAppLauncher;
+namespace _4MagicKeysPlusAgent;
 
 // A hidden, message-only window (HWND_MESSAGE parent) - just enough to receive WM_HOTKEY,
 // never actually shown on screen.

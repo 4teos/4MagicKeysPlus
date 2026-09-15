@@ -1,0 +1,80 @@
+﻿<Window x:Class="_4MagicKeysPlus.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:properties="clr-namespace:_4MagicKeysPlus.Properties"
+        mc:Ignorable="d"
+        Title="4MagicKeys+" Height="800" Width="1300" MinHeight="420" MinWidth="640"
+        WindowStyle="None" Background="#F3F4F6">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="44"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="44"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="4MagicKeys+" VerticalAlignment="Center" Margin="12,0,20,0"
+                       FontSize="12" Foreground="#374151"/>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="{Binding DeviceName}" VerticalAlignment="Center" FontSize="13"
+                           FontWeight="SemiBold" Foreground="#111827" Margin="0,0,14,0"/>
+
+                <TextBlock Text="{Binding ConnectionGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                           Foreground="#374151" VerticalAlignment="Center" Margin="0,0,10,0"
+                           ToolTip="{Binding ConnectionTooltip}"
+                           shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+
+                <TextBlock Text="{Binding BatteryGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                           Foreground="{Binding BatteryColor}" VerticalAlignment="Center" Margin="0,0,10,0"
+                           ToolTip="{Binding BatteryTooltip}"
+                           shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+
+                <Border Background="{Binding FnLockBackground}" BorderBrush="#9CA3AF" BorderThickness="1"
+                        CornerRadius="4" Padding="5,2" VerticalAlignment="Center"
+                        ToolTip="{Binding FnLockTooltip}"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                    <TextBlock Text="Fn" FontSize="11" FontWeight="Bold" Foreground="{Binding FnLockForeground}"/>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button Content="—" Width="44" Height="44" Click="MinimizeButton_Click"
+                        Background="Transparent" BorderThickness="0" Foreground="#374151"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+                <Button Content="✕" Width="44" Height="44" Click="CloseButton_Click"
+                        Background="Transparent" BorderThickness="0" Foreground="#374151"
+                        shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Background="#1F2937">
+                <RadioButton x:Name="NavKeys" Content="{x:Static properties:Strings.NavKeys}" GroupName="Nav" IsChecked="True"
+                             Foreground="White" Margin="16,20,16,8" Checked="NavKeys_Checked"/>
+                <RadioButton Content="{x:Static properties:Strings.NavQuickLaunch}" GroupName="Nav" IsEnabled="False" Foreground="Gray" Margin="16,8"/>
+                <RadioButton Content="{x:Static properties:Strings.NavAdvanced}" GroupName="Nav" IsEnabled="False" Foreground="Gray" Margin="16,8"/>
+            </StackPanel>
+
+            <ContentControl x:Name="MainContent" Grid.Column="1" Margin="24"/>
+        </Grid>
+    </Grid>
+</Window>

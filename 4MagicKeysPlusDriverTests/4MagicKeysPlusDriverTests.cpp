@@ -1,11 +1,11 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "CppUnitTest.h"
 
 #include "KeyProcessor.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace My4MagicKeysPlusTests
+namespace My4MagicKeysPlusDriverTests
 {
     namespace {
         // 9-byte HID report layout Process() expects: [0]=modifiers,

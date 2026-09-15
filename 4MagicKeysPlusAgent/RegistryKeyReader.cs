@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace _4MagicKeysPlusAppLauncher;
+namespace _4MagicKeysPlusAgent;
 
 internal interface IRegistryKeyReader : IDisposable {
     IEnumerable<string> GetSubKeyNames();

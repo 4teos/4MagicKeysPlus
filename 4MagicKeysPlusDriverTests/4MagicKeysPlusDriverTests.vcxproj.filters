@@ -13,30 +13,30 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="4MagicKeysPlus">
+    <Filter Include="4MagicKeysPlusDriver">
       <UniqueIdentifier>{C1A6F1E4-9B7A-4B2E-8F3B-2E4B7C9A1D6F}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="4MagicKeysPlusTests.cpp">
+    <ClCompile Include="4MagicKeysPlusDriverTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\4MagicKeysPlus\KeyProcessor.cpp">
-      <Filter>4MagicKeysPlus</Filter>
+    <ClCompile Include="..\4MagicKeysPlusDriver\KeyProcessor.cpp">
+      <Filter>4MagicKeysPlusDriver</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\4MagicKeysPlus\KeyProcessor.h">
-      <Filter>4MagicKeysPlus</Filter>
+    <ClInclude Include="..\4MagicKeysPlusDriver\KeyProcessor.h">
+      <Filter>4MagicKeysPlusDriver</Filter>
     </ClInclude>
-    <ClInclude Include="..\4MagicKeysPlus\KeyProcessorTypes.h">
-      <Filter>4MagicKeysPlus</Filter>
+    <ClInclude Include="..\4MagicKeysPlusDriver\KeyProcessorTypes.h">
+      <Filter>4MagicKeysPlusDriver</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

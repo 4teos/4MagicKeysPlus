@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace _4MagicKeysPlusAppLauncher;
+namespace _4MagicKeysPlusAgent;
 
 internal static class NativeMethods {
     public const uint MOD_ALT = 0x0001;

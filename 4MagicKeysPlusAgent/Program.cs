@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace _4MagicKeysPlusAppLauncher;
+namespace _4MagicKeysPlusAgent;
 
 internal static class Program {
     [STAThread]

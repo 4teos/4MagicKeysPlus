@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
-    <RootNamespace>_4MagicKeysPlusAppLauncherTests</RootNamespace>
+    <RootNamespace>_4MagicKeysPlusAgentTests</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\4MagicKeysPlusAppLauncher\4MagicKeysPlusAppLauncher.csproj" />
+    <ProjectReference Include="..\4MagicKeysPlusAgent\4MagicKeysPlusAgent.csproj" />
   </ItemGroup>
 
 </Project>

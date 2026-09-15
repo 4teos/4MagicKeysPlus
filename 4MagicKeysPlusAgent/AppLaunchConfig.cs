@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace _4MagicKeysPlusAppLauncher;
+namespace _4MagicKeysPlusAgent;
 
 internal sealed record AppLaunchEntry(int HotkeyId, string Name, uint VirtualKey, uint Modifiers, string ExecutablePath);
 
