@@ -25,7 +25,12 @@ public static class PhysicalKeyHidMap {
             [PhysicalKey.RightCommand] = 0x80
         };
 
+    // HID usages 0xE0-0xE7 are the modifiers, whose PhysicalKey values are fake and ordered
+    // differently, so those usages deliberately map to None here.
     public static PhysicalKey GetPhysicalKey(byte code) {
+        if (code is >= 0xE0 and <= 0xE7) {
+            return PhysicalKey.None;
+        }
         if (Enum.IsDefined(typeof(PhysicalKey), code)) {
             return (PhysicalKey)code;
         }

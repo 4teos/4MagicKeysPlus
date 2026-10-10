@@ -1,11 +1,5 @@
 namespace _4MagicKeysPlus.Models;
 
-public enum RemapTable {
-    KeyMap,
-    ModMap,
-    SpecialModMap
-}
-
 public static class KeyRemapRules {
     private static readonly IReadOnlyList<PhysicalKey> Modifiers = [
         PhysicalKey.LeftShift, PhysicalKey.LeftControl, PhysicalKey.LeftOption, PhysicalKey.LeftCommand,
@@ -47,40 +41,24 @@ public static class KeyRemapRules {
         return GetCandidates(source).Where(target => target != source).ToList();
     }
 
-    public static RemapTable GetTable(PhysicalKey source, PhysicalKey target) {
-        bool sourceIsModifier = Modifiers.Contains(source);
-        bool targetIsModifier = Modifiers.Contains(target);
-        bool sourceIsVirtual = VirtualKeys.Contains(source);
-        bool targetIsVirtual = VirtualKeys.Contains(target);
-
-        if (sourceIsModifier && targetIsModifier) {
-            return RemapTable.ModMap;
-        }
-        if ((sourceIsModifier && targetIsVirtual) || (sourceIsVirtual && targetIsModifier)) {
-            return RemapTable.SpecialModMap;
-        }
-        return RemapTable.KeyMap;
-    }
-
-    // Null when the key is not remapped. A hand-edited multi-bit modifier mask is not representable here.
+    // The key the source is remapped to on the base layer (no Fn), or null when it is not remapped
+    // that way. A target that is not a single key (key + modifiers, several modifiers, a media
+    // usage) is not representable here.
     public static PhysicalKey? GetCurrentTarget(DriverKeyRemapConfig config, PhysicalKey source) {
-        foreach (KeyMapEntry entry in config.KeyMap) {
-            if (entry.Source == source) {
-                return entry.Target;
+        foreach (KeyRule rule in config.Rules) {
+            if (rule.FnLayer || rule.Source.Count != 1 || !rule.Source.Contains(source)) {
+                continue;
             }
-        }
-        foreach (ModMapEntry entry in config.ModMap) {
-            if (entry.Source.Count == 1 && entry.Source.Contains(source) && entry.Target.Count == 1) {
-                return entry.Target.Single();
+            if (rule.ConsumerUsage is not null) {
+                return null;
             }
-        }
-        foreach (SpecialModMapEntry entry in config.SpecialModMap) {
-            if (entry.Direction == SpecialModMapDirection.KeyToModifiers && entry.Key == source && entry.Modifiers.Count == 1) {
-                return entry.Modifiers.Single();
+            if (rule.TargetKey != PhysicalKey.None && rule.TargetModifiers.Count == 0) {
+                return rule.TargetKey;
             }
-            if (entry.Direction == SpecialModMapDirection.ModifiersToKey && entry.Modifiers.Count == 1 && entry.Modifiers.Contains(source)) {
-                return entry.Key;
+            if (rule.TargetKey == PhysicalKey.None && rule.TargetCode == 0 && rule.TargetModifiers.Count == 1) {
+                return rule.TargetModifiers.Single();
             }
+            return null;
         }
         return null;
     }

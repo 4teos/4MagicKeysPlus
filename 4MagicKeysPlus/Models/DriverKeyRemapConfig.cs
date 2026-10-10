@@ -1,65 +1,59 @@
 namespace _4MagicKeysPlus.Models;
 
-public enum SpecialModMapDirection {
-    KeyToModifiers,
-    ModifiersToKey
+// One rule of the driver's Parameters\Rules list. Source is a single key, a single Fn/Eject, or
+// the modifiers of a modifier source; FnLayer is the "only with Fn" flag of a key source.
+// The target is a key (TargetKey, or only TargetCode when that has no PhysicalKey), modifiers,
+// or a consumer-control usage.
+public sealed record KeyRule(
+    IReadOnlySet<PhysicalKey> Source,
+    bool FnLayer,
+    PhysicalKey TargetKey,
+    int TargetCode,
+    IReadOnlySet<PhysicalKey> TargetModifiers,
+    int? ConsumerUsage,
+    bool FnLockAware) {
+
+    public string DescribeTarget() {
+        if (ConsumerUsage is int usage) {
+            return ConsumerUsageNames.Get(usage);
+        }
+
+        List<string> parts = [.. TargetModifiers.Select(PhysicalKeyNames.GetDisplayName)];
+        if (TargetKey != PhysicalKey.None) {
+            parts.Add(PhysicalKeyNames.GetDisplayName(TargetKey));
+        } else if (TargetCode != 0) {
+            parts.Add($"0x{TargetCode:X2}");
+        }
+        return string.Join(" + ", parts);
+    }
 }
 
-public readonly record struct KeyMapEntry(PhysicalKey Source, PhysicalKey Target);
-
-public readonly record struct ModMapEntry(IReadOnlySet<PhysicalKey> Source, IReadOnlySet<PhysicalKey> Target);
-
-public readonly record struct SpecialModMapEntry(PhysicalKey Key, IReadOnlySet<PhysicalKey> Modifiers, SpecialModMapDirection Direction);
-
-public sealed record DriverKeyRemapConfig(
-    IReadOnlyList<KeyMapEntry> KeyMap,
-    IReadOnlyList<ModMapEntry> ModMap,
-    IReadOnlyList<SpecialModMapEntry> SpecialModMap) {
+public sealed record DriverKeyRemapConfig(IReadOnlyList<KeyRule> Rules, bool FnLockEnabled) {
 
     public IReadOnlySet<PhysicalKey> GetRemappedKeys() {
         HashSet<PhysicalKey> keys = [];
-
-        foreach (KeyMapEntry entry in KeyMap) {
-            keys.Add(entry.Source);
-        }
-        foreach (ModMapEntry entry in ModMap) {
-            keys.UnionWith(entry.Source);
-        }
-        foreach (SpecialModMapEntry entry in SpecialModMap) {
-            if (entry.Direction == SpecialModMapDirection.KeyToModifiers) {
-                keys.Add(entry.Key);
-            } else {
-                keys.UnionWith(entry.Modifiers);
-            }            
+        foreach (KeyRule rule in Rules) {
+            keys.UnionWith(rule.Source);
         }
         return keys;
     }
 
-    // Gets tooltip text with the map target key
+    // Gets tooltip text with the rule target for the key. A Fn-layer rule is marked "Fn: "
+    // only while it really needs Fn held - a FnLockAware rule needs no Fn once FnLock is off.
     public IReadOnlyList<string> DescribeTargets(PhysicalKey key) {
         List<string> targets = [];
-        foreach (KeyMapEntry entry in KeyMap) {
-            if (entry.Source == key) {
-                targets.Add(entry.Target.ToString());
+        foreach (KeyRule rule in Rules) {
+            if (!rule.Source.Contains(key)) {
+                continue;
             }
-        }
-        foreach (ModMapEntry entry in ModMap) {
-            if (entry.Source.Contains(key)) {
-                targets.Add(DescribeKeySet(entry.Target));
-            }
-        }
-        foreach (SpecialModMapEntry entry in SpecialModMap) {
-            if (entry.Direction == SpecialModMapDirection.KeyToModifiers && entry.Key == key) {
-                targets.Add(DescribeKeySet(entry.Modifiers));
-            }
-            if (entry.Direction == SpecialModMapDirection.ModifiersToKey && entry.Modifiers.Contains(key)) {
-                targets.Add(entry.Key.ToString());
-            }
+
+            string target = rule.DescribeTarget();
+            targets.Add(NeedsFnHeld(rule) ? $"Fn: {target}" : target);
         }
         return targets;
     }
 
-    private static string DescribeKeySet(IReadOnlySet<PhysicalKey> keys) {
-        return string.Join(" + ", keys);
+    private bool NeedsFnHeld(KeyRule rule) {
+        return rule.FnLayer && !(rule.FnLockAware && !FnLockEnabled);
     }
 }

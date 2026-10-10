@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="4MagicKeysPlusTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\4MagicKeysPlusCore\4MagicKeysPlusCore.csproj" />
   </ItemGroup>
 

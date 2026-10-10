@@ -2,67 +2,84 @@ using _4MagicKeysPlus.Models;
 
 namespace _4MagicKeysPlus.Services;
 
+// Decodes one Source/Target pair of Parameters\Rules the way the driver does (ClassifyRule in
+// KeyProcessor.cpp): whatever the driver drops as invalid must not show up here either, or the
+// Keys screen would highlight remaps that do nothing. Keep the two in step.
 internal static class DriverConfigParser {
-    // Matches MAX_KEYMAP_SIZE/MAX_MODMAP_SIZE/MAX_SPECIAL_MODMAP_SIZE in KeyProcessorTypes.h
-    private const int MaxKeyMapPairs = 64;
-    private const int MaxModMapPairs = 8;
-    private const int MaxSpecialModMapPairs = 2;
+    private const uint CodeMask = 0x0000FFFF;
+    private const int ModsShift = 16;
+    private const uint ModsMask = 0x00FF0000;
+    private const uint SourceFnFlag = 0x01000000;
+    private const uint TargetConsumerFlag = 0x01000000;
+    private const uint FlagsMask = 0xFF000000;
+    private const uint VirtualEject = 0xF0;
+    private const uint VirtualFn = 0xF1;
+    private const uint MaxConsumerUsage = 0x03FF;
 
-    public static List<KeyMapEntry> ParseKeyMap(byte[]? raw) {
-        List<KeyMapEntry> entries = [];
-        foreach ((byte source, byte target) in Pairs(raw, MaxKeyMapPairs)) {
-            PhysicalKey sourceKey = PhysicalKeyHidMap.GetPhysicalKey(source);
-            PhysicalKey targetKey = PhysicalKeyHidMap.GetPhysicalKey(target);
-            if (sourceKey == PhysicalKey.None || targetKey == PhysicalKey.None) {
-                continue;
+    public static KeyRule? ParseRule(uint source, uint target, bool fnLockAware) {
+        uint sourceFlags = source & FlagsMask;
+        uint targetFlags = target & FlagsMask;
+        if ((sourceFlags & ~SourceFnFlag) != 0 || (targetFlags & ~TargetConsumerFlag) != 0) {
+            return null;
+        }
+
+        bool sourceFn = sourceFlags != 0;
+        bool targetConsumer = targetFlags != 0;
+        uint sourceCode = source & CodeMask;
+        uint targetCode = target & CodeMask;
+        byte sourceMods = (byte)((source & ModsMask) >> ModsShift);
+        byte targetMods = (byte)((target & ModsMask) >> ModsShift);
+
+        if (sourceCode > 0xFF) {
+            return null;
+        }
+
+        bool sourceIsMod = sourceCode == 0 && sourceMods != 0;
+        bool sourceIsVirtual = IsVirtual(sourceCode);
+        bool sourceIsKey = sourceCode != 0 && !sourceIsVirtual && sourceMods == 0;
+
+        if (sourceIsMod || sourceIsVirtual) {
+            if (sourceFn || targetConsumer || (sourceIsVirtual && sourceMods != 0)) {
+                return null;
             }
-            entries.Add(new KeyMapEntry(sourceKey, targetKey));
-        }
-        return entries;
-    }
 
-    public static List<ModMapEntry> ParseModMap(byte[]? raw) {
-        List<ModMapEntry> entries = [];
-        foreach ((byte sourceMask, byte targetMask) in Pairs(raw, MaxModMapPairs)) {
-            IReadOnlySet<PhysicalKey> sourceModifiers = PhysicalKeyHidMap.DecodeModifiers(sourceMask);
-            IReadOnlySet<PhysicalKey> targetModifiers = PhysicalKeyHidMap.DecodeModifiers(targetMask);
-            entries.Add(new ModMapEntry(sourceModifiers, targetModifiers));
-        }
-        return entries;
-    }
-
-    public static List<SpecialModMapEntry> ParseSpecialModMap(byte[]? raw) {
-        List<SpecialModMapEntry> entries = [];
-        foreach ((byte source, byte target) in Pairs(raw, MaxSpecialModMapPairs)) {
-            PhysicalKey sourceKey = PhysicalKeyHidMap.GetPhysicalKey(source);
-            if (IsVirtual(sourceKey)) {
-                IReadOnlySet<PhysicalKey> targetModifiers = PhysicalKeyHidMap.DecodeModifiers(target);
-                entries.Add(new SpecialModMapEntry(sourceKey, targetModifiers, SpecialModMapDirection.KeyToModifiers));
-                continue;
+            bool targetIsValid = targetCode == 0
+                ? targetMods != 0
+                : IsVirtual(targetCode) ? targetMods == 0 : sourceIsVirtual && targetCode <= 0xFF;
+            if (!targetIsValid) {
+                return null;
             }
-
-            PhysicalKey targetKey = PhysicalKeyHidMap.GetPhysicalKey(target);
-            if (IsVirtual(targetKey)) {
-                IReadOnlySet<PhysicalKey> sourceModifiers = PhysicalKeyHidMap.DecodeModifiers(source);
-                entries.Add(new SpecialModMapEntry(targetKey, sourceModifiers, SpecialModMapDirection.ModifiersToKey));
+        } else if (sourceIsKey) {
+            bool targetIsValid = targetConsumer
+                ? targetCode != 0 && targetCode <= MaxConsumerUsage
+                : targetCode <= 0xFF && !IsVirtual(targetCode) && (targetCode != 0 || targetMods != 0);
+            if (!targetIsValid) {
+                return null;
             }
+        } else {
+            return null;
         }
-        return entries;
+
+        IReadOnlySet<PhysicalKey> sourceKeys;
+        if (sourceIsMod) {
+            sourceKeys = PhysicalKeyHidMap.DecodeModifiers(sourceMods);
+        } else {
+            PhysicalKey sourceKey = PhysicalKeyHidMap.GetPhysicalKey((byte)sourceCode);
+            if (sourceKey == PhysicalKey.None) {
+                return null;
+            }
+            sourceKeys = new HashSet<PhysicalKey> { sourceKey };
+        }
+
+        if (targetConsumer) {
+            return new KeyRule(sourceKeys, sourceFn, PhysicalKey.None, 0, new HashSet<PhysicalKey>(), (int)targetCode, fnLockAware);
+        }
+
+        PhysicalKey targetKey = targetCode == 0 ? PhysicalKey.None : PhysicalKeyHidMap.GetPhysicalKey((byte)targetCode);
+        return new KeyRule(sourceKeys, sourceFn, targetKey, (int)targetCode, PhysicalKeyHidMap.DecodeModifiers(targetMods), null, fnLockAware);
     }
 
-    private static bool IsVirtual(PhysicalKey key) {
-        return key is PhysicalKey.Eject or PhysicalKey.Fn;
-    }
-
-    private static IEnumerable<(byte, byte)> Pairs(byte[]? raw, int maxPairs) {
-        if (raw is null) {
-            yield break;
-        }
-
-        int clampedLength = Math.Min(raw.Length, maxPairs * 2);
-        int pairCount = clampedLength / 2;
-        for (int i = 0; i < pairCount; i++) {
-            yield return (raw[i * 2], raw[i * 2 + 1]);
-        }
+    private static bool IsVirtual(uint code) {
+        return code is VirtualEject or VirtualFn;
     }
 }
