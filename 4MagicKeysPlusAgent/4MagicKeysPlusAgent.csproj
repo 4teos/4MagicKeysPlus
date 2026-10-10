@@ -7,12 +7,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>2.0.1</Version>
-    <AssemblyVersion>2.0.1.4</AssemblyVersion>
-    <FileVersion>2.0.1.4</FileVersion>
+    <Version>2.2.1</Version>
+    <AssemblyVersion>2.2.1.12</AssemblyVersion>
+    <FileVersion>2.2.1.12</FileVersion>
 	<Copyright>© 2026 4teos https://github.com/4teos</Copyright>
   </PropertyGroup>
 
@@ -20,6 +21,10 @@
     <InternalsVisibleTo Include="4MagicKeysPlusAgentTests" />
     <!-- Moq generates mock proxies for internal types in this dynamically-created assembly. -->
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\4MagicKeysPlusCore\4MagicKeysPlusCore.csproj" />
   </ItemGroup>
 
 </Project>

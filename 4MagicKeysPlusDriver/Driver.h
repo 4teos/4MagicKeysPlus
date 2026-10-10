@@ -22,9 +22,9 @@ extern "C" {
 
 // DRIVERNAME and DebugPrint come from KeyProcessorTypes.h (its
 // KEYPROCESSOR_KERNEL_BUILD branch - defined project-wide by
-// 4MagicKeysPlus.vcxproj). It also carries the HID codes/enums, MAX_*_SIZE
-// limits, VIRTUAL_EJECT/FN and CONSUMER_USAGE_* constants, shared as-is with
-// the portable KeyProcessor class and its user-mode unit tests.
+// 4MagicKeysPlus.vcxproj). It also carries the HID codes/enums, the rule
+// encoding and MAX_RULES, VIRTUAL_EJECT/FN and CONSUMER_USAGE_* constants,
+// shared as-is with the portable KeyProcessor class and its user-mode unit tests.
 #include "KeyProcessorTypes.h"
 
 #if defined(DBG)
@@ -37,12 +37,8 @@ extern "C" {
     // Globals
 
     extern DWORD g_dwFnLock;
-    extern BYTE g_KeyMap[MAX_KEYMAP_SIZE];
-    extern ULONG g_KeyMapSize;
-    extern BYTE g_ModMap[MAX_MODMAP_SIZE];
-    extern ULONG g_ModMapSize;
-    extern BYTE g_SpecialModMap[MAX_SPECIAL_MODMAP_SIZE];
-    extern ULONG g_SpecialModMapSize;
+    extern KEY_RULE g_Rules[MAX_RULES];
+    extern ULONG g_RuleCount;
 
     ///////////////////////////////////////////////////////////////////////////////
     // Per-device context - holds the handle to our virtual Consumer Control HID
@@ -90,7 +86,6 @@ extern "C" {
     void EvtIoInternalDeviceControl(IN WDFQUEUE queue, IN WDFREQUEST request, IN size_t outputBufferLength, IN size_t inputBufferLength, IN ULONG ioControlCode);
     void InternalIoctlRequestCompletion(IN WDFREQUEST request, IN WDFIOTARGET target, IN PWDF_REQUEST_COMPLETION_PARAMS params, IN WDFCONTEXT context);
     void KdPrintBuffer(PCHAR text, PUCHAR buffer, ULONG length);
-    NTSTATUS ReadDriverRegistryValue(PUNICODE_STRING registryPath, DWORD dwRegValeType, PCWSTR wcszValName, PVOID* pValue);
 
     VOID EvtVhfReadyForNextReadReport(IN PVOID VhfClientContext);
 
@@ -101,10 +96,7 @@ extern "C" {
     //
     PVOID KeyProcessorCreate(void);
     void KeyProcessorDestroy(PVOID handle);
-    void KeyProcessorLoadConfig(PVOID handle, DWORD fnLock,
-        const BYTE* keyMap, ULONG keyMapSize,
-        const BYTE* modMap, ULONG modMapSize,
-        const BYTE* specialModMap, ULONG specialModMapSize);
+    void KeyProcessorLoadConfig(PVOID handle, DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount);
     void KeyProcessorProcess(PVOID handle, BYTE* buf, ULONG size, VHFHANDLE vhfHandle);
 
 #ifdef __cplusplus

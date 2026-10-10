@@ -1,37 +1,37 @@
 using System.Runtime.InteropServices;
 
-namespace _4MagicKeysPlus.Services;
+namespace _4MagicKeysPlus.Core;
 
 internal static class HidDeviceEnumerator {
     public static IEnumerable<string> EnumeratePaths() {
-        NativeMethods.HidD_GetHidGuid(out Guid hidGuid);
+        HidNativeMethods.HidD_GetHidGuid(out Guid hidGuid);
 
-        IntPtr deviceInfoSet = NativeMethods.SetupDiGetClassDevs(
+        IntPtr deviceInfoSet = HidNativeMethods.SetupDiGetClassDevs(
             ref hidGuid, IntPtr.Zero, IntPtr.Zero,
-            NativeMethods.DIGCF_PRESENT | NativeMethods.DIGCF_DEVICEINTERFACE);
+            HidNativeMethods.DIGCF_PRESENT | HidNativeMethods.DIGCF_DEVICEINTERFACE);
 
         if (deviceInfoSet == IntPtr.Zero || deviceInfoSet == new IntPtr(-1)) {
             yield break;
         }
 
         try {
-            NativeMethods.SP_DEVICE_INTERFACE_DATA interfaceData = new() {
-                cbSize = Marshal.SizeOf<NativeMethods.SP_DEVICE_INTERFACE_DATA>()
+            HidNativeMethods.SP_DEVICE_INTERFACE_DATA interfaceData = new() {
+                cbSize = Marshal.SizeOf<HidNativeMethods.SP_DEVICE_INTERFACE_DATA>()
             };
 
-            for (int i = 0; NativeMethods.SetupDiEnumDeviceInterfaces(deviceInfoSet, IntPtr.Zero, ref hidGuid, i, ref interfaceData); i++) {
+            for (int i = 0; HidNativeMethods.SetupDiEnumDeviceInterfaces(deviceInfoSet, IntPtr.Zero, ref hidGuid, i, ref interfaceData); i++) {
                 string? path = TryGetDevicePath(deviceInfoSet, ref interfaceData);
                 if (path != null) {
                     yield return path;
                 }
             }
         } finally {
-            NativeMethods.SetupDiDestroyDeviceInfoList(deviceInfoSet);
+            HidNativeMethods.SetupDiDestroyDeviceInfoList(deviceInfoSet);
         }
     }
 
-    private static string? TryGetDevicePath(IntPtr deviceInfoSet, ref NativeMethods.SP_DEVICE_INTERFACE_DATA interfaceData) {
-        NativeMethods.SetupDiGetDeviceInterfaceDetail(deviceInfoSet, ref interfaceData, IntPtr.Zero, 0, out int requiredSize, IntPtr.Zero);
+    private static string? TryGetDevicePath(IntPtr deviceInfoSet, ref HidNativeMethods.SP_DEVICE_INTERFACE_DATA interfaceData) {
+        HidNativeMethods.SetupDiGetDeviceInterfaceDetail(deviceInfoSet, ref interfaceData, IntPtr.Zero, 0, out int requiredSize, IntPtr.Zero);
 
         IntPtr detailBuffer = Marshal.AllocHGlobal(requiredSize);
         try {
@@ -39,7 +39,7 @@ internal static class HidDeviceEnumerator {
             // (not the variable-length struct's real size), or the call fails with ERROR_INVALID_PARAMETER.
             Marshal.WriteInt32(detailBuffer, IntPtr.Size == 8 ? 8 : 4 + Marshal.SystemDefaultCharSize);
 
-            if (!NativeMethods.SetupDiGetDeviceInterfaceDetail(deviceInfoSet, ref interfaceData, detailBuffer, requiredSize, out _, IntPtr.Zero)) {
+            if (!HidNativeMethods.SetupDiGetDeviceInterfaceDetail(deviceInfoSet, ref interfaceData, detailBuffer, requiredSize, out _, IntPtr.Zero)) {
                 return null;
             }
 

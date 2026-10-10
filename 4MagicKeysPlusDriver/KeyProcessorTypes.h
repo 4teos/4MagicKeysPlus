@@ -69,9 +69,29 @@ typedef std::uint8_t BOOLEAN;
 
 #endif // KEYPROCESSOR_KERNEL_BUILD
 
-#define MAX_KEYMAP_SIZE 128
-#define MAX_MODMAP_SIZE 16
-#define MAX_SPECIAL_MODMAP_SIZE 4
+// Sanity cap on rules loaded from Parameters\Rules, not a functional limit.
+#define MAX_RULES 128
+
+// Rule encoding (Parameters\Rules\<name>\Source / Target, both REG_DWORD):
+//   bits  0-15  code: HID keyboard usage, VIRTUAL_EJECT/VIRTUAL_FN, or - in a
+//               target with RULE_TARGET_CONSUMER - a Consumer Control usage.
+//               0 means "no key" (a pure modifier rule).
+//   bits 16-23  modifier mask (HidModifierMasks bits).
+//   bit  24     source: Fn must be held (RULE_SOURCE_FN);
+//               target: the code is a Consumer Control usage (RULE_TARGET_CONSUMER).
+//   bits 25-31  reserved, a rule with any of them set is ignored.
+#define RULE_CODE_MASK        0x0000FFFFUL
+#define RULE_MODS_SHIFT       16
+#define RULE_MODS_MASK        0x00FF0000UL
+#define RULE_SOURCE_FN        0x01000000UL
+#define RULE_TARGET_CONSUMER  0x01000000UL
+#define RULE_FLAGS_MASK       0xFF000000UL
+
+typedef struct _KEY_RULE {
+    DWORD Source;
+    DWORD Target;
+    BOOLEAN FnLockAware;
+} KEY_RULE, *PKEY_RULE;
 
 #define VIRTUAL_EJECT 0xF0
 #define VIRTUAL_FN    0xF1
@@ -89,6 +109,8 @@ typedef std::uint8_t BOOLEAN;
 #define CONSUMER_VOLUME_UP          0x00E9
 #define CONSUMER_VOLUME_DOWN        0x00EA
 #define CONSUMER_CALCULATOR         0x0192
+// Upper bound of the usage range declared in g_ConsumerReportDescriptor (Driver.h).
+#define CONSUMER_USAGE_MAX          0x03FF
 
 enum HidCodes {
     HidKeyNone = 0x0,
@@ -155,5 +177,3 @@ enum HidModifierMasks {
     HidLeftCmdMask = 0x8,
     HidRightCmdMask = 0x80
 };
-
-static const BYTE g_SpecialKeyCodes[] = { VIRTUAL_EJECT, VIRTUAL_FN };

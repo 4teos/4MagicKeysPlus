@@ -1,3 +1,4 @@
+using _4MagicKeysPlus.Core;
 using _4MagicKeysPlus.Properties;
 
 namespace _4MagicKeysPlus.Models;
@@ -12,5 +13,13 @@ public record KeyboardModel {
 
     public string DeviceDescription {
         get;
+    }
+
+    public static KeyboardModel From(KeyboardProduct product) {
+        return product switch {
+            KeyboardProduct.A1644 => A1644,
+            KeyboardProduct.A1843 => A1843,
+            _ => throw new ArgumentOutOfRangeException(nameof(product), product, null),
+        };
     }
 }

@@ -1,3 +1,4 @@
+using _4MagicKeysPlus.Core;
 using _4MagicKeysPlus.Models;
 using _4MagicKeysPlus.Properties;
 using _4MagicKeysPlus.Services;
@@ -30,7 +31,7 @@ public partial class KeysView : UserControl {
         ModelSelector.Items.Add(KeyboardModel.A1843);
 
         DetectedKeyboard? detectedKeyboard = KeyboardDetector.DetectConnectedKeyboard();
-        ModelSelector.SelectedValue = detectedKeyboard?.Model;
+        ModelSelector.SelectedValue = detectedKeyboard == null ? null : KeyboardModel.From(detectedKeyboard.Product);
     }
 
     private void ModelSelector_SelectionChanged(object sender, SelectionChangedEventArgs e) {

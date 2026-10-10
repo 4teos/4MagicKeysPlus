@@ -6,11 +6,12 @@ namespace _4MagicKeysPlusAgentTests;
 public class AppLaunchConfigTests {
     private const uint VkF16 = 0x7F;
 
-    private static Mock<IRegistryKeyReader> CreateAppKeyMock(string? path, object? key, object? modifier = null) {
+    private static Mock<IRegistryKeyReader> CreateAppKeyMock(string? path, object? key, object? modifier = null, string? comment = null) {
         Mock<IRegistryKeyReader> appKey = new Mock<IRegistryKeyReader>();
         appKey.Setup(k => k.GetValue("Path")).Returns(path);
-        appKey.Setup(k => k.GetValue("Key")).Returns(key);
-        appKey.Setup(k => k.GetValue("Modifier")).Returns(modifier);
+        appKey.Setup(k => k.GetValue("VkKey")).Returns(key);
+        appKey.Setup(k => k.GetValue("VkModifier")).Returns(modifier);
+        appKey.Setup(k => k.GetValue("Comment")).Returns(comment);
         return appKey;
     }
 
@@ -46,6 +47,34 @@ public class AppLaunchConfigTests {
         Assert.Equal(0u, entry.Modifiers);
         Assert.Equal(@"C:\Windows\System32\notepad.exe", entry.ExecutablePath);
         Assert.Equal(1, entry.HotkeyId);
+    }
+
+    [Fact]
+    public void Load_SilentlySkipsDriverOnlyRules() {
+        Mock<IRegistryKeyReader> root = new Mock<IRegistryKeyReader>();
+        root.Setup(r => r.GetSubKeyNames()).Returns(["01000041", "Launch_00_7F"]);
+        Mock<IRegistryKeyReader> driverRule = CreateAppKeyMock(path: null, key: null);
+        driverRule.Setup(k => k.GetValue("Source")).Returns(0x01000041);
+        driverRule.Setup(k => k.GetValue("Target")).Returns(0x01000000 | 0xCD);
+        root.Setup(r => r.OpenSubKey("01000041")).Returns(driverRule.Object);
+        root.Setup(r => r.OpenSubKey("Launch_00_7F")).Returns(CreateAppKeyMock(@"C:\calc.exe", (int)VkF16).Object);
+
+        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+
+        AppLaunchEntry entry = Assert.Single(entries);
+        Assert.Equal("Launch_00_7F", entry.Name);
+        Assert.Equal(1, entry.HotkeyId);
+    }
+
+    [Fact]
+    public void Load_UsesCommentAsName_WhenPresent() {
+        Mock<IRegistryKeyReader> root = new Mock<IRegistryKeyReader>();
+        root.Setup(r => r.GetSubKeyNames()).Returns(["Launch_00_7F"]);
+        root.Setup(r => r.OpenSubKey("Launch_00_7F")).Returns(CreateAppKeyMock(@"C:\calc.exe", (int)VkF16, comment: "Calculator").Object);
+
+        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+
+        Assert.Equal("Calculator", Assert.Single(entries).Name);
     }
 
     [Fact]

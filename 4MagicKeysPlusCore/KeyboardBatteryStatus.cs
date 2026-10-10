@@ -1,3 +1,3 @@
-namespace _4MagicKeysPlus.Models;
+namespace _4MagicKeysPlus.Core;
 
 public record KeyboardBatteryStatus(int Percent, bool IsCharging);

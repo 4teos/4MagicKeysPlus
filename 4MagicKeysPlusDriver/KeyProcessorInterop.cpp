@@ -8,7 +8,7 @@
 
 // Kernel mode has no <new> header (no CRT backing it) - placement new must be
 // declared by hand. This overload takes no allocator action, it only lets us
-// construct KeyProcessor into memory we already got from ExAllocatePoolWithTag.
+// construct KeyProcessor into memory we already got from ExAllocatePool2.
 inline void* operator new(size_t, void* location) noexcept {
     return location;
 }
@@ -38,7 +38,7 @@ namespace {
 extern "C" {
 
 PVOID KeyProcessorCreate(void) {
-    void* mem = ExAllocatePoolWithTag(NonPagedPoolNx, sizeof(KeyProcessor), 'pKyT');
+    void* mem = ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KeyProcessor), 'pKyT');
     if (!mem) {
         return nullptr;
     }
@@ -53,11 +53,8 @@ void KeyProcessorDestroy(PVOID handle) {
     ExFreePool(handle);
 }
 
-void KeyProcessorLoadConfig(PVOID handle, DWORD fnLock,
-        const BYTE* keyMap, ULONG keyMapSize,
-        const BYTE* modMap, ULONG modMapSize,
-        const BYTE* specialModMap, ULONG specialModMapSize) {
-    static_cast<KeyProcessor*>(handle)->LoadConfig(fnLock, keyMap, keyMapSize, modMap, modMapSize, specialModMap, specialModMapSize);
+void KeyProcessorLoadConfig(PVOID handle, DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount) {
+    static_cast<KeyProcessor*>(handle)->LoadConfig(fnLock, rules, ruleCount);
 }
 
 void KeyProcessorProcess(PVOID handle, BYTE* buf, ULONG size, VHFHANDLE vhfHandle) {

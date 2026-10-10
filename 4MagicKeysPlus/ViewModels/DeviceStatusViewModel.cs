@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Media;
 using System.Windows.Threading;
+using _4MagicKeysPlus.Core;
 using _4MagicKeysPlus.Models;
 using _4MagicKeysPlus.Properties;
 using _4MagicKeysPlus.Services;
@@ -94,7 +95,7 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
 
         bool fnLock = DriverStatus.ReadFnLockEnabled();
 
-        DeviceName = detectedKeyboard?.Model.DeviceDescription ?? Strings.DeviceNotDetected;
+        DeviceName = detectedKeyboard == null ? Strings.DeviceNotDetected : KeyboardModel.From(detectedKeyboard.Product).DeviceDescription;
 
         ConnectionGlyph = detectedKeyboard?.Connection switch {
             KeyboardConnection.Usb => Glyphs.Usb,

@@ -1,9 +1,8 @@
 using Microsoft.Win32.SafeHandles;
-using _4MagicKeysPlus.Models;
 
-namespace _4MagicKeysPlus.Services;
+namespace _4MagicKeysPlus.Core;
 
-internal static class KeyboardBattery {
+public static class KeyboardBattery {
     // The keyboard's vendor-defined HID collection (usage page 0xFF00) reports battery as a
     // 3-byte INPUT report: {0x90, status flags, percentage}. Confirmed on real hardware that
     // HidD_GetFeature does not work here - HidP_GetCaps shows this collection declares zero
@@ -21,7 +20,7 @@ internal static class KeyboardBattery {
             return null;
         }
 
-        using SafeFileHandle handle = NativeMethods.OpenHidDevice(detectedKeyboard.DevicePath);
+        using SafeFileHandle handle = HidNativeMethods.OpenHidDevice(detectedKeyboard.DevicePath);
         if (handle.IsInvalid) {
             return null;
         }
@@ -31,10 +30,10 @@ internal static class KeyboardBattery {
 
     // Also used by KeyboardDetector as its liveness probe: among the several HID collections a
     // composite keyboard exposes under the same VID/PID, only this vendor one actually answers.
-    public static bool TryRead(SafeFileHandle handle, out KeyboardBatteryStatus status) {
+    internal static bool TryRead(SafeFileHandle handle, out KeyboardBatteryStatus status) {
         byte[] report = new byte[BatteryReportLength];
         report[0] = BatteryReportId;
-        if (NativeMethods.HidD_GetInputReport(handle, report, report.Length)) {
+        if (HidNativeMethods.HidD_GetInputReport(handle, report, report.Length)) {
             status = new KeyboardBatteryStatus(report[2], (report[1] & ExternalPowerFlag) != 0);
             return true;
         }

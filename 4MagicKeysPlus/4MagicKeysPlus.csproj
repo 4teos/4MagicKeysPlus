@@ -11,4 +11,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\4MagicKeysPlusCore\4MagicKeysPlusCore.csproj" />
+  </ItemGroup>
+
 </Project>

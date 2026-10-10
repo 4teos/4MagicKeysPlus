@@ -1,4 +1,4 @@
-namespace _4MagicKeysPlus.Models;
+namespace _4MagicKeysPlus.Core;
 
 public enum KeyboardConnection {
     Usb,

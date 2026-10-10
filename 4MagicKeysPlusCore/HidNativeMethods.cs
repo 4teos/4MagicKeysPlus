@@ -1,9 +1,9 @@
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-namespace _4MagicKeysPlus.Services;
+namespace _4MagicKeysPlus.Core;
 
-internal static class NativeMethods {
+internal static class HidNativeMethods {
     public const int GENERIC_READ = unchecked((int)0x80000000);
     public const int GENERIC_WRITE = 0x40000000;
     public const int FILE_SHARE_READ = 0x1;

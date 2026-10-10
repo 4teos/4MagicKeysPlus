@@ -1,42 +1,90 @@
 #include "KeyProcessor.h"
 
-// ntddk.h (pulled in by KeyProcessorTypes.h for KEYPROCESSOR_KERNEL_BUILD)
-// already makes memcpy available as a compiler intrinsic - <cstring> would
-// pull in vcruntime headers that clash with the kernel CRT headers next to it
-// on the include path.
-#if !defined(KEYPROCESSOR_KERNEL_BUILD)
-#include <cstring>
-#endif
-
 namespace {
-    ULONG ClampSize(ULONG size, ULONG maxSize) {
-        return size > maxSize ? maxSize : size;
+    BYTE ModsOf(DWORD value) {
+        return (BYTE)((value & RULE_MODS_MASK) >> RULE_MODS_SHIFT);
+    }
+
+    DWORD CodeOf(DWORD value) {
+        return value & RULE_CODE_MASK;
     }
 }
 
-void KeyProcessor::LoadConfig(DWORD fnLock,
-        const BYTE* keyMap, ULONG keyMapSize,
-        const BYTE* modMap, ULONG modMapSize,
-        const BYTE* specialModMap, ULONG specialModMapSize) {
-    m_FnLock = fnLock;
-
-    m_KeyMapSize = ClampSize(keyMapSize, MAX_KEYMAP_SIZE);
-    memcpy(m_KeyMap, keyMap, m_KeyMapSize);
-
-    m_ModMapSize = ClampSize(modMapSize, MAX_MODMAP_SIZE);
-    memcpy(m_ModMap, modMap, m_ModMapSize);
-
-    m_SpecialModMapSize = ClampSize(specialModMapSize, MAX_SPECIAL_MODMAP_SIZE);
-    memcpy(m_SpecialModMap, specialModMap, m_SpecialModMapSize);
+BOOLEAN KeyProcessor::IsSpecialVirtualKey(DWORD code) {
+    return code == VIRTUAL_EJECT || code == VIRTUAL_FN;
 }
 
-BYTE KeyProcessor::LookupKeyMap(BYTE source) const {
-    for (ULONG i = 0; i + 1 < m_KeyMapSize; i += 2) {
-        if (m_KeyMap[i] == source) {
-            return m_KeyMap[i + 1];
+// Shapes that are not interpreted (key -> Fn/Eject, modifier -> key code,
+// modifiers in a key source, ...) come back as RuleInvalid and are dropped.
+KeyProcessor::RuleKind KeyProcessor::ClassifyRule(DWORD source, DWORD target) {
+    DWORD sourceFlags = source & RULE_FLAGS_MASK;
+    DWORD targetFlags = target & RULE_FLAGS_MASK;
+    if ((sourceFlags & ~RULE_SOURCE_FN) != 0 || (targetFlags & ~RULE_TARGET_CONSUMER) != 0) {
+        return RuleInvalid;
+    }
+
+    BOOLEAN sourceFn = sourceFlags != 0;
+    BOOLEAN targetConsumer = targetFlags != 0;
+    DWORD sourceCode = CodeOf(source);
+    DWORD targetCode = CodeOf(target);
+    BYTE sourceMods = ModsOf(source);
+    BYTE targetMods = ModsOf(target);
+
+    if (sourceCode > 0xFF) {
+        return RuleInvalid;
+    }
+
+    BOOLEAN sourceIsMod = sourceCode == 0 && sourceMods != 0;
+    BOOLEAN sourceIsVirtual = IsSpecialVirtualKey(sourceCode);
+    BOOLEAN sourceIsKey = sourceCode != 0 && !sourceIsVirtual && sourceMods == 0;
+
+    if (sourceIsMod || sourceIsVirtual) {
+        if (sourceFn || targetConsumer || (sourceIsVirtual && sourceMods != 0)) {
+            return RuleInvalid;
         }
+        if (targetCode == 0) {
+            if (targetMods == 0) {
+                return RuleInvalid;
+            }
+            return sourceIsMod ? RuleModToMod : RuleVirtualToMod;
+        }
+        if (IsSpecialVirtualKey(targetCode)) {
+            if (targetMods != 0) {
+                return RuleInvalid;
+            }
+            return sourceIsMod ? RuleModToVirtual : RuleVirtualToVirtual;
+        }
+        if (sourceIsVirtual && targetCode <= 0xFF) {
+            return RuleVirtualToKey;
+        }
+        return RuleInvalid;
     }
-    return 0;
+
+    if (sourceIsKey) {
+        if (targetConsumer) {
+            return (targetCode != 0 && targetCode <= CONSUMER_USAGE_MAX) ? RuleKeyToOutput : RuleInvalid;
+        }
+        if (targetCode > 0xFF || IsSpecialVirtualKey(targetCode) || (targetCode == 0 && targetMods == 0)) {
+            return RuleInvalid;
+        }
+        return RuleKeyToOutput;
+    }
+
+    return RuleInvalid;
+}
+
+void KeyProcessor::LoadConfig(DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount) {
+    m_FnLock = fnLock;
+    m_RuleCount = 0;
+
+    for (ULONG i = 0; i < ruleCount && m_RuleCount < MAX_RULES; i++) {
+        RuleKind kind = ClassifyRule(rules[i].Source, rules[i].Target);
+        if (kind == RuleInvalid) {
+            DebugPrint("Rule ignored: source 0x%08X target 0x%08X\n", rules[i].Source, rules[i].Target);
+            continue;
+        }
+        m_Rules[m_RuleCount++] = { rules[i].Source, rules[i].Target, kind, rules[i].FnLockAware };
+    }
 }
 
 void KeyProcessor::InjectKey(BYTE* buf, BYTE keyCode) {
@@ -48,191 +96,135 @@ void KeyProcessor::InjectKey(BYTE* buf, BYTE keyCode) {
     }
 }
 
-BOOLEAN KeyProcessor::IsSpecialVirtualKey(BYTE keyCode) {
-    char keyIndex = keyCode - VIRTUAL_EJECT;
-    size_t arraySize = sizeof(g_SpecialKeyCodes) / sizeof(g_SpecialKeyCodes[0]);
-    return keyIndex >= 0 && (size_t)keyIndex < arraySize;
-}
+// Decides everything from the original modifiers/Fn/Eject state, never from
+// what an earlier rule in this same pass produced, so independent rules can't
+// chain into each other or cancel a swap. Only the SOURCE side of a rule is
+// cleared; a rule's target bits are only ever added.
+void KeyProcessor::ProcessModifiersAndVirtualKeys(BYTE* buf, BOOLEAN* pFnPressed, BOOLEAN ejectPressed, BYTE* injectedKeys, ULONG* pInjectedCount) const {
+    const BYTE originalMods = buf[0];
+    const BOOLEAN originalFn = *pFnPressed;
 
-USHORT KeyProcessor::ConsumerUsageForKey(BYTE keyCode) {
-    switch (keyCode) {
-        case HidF1:
-            return CONSUMER_USAGE_BRIGHT_DOWN;
-        case HidF2:
-            return CONSUMER_USAGE_BRIGHT_UP;
-        case HidF7:
-            return CONSUMER_USAGE_PREV;
-        case HidF8:
-            return CONSUMER_USAGE_PLAYPAUSE;
-        case HidF9:
-            return CONSUMER_USAGE_NEXT;
-        case HidF10:
-            return CONSUMER_USAGE_MUTE;
-        case HidF11:
-            return CONSUMER_VOLUME_DOWN;
-        case HidF12:
-            return CONSUMER_VOLUME_UP;
-        default:
-            return CONSUMER_USAGE_NONE;
-    }
-}
+    BYTE consumedMods = 0;
+    BYTE producedMods = 0;
+    BOOLEAN consumedFn = FALSE;
+    BOOLEAN producedFn = FALSE;
+    BOOLEAN fnRuleApplied = FALSE;
+    BOOLEAN ejectRuleApplied = FALSE;
 
-// Apply modifiers remapping
-void KeyProcessor::ProcessModifiers(BYTE* pModifier) const {
-    if (m_ModMapSize < 2) {
-        return;
-    }
+    for (ULONG i = 0; i < m_RuleCount; i++) {
+        const ParsedRule& rule = m_Rules[i];
+        BYTE sourceMods = ModsOf(rule.Source);
+        BYTE targetMods = ModsOf(rule.Target);
+        DWORD targetCode = CodeOf(rule.Target);
 
-    BYTE original = *pModifier;
-    BYTE mappedMask = 0;
-    for (ULONG i = 0; i + 1 < m_ModMapSize; i += 2)
-        mappedMask |= m_ModMap[i];
-
-    *pModifier = original & ~mappedMask;
-    for (ULONG i = 0; i + 1 < m_ModMapSize; i += 2) {
-        if (original & m_ModMap[i])
-            *pModifier |= m_ModMap[i + 1];
-    }
-
-    if (original != *pModifier) {
-        DebugPrint("ModMap applied: 0x%02X -> 0x%02X\n", original, *pModifier);
-    }
-}
-
-// Apply remapping between real modifiers and the virtual Fn/Eject keys, in either
-// direction. Each m_SpecialModMap pair has exactly one real-modifier side and one
-// VIRTUAL_FN/VIRTUAL_EJECT side; IsSpecialVirtualKey tells them apart per pair.
-void KeyProcessor::ProcessSpecialModifiers(BYTE* pModifier, BOOLEAN* pFnPressed, BOOLEAN* pEjectPressed) const {
-    if (m_SpecialModMapSize < 2) {
-        return;
-    }
-
-    BYTE original = *pModifier;
-    BOOLEAN originalFn = *pFnPressed;
-    BOOLEAN originalEject = *pEjectPressed;
-
-    // Only the SOURCE side of a modifier->special rule gets cleared up front. A
-    // special->modifier TARGET bit must stay untouched here, otherwise an
-    // independent press of that same physical key would be wiped even when the
-    // Fn/Eject source isn't held.
-    BYTE consumedMask = 0;
-    for (ULONG i = 0; i + 1 < m_SpecialModMapSize; i += 2) {
-        if (!IsSpecialVirtualKey(m_SpecialModMap[i]) && IsSpecialVirtualKey(m_SpecialModMap[i + 1])) {
-            consumedMask |= m_SpecialModMap[i];
+        switch (rule.Kind) {
+            case RuleModToMod:
+                consumedMods |= sourceMods;
+                if (originalMods & sourceMods) {
+                    producedMods |= targetMods;
+                }
+                break;
+            case RuleModToVirtual:
+                consumedMods |= sourceMods;
+                if ((originalMods & sourceMods) && targetCode == VIRTUAL_FN) {
+                    producedFn = TRUE;
+                }
+                break;
+            case RuleVirtualToMod:
+            case RuleVirtualToVirtual:
+            case RuleVirtualToKey: {
+                BOOLEAN sourceIsFn = CodeOf(rule.Source) == VIRTUAL_FN;
+                BOOLEAN sourcePressed = sourceIsFn ? originalFn : ejectPressed;
+                BOOLEAN* applied = sourceIsFn ? &fnRuleApplied : &ejectRuleApplied;
+                if (!sourcePressed || *applied) {
+                    break;
+                }
+                *applied = TRUE;
+                if (sourceIsFn) {
+                    consumedFn = TRUE;
+                }
+                producedMods |= targetMods;
+                if (rule.Kind == RuleVirtualToVirtual) {
+                    if (targetCode == VIRTUAL_FN) {
+                        producedFn = TRUE;
+                    }
+                } else if (rule.Kind == RuleVirtualToKey && *pInjectedCount < 2) {
+                    injectedKeys[(*pInjectedCount)++] = (BYTE)targetCode;
+                }
+                break;
+            }
+            default:
+                break;
         }
     }
 
-    BYTE result = original & ~consumedMask;
-    BOOLEAN newFn = originalFn;
-    BOOLEAN newEject = originalEject;
+    buf[0] = (originalMods & ~consumedMods) | producedMods;
+    *pFnPressed = (originalFn && !consumedFn) || producedFn;
 
-    for (ULONG i = 0; i + 1 < m_SpecialModMapSize; i += 2) {
-        BYTE source = m_SpecialModMap[i];
-        BYTE target = m_SpecialModMap[i + 1];
+    if (originalMods != buf[0] || originalFn != *pFnPressed) {
+        DebugPrint("Modifier rules applied: mod 0x%02X -> 0x%02X, Fn %d -> %d\n",
+            originalMods, buf[0], originalFn, *pFnPressed);
+    }
+}
 
-        if (!IsSpecialVirtualKey(source) && IsSpecialVirtualKey(target)) {
-            // modifier -> Fn/Eject
-            if (original & source) {
-                if (target == VIRTUAL_FN) {
-                    newFn = TRUE;
-                } else {
-                    newEject = TRUE;
-                }
+// Rules marked FnLockAware have their Fn requirement inverted while FnLock is
+// off, so one "Fn+F8 -> Play/Pause" rule covers both lock modes.
+BOOLEAN KeyProcessor::IsFnLayerActive(const ParsedRule& rule, BOOLEAN fnPressed) const {
+    BOOLEAN active = fnPressed != FALSE;
+    if (rule.FnLockAware && m_FnLock == 0) {
+        active = !active;
+    }
+    return active;
+}
+
+const KeyProcessor::ParsedRule* KeyProcessor::FindKeyRule(BYTE key, BOOLEAN fnLayer) const {
+    for (ULONG i = 0; i < m_RuleCount; i++) {
+        const ParsedRule& rule = m_Rules[i];
+        if (rule.Kind == RuleKeyToOutput
+            && CodeOf(rule.Source) == key
+            && ((rule.Source & RULE_SOURCE_FN) != 0) == (fnLayer != FALSE)) {
+            return &rule;
+        }
+    }
+    return nullptr;
+}
+
+// An active Fn-layer rule wins; otherwise the plain rule for the key applies
+// (so e.g. a plain F13 remap keeps working while Fn is held).
+USHORT KeyProcessor::ProcessKeys(BYTE* buf, BOOLEAN fnPressed) const {
+    USHORT consumerUsage = CONSUMER_USAGE_NONE;
+    BYTE extraMods = 0;
+
+    for (int i = 2; i <= 7; i++) {
+        BYTE key = buf[i];
+        if (!key) {
+            continue;
+        }
+
+        const ParsedRule* rule = FindKeyRule(key, TRUE);
+        if (!rule || !IsFnLayerActive(*rule, fnPressed)) {
+            rule = FindKeyRule(key, FALSE);
+        }
+        if (!rule) {
+            continue;
+        }
+
+        DWORD targetCode = CodeOf(rule->Target);
+        if (rule->Target & RULE_TARGET_CONSUMER) {
+            buf[i] = HidKeyNone;
+            if (consumerUsage == CONSUMER_USAGE_NONE) {
+                consumerUsage = (USHORT)targetCode;
             }
-        } else if (IsSpecialVirtualKey(source) && !IsSpecialVirtualKey(target)) {
-            // Fn/Eject -> modifier
-            BOOLEAN sourcePressed = (source == VIRTUAL_FN) ? originalFn : originalEject;
-            if (sourcePressed) {
-                result |= target;
-                if (source == VIRTUAL_FN) {
-                    newFn = FALSE;
-                } else {
-                    newEject = FALSE;
-                }
-            }
+            DebugPrint("Key 0x%02X -> consumer usage 0x%04X\n", key, targetCode);
+        } else {
+            buf[i] = (BYTE)targetCode;
+            extraMods |= ModsOf(rule->Target);
+            DebugPrint("Key 0x%02X -> 0x%02X\n", key, targetCode);
         }
     }
 
-    *pModifier = result;
-    *pFnPressed = newFn;
-    *pEjectPressed = newEject;
-
-    if (original != *pModifier || originalFn != *pFnPressed || originalEject != *pEjectPressed) {
-        DebugPrint("SpecialModMap applied: mod 0x%02X -> 0x%02X, Fn %d -> %d, Eject %d -> %d\n",
-            original, *pModifier, originalFn, *pFnPressed, originalEject, *pEjectPressed);
-    }
-}
-
-// Apply hardcoded remappings with the Fn key pressed
-void KeyProcessor::ProcessHardcodedFnBehaviorForKey(BYTE* buf, ULONG pos, BOOLEAN fnPressed) {
-    if (!fnPressed) {
-        return;
-    }
-
-    BYTE key = buf[pos];
-    switch (key) {
-        case HidLeft:
-            buf[pos] = HidHome;
-            break;
-        case HidRight:
-            buf[pos] = HidEnd;
-            break;
-        case HidUp:
-            buf[pos] = HidPgUp;
-            break;
-        case HidDown:
-            buf[pos] = HidPgDown;
-            break;
-        case HidEnter:
-            buf[pos] = HidInsert;
-            break;
-        case HidKeyP:
-            buf[pos] = HidPrtScr;
-            break;
-        case HidKeyB:
-            buf[pos] = HidPauseBreak;
-            break;
-        case HidKeyS:
-            buf[pos] = HidScrLck;
-            break;
-    }
-
-    if (key != buf[pos]) {
-        DebugPrint("Hardcoded Fn combo: 0x%02X -> 0x%02X\n", key, buf[pos]);
-    }
-}
-
-// Apply F key behaviors. F keys contain extra functions (volume control, multimedia control, etc.)
-// and behave depending on the Fn key and FnLock behavior.
-USHORT KeyProcessor::ProcessFKey(BYTE* buf, ULONG pos, BOOLEAN fnPressed, USHORT currentConsumerUsage) const {
-    BYTE key = buf[pos];
-
-    if (key < HidF1 || key > HidF12 || (m_FnLock != 0) != (fnPressed != FALSE)) {
-        // nothing to do because it is not an F key or it should act like a regular F key
-        return CONSUMER_USAGE_NONE;
-    }
-
-    if (currentConsumerUsage != CONSUMER_USAGE_NONE) {
-        return currentConsumerUsage;
-    }
-
-    USHORT consumerUsage = ConsumerUsageForKey(key);
-    if (consumerUsage != CONSUMER_USAGE_NONE) {
-        buf[pos] = HidKeyNone;
-        DebugPrint("Extra function for F key: 0x%02X -> 0x%04X\n", key, consumerUsage);
-    }
-
+    buf[0] |= extraMods;
     return consumerUsage;
-}
-
-// Apply normal key remappings
-void KeyProcessor::ProcessNormalKey(BYTE* buf, ULONG pos) const {
-    BYTE key = buf[pos];
-    BYTE targetKey = LookupKeyMap(key);
-    if (targetKey) {
-        DebugPrint("Key mapping: 0x%02X -> 0x%02X\n", key, targetKey);
-        buf[pos] = targetKey;
-    }
 }
 
 // Decides whether the caller should submit a Consumer Control usage report.
@@ -272,46 +264,16 @@ ConsumerUsageSubmission KeyProcessor::Process(BYTE* buf, ULONG size) {
     BOOLEAN ejectPressed = (*pSpecialKey & 0x1) != 0;
     *pSpecialKey = 0;
 
-    if (fnPressed) {
-        BYTE fnKeyTarget = LookupKeyMap(VIRTUAL_FN);
-        if (fnKeyTarget) {
-            fnPressed = FALSE;
-            if (fnKeyTarget == VIRTUAL_EJECT) {
-                DebugPrint("Fn pressed -> mapped to Eject key");
-                ejectPressed = TRUE;
-            } else {
-                DebugPrint("Fn pressed -> mapped to normal key 0x%02X\n", fnKeyTarget);
-                InjectKey(buf, fnKeyTarget);
-            }
-        }
-    }
+    // Keys produced by Fn/Eject -> key rules are injected only after the key
+    // pass so they are not remapped a second time.
+    BYTE injectedKeys[2] = {};
+    ULONG injectedCount = 0;
+    ProcessModifiersAndVirtualKeys(buf, &fnPressed, ejectPressed, injectedKeys, &injectedCount);
 
-    if (ejectPressed) {
-        BYTE ejectKeyTarget = LookupKeyMap(VIRTUAL_EJECT);
-        if (ejectKeyTarget) {
-            ejectPressed = FALSE;
-            if (ejectKeyTarget == VIRTUAL_FN) {
-                DebugPrint("Eject pressed -> mapped to Fn key");
-                fnPressed = TRUE;
-            } else {
-                DebugPrint("Eject pressed -> mapped to normal key 0x%02X\n", ejectKeyTarget);
-                InjectKey(buf, ejectKeyTarget);
-            }
-        }
-    }
+    USHORT consumerUsage = ProcessKeys(buf, fnPressed);
 
-    ProcessModifiers(&buf[0]);
-    ProcessSpecialModifiers(&buf[0], &fnPressed, &ejectPressed);
-
-    USHORT consumerUsage = CONSUMER_USAGE_NONE;
-    for (int i = 2; i <= 7; i++) {
-        if (!buf[i]) {
-            continue;
-        }
-
-        ProcessHardcodedFnBehaviorForKey(buf, i, fnPressed);
-        consumerUsage = ProcessFKey(buf, i, fnPressed, consumerUsage);
-        ProcessNormalKey(buf, i);
+    for (ULONG i = 0; i < injectedCount; i++) {
+        InjectKey(buf, injectedKeys[i]);
     }
 
     return DecideConsumerUsageSubmission(consumerUsage);

@@ -1,49 +1,99 @@
 #include "Driver.h"
 
+// Upper bound on subkeys examined under Parameters\Rules, so a damaged key can't keep the enumeration loop running.
+#define MAX_RULE_SUBKEYS 1024
+
 ///////////////////////////////////////////////////////////////////////////////
 // Globals Initialisation
 //
 DWORD g_dwFnLock = 0;
-BYTE g_KeyMap[MAX_KEYMAP_SIZE] = {0};
-ULONG g_KeyMapSize = 0;
-BYTE g_ModMap[MAX_MODMAP_SIZE] = {0};
-ULONG g_ModMapSize = 0;
-BYTE g_SpecialModMap[MAX_SPECIAL_MODMAP_SIZE] = {0};
-ULONG g_SpecialModMapSize = 0;
+KEY_RULE g_Rules[MAX_RULES] = {0};
+ULONG g_RuleCount = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
-// Read REG_BINARY value from registry into a buffer
+// Read a REG_DWORD value from an open key. *pValue is only written on success.
 //
-static NTSTATUS ReadBinaryRegistryValue(PUNICODE_STRING registryPath, PCWSTR wcszValName, BYTE* destBuf, ULONG destMaxSize, ULONG* pOutSize) {
+static NTSTATUS ReadDwordValue(HANDLE hKey, PCWSTR wcszValName, DWORD* pValue) {
     PAGED_CODE();
 
-    HANDLE hKey;
-    OBJECT_ATTRIBUTES oa;
-    InitializeObjectAttributes(&oa, registryPath, OBJ_CASE_INSENSITIVE, NULL, NULL);
-
-    NTSTATUS status = ZwOpenKey(&hKey, KEY_READ, &oa);
-    if (!NT_SUCCESS(status))
-        return status;
-
     UNICODE_STRING valname;
-    ULONG size = 0;
     RtlInitUnicodeString(&valname, wcszValName);
-    status = ZwQueryValueKey(hKey, &valname, KeyValuePartialInformation, NULL, 0, &size);
-    if (status != STATUS_OBJECT_NAME_NOT_FOUND && size) {
-        PKEY_VALUE_PARTIAL_INFORMATION vp = (PKEY_VALUE_PARTIAL_INFORMATION)ExAllocatePoolWithTag(PagedPool, size, '1gaT');
-        if (vp) {
-            status = ZwQueryValueKey(hKey, &valname, KeyValuePartialInformation, vp, size, &size);
-            if (NT_SUCCESS(status) && vp->Type == REG_BINARY && vp->DataLength <= destMaxSize) {
-                RtlCopyMemory(destBuf, vp->Data, vp->DataLength);
-                *pOutSize = vp->DataLength;
-                DebugPrint("%ws loaded: %lu bytes\n", wcszValName, *pOutSize);
-            }
-            ExFreePool(vp);
-        }
+
+    ULONGLONG storage[(sizeof(KEY_VALUE_PARTIAL_INFORMATION) + sizeof(DWORD) + sizeof(ULONGLONG) - 1) / sizeof(ULONGLONG)];
+    PKEY_VALUE_PARTIAL_INFORMATION info = (PKEY_VALUE_PARTIAL_INFORMATION)storage;
+    ULONG resultLength = 0;
+    NTSTATUS status = ZwQueryValueKey(hKey, &valname, KeyValuePartialInformation, info, sizeof(storage), &resultLength);
+    if (!NT_SUCCESS(status)) {
+        return status;
+    }
+    if (info->Type != REG_DWORD || info->DataLength != sizeof(DWORD)) {
+        return STATUS_OBJECT_TYPE_MISMATCH;
     }
 
-    ZwClose(hKey);
+    RtlCopyMemory(pValue, info->Data, sizeof(DWORD));
     return STATUS_SUCCESS;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Load every rule subkey of Parameters\Rules into g_Rules. A subkey is a rule
+// only if it has REG_DWORD Source and Target; the subkey name itself is
+// irrelevant, and subkeys without a Target (launch-only entries) are skipped.
+//
+static void ReadRules(PUNICODE_STRING rulesPath) {
+    PAGED_CODE();
+
+    g_RuleCount = 0;
+
+    HANDLE hRules;
+    OBJECT_ATTRIBUTES oa;
+    InitializeObjectAttributes(&oa, rulesPath, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
+    if (!NT_SUCCESS(ZwOpenKey(&hRules, KEY_READ, &oa))) {
+        return;
+    }
+
+    // Registry key names are at most 255 characters.
+    ULONG infoSize = sizeof(KEY_BASIC_INFORMATION) + 256 * sizeof(WCHAR);
+    PKEY_BASIC_INFORMATION info = (PKEY_BASIC_INFORMATION)ExAllocatePool2(POOL_FLAG_PAGED, infoSize, 'uRyK');
+    if (!info) {
+        ZwClose(hRules);
+        return;
+    }
+
+    for (ULONG index = 0; index < MAX_RULE_SUBKEYS && g_RuleCount < MAX_RULES; index++) {
+        ULONG resultLength = 0;
+        NTSTATUS status = ZwEnumerateKey(hRules, index, KeyBasicInformation, info, infoSize, &resultLength);
+        if (status == STATUS_NO_MORE_ENTRIES) {
+            break;
+        }
+        if (!NT_SUCCESS(status)) {
+            continue;
+        }
+
+        UNICODE_STRING name;
+        name.Buffer = info->Name;
+        name.Length = (USHORT)info->NameLength;
+        name.MaximumLength = (USHORT)info->NameLength;
+
+        OBJECT_ATTRIBUTES ruleOa;
+        InitializeObjectAttributes(&ruleOa, &name, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, hRules, NULL);
+        HANDLE hRule;
+        if (!NT_SUCCESS(ZwOpenKey(&hRule, KEY_READ, &ruleOa))) {
+            continue;
+        }
+
+        KEY_RULE rule = {0};
+        DWORD fnLockAware = 0;
+        if (NT_SUCCESS(ReadDwordValue(hRule, L"Source", &rule.Source))
+            && NT_SUCCESS(ReadDwordValue(hRule, L"Target", &rule.Target))) {
+            ReadDwordValue(hRule, L"FnLockAware", &fnLockAware);
+            rule.FnLockAware = fnLockAware != 0;
+            g_Rules[g_RuleCount++] = rule;
+        }
+        ZwClose(hRule);
+    }
+
+    ExFreePool(info);
+    ZwClose(hRules);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -67,12 +117,21 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT driverObject, IN PUNICODE_STRING registry
     RtlStringCbPrintfW(paramPathBuf, sizeof(paramPathBuf), L"%wZ\\Parameters", registryPath);
     RtlInitUnicodeString(&paramPath, paramPathBuf);
 
-    ReadDriverRegistryValue(&paramPath, REG_DWORD, L"FnLock", (void*)&g_dwFnLock);
-    ReadBinaryRegistryValue(&paramPath, L"KeyMap", g_KeyMap, MAX_KEYMAP_SIZE, &g_KeyMapSize);
-    ReadBinaryRegistryValue(&paramPath, L"ModMap", g_ModMap, MAX_MODMAP_SIZE, &g_ModMapSize);
-    ReadBinaryRegistryValue(&paramPath, L"SpecialModMap", g_SpecialModMap, MAX_SPECIAL_MODMAP_SIZE, &g_SpecialModMapSize);
+    HANDLE hParams;
+    OBJECT_ATTRIBUTES paramOa;
+    InitializeObjectAttributes(&paramOa, &paramPath, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
+    if (NT_SUCCESS(ZwOpenKey(&hParams, KEY_READ, &paramOa))) {
+        ReadDwordValue(hParams, L"FnLock", &g_dwFnLock);
+        ZwClose(hParams);
+    }
 
-    DebugPrint("FnLock=%d, KeyMapSize=%lu, ModMapSize=%lu\n", g_dwFnLock, g_KeyMapSize, g_ModMapSize);
+    WCHAR rulesPathBuf[512];
+    UNICODE_STRING rulesPath;
+    RtlStringCbPrintfW(rulesPathBuf, sizeof(rulesPathBuf), L"%wZ\\Rules", &paramPath);
+    RtlInitUnicodeString(&rulesPath, rulesPathBuf);
+    ReadRules(&rulesPath);
+
+    DebugPrint("FnLock=%lu, rules loaded: %lu\n", g_dwFnLock, g_RuleCount);
 
     return STATUS_SUCCESS;
 }
@@ -117,8 +176,7 @@ NTSTATUS EvtDriverDeviceAdd(IN WDFDRIVER driver, IN PWDFDEVICE_INIT deviceInit) 
         DebugPrint("EvtDriverDeviceAdd(): KeyProcessorCreate failed\n");
         return STATUS_INSUFFICIENT_RESOURCES;
     }
-    KeyProcessorLoadConfig(deviceContext->KeyProcessorHandle, g_dwFnLock,
-        g_KeyMap, g_KeyMapSize, g_ModMap, g_ModMapSize, g_SpecialModMap, g_SpecialModMapSize);
+    KeyProcessorLoadConfig(deviceContext->KeyProcessorHandle, g_dwFnLock, g_Rules, g_RuleCount);
 
     VHF_CONFIG vhfConfig;
     VHF_CONFIG_INIT(&vhfConfig, WdfDeviceWdmGetDeviceObject(hDevice), sizeof(g_ConsumerReportDescriptor), (PUCHAR)g_ConsumerReportDescriptor);
@@ -274,53 +332,4 @@ void KdPrintBuffer(PCHAR text, PUCHAR buffer, ULONG length) {
     for (ULONG i = 0; i < length; ++i)
         DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL, "%02X ", buffer[i]);
     DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL, "\n");
-}
-
-NTSTATUS ReadDriverRegistryValue(PUNICODE_STRING registryPath, DWORD dwRegValeType, PCWSTR wcszValName, PVOID* pValue) {
-    PAGED_CODE();
-
-    HANDLE hKey;
-    OBJECT_ATTRIBUTES oa;
-    InitializeObjectAttributes(&oa, registryPath, OBJ_CASE_INSENSITIVE, NULL, NULL);
-
-    NTSTATUS status = ZwOpenKey(&hKey, KEY_READ, &oa);
-    if (!NT_SUCCESS(status)) {
-        DebugPrint("Can't open key %wZ - %X\n", registryPath, status);
-        return status;
-    }
-
-    UNICODE_STRING valname;
-    ULONG size = 0;
-    RtlInitUnicodeString(&valname, wcszValName);
-    status = ZwQueryValueKey(hKey, &valname, KeyValuePartialInformation, NULL, 0, &size);
-    if (status != STATUS_OBJECT_NAME_NOT_FOUND && size) {
-        PKEY_VALUE_PARTIAL_INFORMATION vp = (PKEY_VALUE_PARTIAL_INFORMATION)ExAllocatePoolWithTag(PagedPool, size, '1gaT');
-        if (vp) {
-            status = ZwQueryValueKey(hKey, &valname, KeyValuePartialInformation, vp, size, &size);
-            if (NT_SUCCESS(status)) {
-                if (dwRegValeType == REG_SZ) {
-                    PUNICODE_STRING pDst = (PUNICODE_STRING)pValue;
-                    UNICODE_STRING src;
-                    src.Buffer = (PWSTR)vp->Data;
-                    src.Length = (USHORT)vp->DataLength;
-                    src.MaximumLength = (USHORT)vp->DataLength;
-                    RtlCopyUnicodeString(pDst, &src);
-                } else if (dwRegValeType == REG_DWORD)
-                    *pValue = (void*)(ULONG_PTR)(*(DWORD*)vp->Data);
-                else {
-                    DebugPrint("Unsupported registry value type.");
-                    status = STATUS_INVALID_PARAMETER;
-                }
-            } else
-                DebugPrint("ZwQueryValueKey(%ws) failed - %X\n", valname.Buffer, status);
-
-            ExFreePool(vp);
-        } else {
-            DebugPrint("Can't allocate %d bytes for reading registry\n", size);
-            status = STATUS_INSUFFICIENT_RESOURCES;
-        }
-    }
-
-    ZwClose(hKey);
-    return status;
 }

@@ -7,6 +7,10 @@ internal static class Logger {
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "4MagicKeysPlus", "agent.log");
 
+    public static void Info(string message) {
+        Write("INFO", message);
+    }
+
     public static void Warn(string message) {
         Write("WARN", message);
     }

@@ -15,40 +15,49 @@ struct ConsumerUsageSubmission {
     USHORT Usage;
 };
 
-// Owns per-device remapping state (KeyMap/ModMap/SpecialModMap config plus the
-// last-submitted consumer usage) and turns a raw HID report buffer into its
-// remapped form. One instance per physical device - see DEVICE_CONTEXT -
-// so that two keyboards plugged in at once don't share consumer-usage
-// dedup state with each other.
+// Owns per-device remapping state (the rule list plus the last-submitted
+// consumer usage) and turns a raw HID report buffer into its remapped form.
+// One instance per physical device - see DEVICE_CONTEXT - so that two
+// keyboards plugged in at once don't share consumer-usage dedup state with
+// each other.
 class KeyProcessor {
 public:
     KeyProcessor() = default;
 
-    void LoadConfig(DWORD fnLock,
-        const BYTE* keyMap, ULONG keyMapSize,
-        const BYTE* modMap, ULONG modMapSize,
-        const BYTE* specialModMap, ULONG specialModMapSize);
+    // Rules that can't be interpreted (see ClassifyRule) are dropped here.
+    void LoadConfig(DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount);
 
     ConsumerUsageSubmission Process(BYTE* buf, ULONG size);
 
 private:
-    BYTE LookupKeyMap(BYTE source) const;
+    enum RuleKind : BYTE {
+        RuleInvalid,
+        RuleModToMod,
+        RuleModToVirtual,
+        RuleVirtualToMod,
+        RuleVirtualToVirtual,
+        RuleVirtualToKey,
+        RuleKeyToOutput,
+    };
+
+    struct ParsedRule {
+        DWORD Source;
+        DWORD Target;
+        RuleKind Kind;
+        BOOLEAN FnLockAware;
+    };
+
+    static RuleKind ClassifyRule(DWORD source, DWORD target);
+    static BOOLEAN IsSpecialVirtualKey(DWORD code);
     static void InjectKey(BYTE* buf, BYTE keyCode);
-    static BOOLEAN IsSpecialVirtualKey(BYTE keyCode);
-    static USHORT ConsumerUsageForKey(BYTE keyCode);
-    void ProcessModifiers(BYTE* pModifier) const;
-    void ProcessSpecialModifiers(BYTE* pModifier, BOOLEAN* pFnPressed, BOOLEAN* pEjectPressed) const;
-    static void ProcessHardcodedFnBehaviorForKey(BYTE* buf, ULONG pos, BOOLEAN fnPressed);
-    USHORT ProcessFKey(BYTE* buf, ULONG pos, BOOLEAN fnPressed, USHORT currentConsumerUsage) const;
-    void ProcessNormalKey(BYTE* buf, ULONG pos) const;
+    const ParsedRule* FindKeyRule(BYTE key, BOOLEAN fnLayer) const;
+    BOOLEAN IsFnLayerActive(const ParsedRule& rule, BOOLEAN fnPressed) const;
+    void ProcessModifiersAndVirtualKeys(BYTE* buf, BOOLEAN* pFnPressed, BOOLEAN ejectPressed, BYTE* injectedKeys, ULONG* pInjectedCount) const;
+    USHORT ProcessKeys(BYTE* buf, BOOLEAN fnPressed) const;
     ConsumerUsageSubmission DecideConsumerUsageSubmission(USHORT usage);
 
     DWORD m_FnLock = 0;
-    BYTE m_KeyMap[MAX_KEYMAP_SIZE] = {};
-    ULONG m_KeyMapSize = 0;
-    BYTE m_ModMap[MAX_MODMAP_SIZE] = {};
-    ULONG m_ModMapSize = 0;
-    BYTE m_SpecialModMap[MAX_SPECIAL_MODMAP_SIZE] = {};
-    ULONG m_SpecialModMapSize = 0;
+    ParsedRule m_Rules[MAX_RULES] = {};
+    ULONG m_RuleCount = 0;
     USHORT m_LastConsumerUsage = CONSUMER_USAGE_NONE;
 };
