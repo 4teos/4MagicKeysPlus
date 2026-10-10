@@ -19,7 +19,7 @@ internal static class HidDeviceEnumerator {
                 cbSize = Marshal.SizeOf<NativeMethods.SP_DEVICE_INTERFACE_DATA>()
             };
 
-            for (int index = 0; NativeMethods.SetupDiEnumDeviceInterfaces(deviceInfoSet, IntPtr.Zero, ref hidGuid, index, ref interfaceData); index++) {
+            for (int i = 0; NativeMethods.SetupDiEnumDeviceInterfaces(deviceInfoSet, IntPtr.Zero, ref hidGuid, i, ref interfaceData); i++) {
                 string? path = TryGetDevicePath(deviceInfoSet, ref interfaceData);
                 if (path != null) {
                     yield return path;

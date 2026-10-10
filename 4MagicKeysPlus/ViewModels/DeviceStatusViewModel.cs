@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Media;
@@ -18,11 +19,19 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
     private static readonly SolidColorBrush UnknownBatteryBrush = new(Color.FromRgb(0x9C, 0xA3, 0xAF));
     private static readonly SolidColorBrush FnLockOnBackground = new(Color.FromRgb(0x37, 0x41, 0x51));
     private static readonly SolidColorBrush FnLockOffBackground = Brushes.Transparent;
+    private static readonly SolidColorBrush FnLockOnForeground = Brushes.White;
+    private static readonly SolidColorBrush FnLockOffForeground = new(Color.FromRgb(0x37, 0x41, 0x51));
 
     private readonly DispatcherTimer timer;
     private DetectedKeyboard? detectedKeyboard;
-    private KeyboardBatteryStatus? batteryStatus;
+    private string deviceName = Strings.DeviceNotDetected;
+    private string connectionGlyph = "";
+    private string batteryGlyph = Glyphs.BatteryLevel(0);
+    private Brush batteryColor = UnknownBatteryBrush;
     private bool fnLockEnabled;
+    private Brush fnLockBackground = FnLockOffBackground;
+    private Brush fnLockForeground = FnLockOffForeground;
+    private string statusTooltip = "";
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -34,66 +43,105 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
         timer.Start();
     }
 
-    public string DeviceName => detectedKeyboard?.Model.DeviceDescription ?? Strings.DeviceNotDetected;
+    public string DeviceName {
+        get => deviceName;
+        private set => SetField(ref deviceName, value);
+    }
 
-    public string ConnectionGlyph => detectedKeyboard?.Connection switch {
-        KeyboardConnection.Usb => Glyphs.Usb,
-        KeyboardConnection.Bluetooth => Glyphs.Bluetooth,
-        _ => "",
-    };
+    public string ConnectionGlyph {
+        get => connectionGlyph;
+        private set => SetField(ref connectionGlyph, value);
+    }
 
-    public string ConnectionTooltip => detectedKeyboard?.Connection switch {
-        KeyboardConnection.Usb => Strings.ConnectionUsb,
-        KeyboardConnection.Bluetooth => Strings.ConnectionBluetooth,
-        _ => Strings.DeviceNotDetected,
-    };
+    public string BatteryGlyph {
+        get => batteryGlyph;
+        private set => SetField(ref batteryGlyph, value);
+    }
 
-    public string BatteryGlyph => batteryStatus == null
-        ? Glyphs.BatteryLevel(0)
-        : batteryStatus.IsCharging ? Glyphs.BatteryCharging : Glyphs.BatteryLevel(batteryStatus.Percent);
+    public Brush BatteryColor {
+        get => batteryColor;
+        private set => SetField(ref batteryColor, value);
+    }
 
-    public Brush BatteryColor => batteryStatus switch {
-        null => UnknownBatteryBrush,
-        { Percent: <= 20 } => LowBatteryBrush,
-        { Percent: <= 50 } => MediumBatteryBrush,
-        _ => GoodBatteryBrush,
-    };
+    public bool FnLockEnabled {
+        get => fnLockEnabled;
+        private set => SetField(ref fnLockEnabled, value);
+    }
 
-    public string BatteryTooltip => batteryStatus == null
-        ? "—"
-        : batteryStatus.IsCharging ? $"{batteryStatus.Percent}% ({Strings.BatteryCharging})" : $"{batteryStatus.Percent}%";
+    public Brush FnLockBackground {
+        get => fnLockBackground;
+        private set => SetField(ref fnLockBackground, value);
+    }
 
-    public bool FnLockEnabled => fnLockEnabled;
-    public Brush FnLockBackground => fnLockEnabled ? FnLockOnBackground : FnLockOffBackground;
-    public Brush FnLockForeground => fnLockEnabled ? Brushes.White : new SolidColorBrush(Color.FromRgb(0x37, 0x41, 0x51));
-    public string FnLockTooltip => fnLockEnabled ? Strings.FnLockEnabled : Strings.FnLockDisabled;
+    public Brush FnLockForeground {
+        get => fnLockForeground;
+        private set => SetField(ref fnLockForeground, value);
+    }
+
+    public string StatusTooltip {
+        get => statusTooltip;
+        private set => SetField(ref statusTooltip, value);
+    }
 
     private void Refresh() {
         detectedKeyboard ??= KeyboardDetector.DetectConnectedKeyboard();
 
         KeyboardBatteryStatus? status = KeyboardBattery.ReadStatus(detectedKeyboard);
         if (status == null && detectedKeyboard != null) {
-            // The known device path died - unplugged, or switched transport (e.g. USB -> Bluetooth).
-            // Re-detect immediately instead of waiting for the device to reappear on its old path.
             detectedKeyboard = KeyboardDetector.DetectConnectedKeyboard();
             status = KeyboardBattery.ReadStatus(detectedKeyboard);
         }
 
-        batteryStatus = status;
-        fnLockEnabled = DriverStatus.ReadFnLockEnabled();
+        bool fnLock = DriverStatus.ReadFnLockEnabled();
 
-        OnPropertyChanged(nameof(DeviceName));
-        OnPropertyChanged(nameof(ConnectionGlyph));
-        OnPropertyChanged(nameof(ConnectionTooltip));
-        OnPropertyChanged(nameof(BatteryGlyph));
-        OnPropertyChanged(nameof(BatteryColor));
-        OnPropertyChanged(nameof(BatteryTooltip));
-        OnPropertyChanged(nameof(FnLockEnabled));
-        OnPropertyChanged(nameof(FnLockBackground));
-        OnPropertyChanged(nameof(FnLockForeground));
-        OnPropertyChanged(nameof(FnLockTooltip));
+        DeviceName = detectedKeyboard?.Model.DeviceDescription ?? Strings.DeviceNotDetected;
+
+        ConnectionGlyph = detectedKeyboard?.Connection switch {
+            KeyboardConnection.Usb => Glyphs.Usb,
+            KeyboardConnection.Bluetooth => Glyphs.Bluetooth,
+            _ => "",
+        };
+
+        BatteryGlyph = status == null
+            ? Glyphs.BatteryLevel(0)
+            : status.IsCharging ? Glyphs.BatteryCharging : Glyphs.BatteryLevel(status.Percent);
+        BatteryColor = status switch {
+            null => UnknownBatteryBrush,
+            { Percent: <= 20 } => LowBatteryBrush,
+            { Percent: <= 50 } => MediumBatteryBrush,
+            _ => GoodBatteryBrush,
+        };
+
+        FnLockEnabled = fnLock;
+        FnLockBackground = fnLock ? FnLockOnBackground : FnLockOffBackground;
+        FnLockForeground = fnLock ? FnLockOnForeground : FnLockOffForeground;
+
+        string batteryValue = status == null
+            ? "—"
+            : status.IsCharging ? $"{status.Percent}% ({Strings.BatteryCharging})" : $"{status.Percent}%";
+        string connectionValue = detectedKeyboard?.Connection switch {
+            KeyboardConnection.Usb => Strings.ConnectionUsb,
+            KeyboardConnection.Bluetooth => Strings.ConnectionBluetooth,
+            _ => Strings.DeviceNotDetected,
+        };
+        string fnLockValue = fnLock ? Strings.FnLockEnabled : Strings.FnLockDisabled;
+
+        StatusTooltip =
+            $"{Strings.StatusBatteryLabel}: {batteryValue}\n" +
+            $"{Strings.StatusConnectionLabel}: {connectionValue}\n" +
+            $"{Strings.StatusFnLockLabel}: {fnLockValue}";
     }
 
-    private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
+    private void SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null) {
+        if (EqualityComparer<T>.Default.Equals(field, value)) {
+            return;
+        }
+
+        field = value;
+        OnPropertyChanged(propertyName);
+    }
+
+    private void OnPropertyChanged(string? propertyName) {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }

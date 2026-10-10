@@ -64,7 +64,7 @@ public static class KeyboardLayout {
                 LabelHAlignment = HorizontalAlignment.Right,
                 LabelVAlignment = VerticalAlignment.Bottom
             },
-            new KeyLayoutEntry(PhysicalKey.Function, "Fn"),
+            new KeyLayoutEntry(PhysicalKey.Fn, "Fn"),
             new KeyLayoutEntry(PhysicalKey.Home, "⤒"),
             new KeyLayoutEntry(PhysicalKey.PageUp, "↑") { GapAfter = SizeUnit.STANDARD_GAP * 2 },
             new KeyLayoutEntry(PhysicalKey.NumPadClear, "⌧"),
@@ -327,7 +327,7 @@ public static class KeyboardLayout {
             });
 
         RowLayoutEntry row6 = new RowLayoutEntry(
-            new KeyLayoutEntry(PhysicalKey.Function, "Fn") {
+            new KeyLayoutEntry(PhysicalKey.Fn, "Fn") {
                 LabelHAlignment = HorizontalAlignment.Left,
                 LabelVAlignment = VerticalAlignment.Bottom
             },

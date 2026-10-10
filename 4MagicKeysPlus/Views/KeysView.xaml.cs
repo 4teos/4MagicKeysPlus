@@ -13,8 +13,18 @@ public partial class KeysView : UserControl {
     private const double KeyCornerRadius = 4;
     private const double UnitSizeInDIP = 8;
 
-    public KeysView() {
+    private static readonly Brush RemappedTextBrush = new SolidColorBrush(Color.FromRgb(0xB4, 0x53, 0x09));
+
+    public KeysView() : this(null) {
+    }
+
+    public KeysView(string? placeholderNotice) {
         InitializeComponent();
+
+        if (!string.IsNullOrEmpty(placeholderNotice)) {
+            PlaceholderNotice.Text = placeholderNotice;
+            PlaceholderNotice.Visibility = Visibility.Visible;
+        }
 
         ModelSelector.Items.Add(KeyboardModel.A1644);
         ModelSelector.Items.Add(KeyboardModel.A1843);
@@ -41,28 +51,25 @@ public partial class KeysView : UserControl {
         }
 
         IReadOnlyList<RowLayoutEntry> keysLayout = KeyboardLayout.GetKeys(model);
+        DriverKeyRemapConfig remapConfig = DriverStatus.ReadKeyRemapConfig();
+        IReadOnlySet<PhysicalKey> remappedKeys = remapConfig.GetRemappedKeys();
 
         foreach (RowLayoutEntry row in keysLayout) {
             for (int i = 0; i < row.RowKeys.Count; i++) {
                 KeyLayoutEntry key = row.RowKeys[i];
+                bool isRemapped = remappedKeys.Contains(key.Kind);
                 KeyBorder border = new(key) {
                     Width = CalcSizeInDIP(key.Width),
                     Height = CalcHeight(key.KeyRowPosition),
-                    Background = Brushes.White,
-                    BorderBrush = new SolidColorBrush(Color.FromRgb(0x9C, 0xA3, 0xAF)),
-                    BorderThickness = key.KeyRowPosition == KeyRowPosition.TWO_ROWS_LOWER_ROW ? new Thickness(1, 0, 1, 1) : new Thickness(1),
+                    NormalBorderThickness = key.KeyRowPosition == KeyRowPosition.TWO_ROWS_LOWER_ROW ? new Thickness(1, 0, 1, 1) : new Thickness(1),
                     CornerRadius = CalcCornerRadius(key),
-                    Child = String.IsNullOrEmpty(key.Label)
-                                ? null
-                                : new TextBlock {
-                                    Text = key.Label,
-                                    FontSize = 11,
-                                    Padding = new Thickness(6),
-                                    HorizontalAlignment = key.LabelHAlignment,
-                                    VerticalAlignment = key.LabelVAlignment,
-                                    IsHitTestVisible = false
-                                },
+                    Child = BuildKeyLabel(key, isRemapped),
                 };
+                if (isRemapped) {
+                    border.ToolTip = BuildKeyToolTip(remapConfig, key.Kind);
+                    ToolTipService.SetInitialShowDelay(border, 0);
+                    ToolTipService.SetBetweenShowDelay(border, 0);
+                }
 
                 Canvas.SetLeft(border, keyX);
                 Canvas.SetTop(border, CalcKeyTop(key.KeyRowPosition, rowY));
@@ -80,6 +87,33 @@ public partial class KeysView : UserControl {
 
         KeysCanvas.Width = maxWidth;
         KeysCanvas.Height = maxHeight;
+    }
+
+    private static TextBlock? BuildKeyLabel(KeyLayoutEntry key, bool isRemapped) {
+        if (string.IsNullOrEmpty(key.Label)) {
+            return null;
+        }
+
+        TextBlock label = new() {
+            Text = key.Label,
+            FontSize = 11,
+            Padding = new Thickness(6),
+            HorizontalAlignment = key.LabelHAlignment,
+            VerticalAlignment = key.LabelVAlignment,
+            IsHitTestVisible = false,
+        };
+        if (isRemapped) {
+            label.FontWeight = FontWeights.Bold;
+            label.Foreground = RemappedTextBrush;
+        }
+        return label;
+    }
+
+    private static ToolTip BuildKeyToolTip(DriverKeyRemapConfig remapConfig, PhysicalKey key) {
+        return new ToolTip {
+            Content = string.Join(Environment.NewLine, remapConfig.DescribeTargets(key)),
+            Style = (Style)Application.Current.Resources["TooltipAbove"],
+        };
     }
 
     private static CornerRadius CalcCornerRadius(KeyLayoutEntry key) {

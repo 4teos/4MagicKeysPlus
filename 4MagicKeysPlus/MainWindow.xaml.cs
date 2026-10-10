@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using _4MagicKeysPlus.Properties;
 using _4MagicKeysPlus.ViewModels;
 using _4MagicKeysPlus.Views;
 
@@ -15,7 +16,15 @@ public partial class MainWindow : Window {
         MainContent?.Content = new KeysView();
     }
 
-    private void MinimizeButton_Click(object sender, RoutedEventArgs e) => SystemCommands.MinimizeWindow(this);
+    private void NavApps_Checked(object sender, RoutedEventArgs e) {
+        MainContent?.Content = new KeysView(Strings.QuickLaunchPlaceholderNotice);
+    }
 
-    private void CloseButton_Click(object sender, RoutedEventArgs e) => SystemCommands.CloseWindow(this);
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e) {
+        SystemCommands.MinimizeWindow(this);
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e) {
+        SystemCommands.CloseWindow(this);
+    }
 }

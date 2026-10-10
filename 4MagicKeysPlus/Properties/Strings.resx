@@ -39,6 +39,18 @@
   <data name="FnLockDisabled" xml:space="preserve">
     <value>Disabled</value>
   </data>
+  <data name="StatusBatteryLabel" xml:space="preserve">
+    <value>Battery charge</value>
+  </data>
+  <data name="StatusConnectionLabel" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="StatusFnLockLabel" xml:space="preserve">
+    <value>Fn Lock</value>
+  </data>
+  <data name="QuickLaunchPlaceholderNotice" xml:space="preserve">
+    <value>Quick Launch isn't built yet - this is a placeholder showing the key layout screen.</value>
+  </data>
   <data name="KeysModelLabel" xml:space="preserve">
     <value>Keyboard model:</value>
   </data>

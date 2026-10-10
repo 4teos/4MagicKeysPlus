@@ -52,7 +52,8 @@ internal static class NativeMethods {
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     public static extern SafeFileHandle CreateFile(string fileName, int desiredAccess, int shareMode, IntPtr securityAttributes, int creationDisposition, int flagsAndAttributes, IntPtr templateFile);
 
-    public static SafeFileHandle OpenHidDevice(string devicePath) => CreateFile(
+    public static SafeFileHandle OpenHidDevice(string devicePath) {
+        return CreateFile(
         devicePath,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -60,4 +61,5 @@ internal static class NativeMethods {
         OPEN_EXISTING,
         0,
         IntPtr.Zero);
+    }
 }

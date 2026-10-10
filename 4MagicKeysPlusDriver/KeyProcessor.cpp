@@ -256,6 +256,17 @@ ConsumerUsageSubmission KeyProcessor::Process(BYTE* buf, ULONG size) {
         return { false, CONSUMER_USAGE_NONE };
     }
 
+    for (int i = 2; i <= 7; i++) {
+        if (buf[i]) {
+            DebugPrint("Raw key: 0x%02X\n", buf[i]);
+        }
+    }
+    for (int bit = 0; bit < 8; bit++) {
+        if (buf[0] & (1 << bit)) {
+            DebugPrint("Raw modifier: bit %d (mask 0x%02X)\n", bit, 1 << bit);
+        }
+    }
+
     BYTE* pSpecialKey = &buf[8];
     BOOLEAN fnPressed = (*pSpecialKey & 0x2) != 0;
     BOOLEAN ejectPressed = (*pSpecialKey & 0x1) != 0;

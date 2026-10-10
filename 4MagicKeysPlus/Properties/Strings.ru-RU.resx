@@ -39,6 +39,18 @@
   <data name="FnLockDisabled" xml:space="preserve">
     <value>Выключен</value>
   </data>
+  <data name="StatusBatteryLabel" xml:space="preserve">
+    <value>Заряд батареи</value>
+  </data>
+  <data name="StatusConnectionLabel" xml:space="preserve">
+    <value>Подключение</value>
+  </data>
+  <data name="StatusFnLockLabel" xml:space="preserve">
+    <value>Fn Lock</value>
+  </data>
+  <data name="QuickLaunchPlaceholderNotice" xml:space="preserve">
+    <value>Экран «Быстрый запуск» ещё не готов — здесь временно показана раскладка клавиш.</value>
+  </data>
   <data name="KeysModelLabel" xml:space="preserve">
     <value>Модель клавиатуры:</value>
   </data>

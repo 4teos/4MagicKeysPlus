@@ -9,36 +9,46 @@ namespace _4MagicKeysPlus.Views;
 public class KeyBorder : Border {
     private static readonly BrushConverter BrushConverter = new();
 
-    private Brush? originalBackground;
-    private Brush? originalBorderBrush;
+    private static readonly Brush NormalBackground = Brushes.White;
+    private static readonly Brush NormalBorderBrush = (Brush)BrushConverter.ConvertFrom("#9CA3AF")!;
+    private static readonly Brush AccentBorderBrush = (Brush)BrushConverter.ConvertFrom("#10B981")!;
+    private static readonly Brush SelectedBackground = (Brush)BrushConverter.ConvertFrom("#D1FAE5")!;
+
+    private const double HoverThicknessMultiplier = 2;
+
+    private Thickness normalBorderThickness = new(1);
+    private bool isHovered;
     private List<KeyBorder>? mergedGroup;
-    
-    public KeyBorder() : base() {
-        KeyLayoutEntry = new KeyLayoutEntry(PhysicalKey.None, "");
+
+    public KeyBorder() : this(new KeyLayoutEntry(PhysicalKey.None, "")) {
     }
 
     public KeyBorder(KeyLayoutEntry keyLayoutEntry) : base() {
         KeyLayoutEntry = keyLayoutEntry;
+        Background = NormalBackground;
+        BorderBrush = NormalBorderBrush;
+        BorderThickness = normalBorderThickness;
     }
 
     public KeyLayoutEntry KeyLayoutEntry {
         get;
     }
 
-    //public Brush HighlightBackground { get; set; } = (Brush)BrushConverter.ConvertFrom("#CCFBF1")!;
-    //public Brush HighlightBorderBrush { get; set; } = (Brush)BrushConverter.ConvertFrom("#14B8A6")!;
-    public Brush HighlightBackground { get; set; } = (Brush)BrushConverter.ConvertFrom("#D1FAE5")!;
-    public Brush HighlightBorderBrush { get; set; } = (Brush)BrushConverter.ConvertFrom("#10B981")!;
-    //public Brush HighlightBackground { get; set; } = (Brush)BrushConverter.ConvertFrom("#E0F2FE")!;
-    //public Brush HighlightBorderBrush { get; set; } = (Brush)BrushConverter.ConvertFrom("#0EA5E9")!;
-    //public Brush HighlightBackground { get; set; } = (Brush)BrushConverter.ConvertFrom("#E5F1FB")!;
-    //public Brush HighlightBorderBrush { get; set; } = (Brush)BrushConverter.ConvertFrom("#0078D4")!;
+    public bool IsSelected {
+        get; private set;
+    }
+
+    public Thickness NormalBorderThickness {
+        get => normalBorderThickness;
+        set {
+            normalBorderThickness = value;
+            ApplyVisualState();
+        }
+    }
 
     protected override void OnMouseEnter(MouseEventArgs e) {
         base.OnMouseEnter(e);
-
-        List<KeyBorder> group = GetMergedGroup();
-        group.ForEach(border => border.ApplyHighlight(true));
+        GetMergedGroup().ForEach(border => border.SetHovered(true));
     }
 
     protected override void OnMouseLeave(MouseEventArgs e) {
@@ -49,7 +59,56 @@ public class KeyBorder : Border {
             return;
         }
 
-        group.ForEach(border => border.ApplyHighlight(false));
+        group.ForEach(border => border.SetHovered(false));
+    }
+
+    protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e) {
+        base.OnMouseLeftButtonDown(e);
+        ToggleSelected();
+    }
+
+    private void SetHovered(bool hovered) {
+        isHovered = hovered;
+        ApplyVisualState();
+    }
+
+    private void ToggleSelected() {
+        bool newState = !IsSelected;
+
+        if (Parent is Canvas canvas) {
+            foreach (KeyBorder otherBorder in canvas.Children.OfType<KeyBorder>()) {
+                if (otherBorder != this && !AreMerged(KeyLayoutEntry, otherBorder.KeyLayoutEntry)) {
+                    otherBorder.SetSelected(false);
+                }
+            }
+        }
+
+        GetMergedGroup().ForEach(border => border.SetSelected(newState));
+    }
+
+    private void SetSelected(bool selected) {
+        IsSelected = selected;
+        ApplyVisualState();
+    }
+
+    private void ApplyVisualState() {
+        if (IsSelected) {
+            Background = SelectedBackground;
+            BorderBrush = AccentBorderBrush;
+            BorderThickness = Scale(normalBorderThickness, HoverThicknessMultiplier);
+        } else if (isHovered) {
+            Background = NormalBackground;
+            BorderBrush = AccentBorderBrush;
+            BorderThickness = Scale(normalBorderThickness, HoverThicknessMultiplier);
+        } else {
+            Background = NormalBackground;
+            BorderBrush = NormalBorderBrush;
+            BorderThickness = normalBorderThickness;
+        }
+    }
+
+    private static Thickness Scale(Thickness thickness, double factor) {
+        return new Thickness(thickness.Left * factor, thickness.Top * factor, thickness.Right * factor, thickness.Bottom * factor);
     }
 
     private List<KeyBorder> GetMergedGroup() {
@@ -66,20 +125,6 @@ public class KeyBorder : Border {
             }
         }
         return mergedGroup;
-    }
-
-    private void ApplyHighlight(bool isHighlighted) {
-        if (isHighlighted) {
-            if (Background != HighlightBackground && BorderBrush != HighlightBorderBrush) {
-                originalBackground = Background;
-                originalBorderBrush = BorderBrush;
-            }
-            Background = HighlightBackground;
-            BorderBrush = HighlightBorderBrush;
-        } else {
-            Background = originalBackground;
-            BorderBrush = originalBorderBrush;
-        }
     }
 
     private static bool AreMerged(KeyLayoutEntry entry1, KeyLayoutEntry entry2) {
