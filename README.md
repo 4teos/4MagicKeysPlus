@@ -17,15 +17,23 @@ Originally forked from the [samartzidis/winAppleKey](https://github.com/samartzi
 - Fn layer: any key can have a separate "with Fn" rule (Home/End/Page Up/Down, Insert, Print Screen, etc. are ordinary rules now, nothing is hardcoded)
 - `FnLock`-aware rules, so the F-row media keys can behave as media keys by default or as regular function keys, with Fn flipping them
 - A small agent (`4MagicKeysPlusAgent`) that launches an application on a hotkey, and warns when the keyboard battery runs low
-- A configuration app (`4MagicKeysPlus`) that currently shows the connected keyboard, its battery/connection/Fn Lock state and highlights the remapped keys (editing is not implemented yet)
+- A configuration app (`4MagicKeysPlus`) that shows the connected keyboard, its battery/connection/Fn Lock state, highlights the remapped keys and lets you edit the rules on a picture of the keyboard. Changes are saved to the registry and applied by the driver at once, no restart needed
+
+### Planned
+
+- A screen for the launch entries (the hotkey and the application, now only set in the registry)
+- Separate settings for each keyboard, so that several keyboards can be used at the same time
+- A toggle for Fn Lock in the app
+- Application settings (theme, language)
+- An installer, and a way to store and apply the default settings
 
 ### Technical Details
 
 4MagicKeys+ consists of four parts:
 
-- **Driver** (`4MagicKeysPlusDriver`) - a HIDCLASS LowerFilter WDM kernel mode driver. It intercepts HID input at the Bluetooth (L2CAP) or USB (URB) level and transforms the 9-byte keyboard report buffer before it reaches the HID class driver. For media/brightness/volume actions it also exposes a virtual Consumer Control HID device (via VHF) that reports the corresponding usage code. All behavior comes from the rules in the registry; the driver has no built-in key tables.
+- **Driver** (`4MagicKeysPlusDriver`) - a HIDCLASS LowerFilter WDM kernel mode driver. It intercepts HID input at the Bluetooth (L2CAP) or USB (URB) level and transforms the 9-byte keyboard report buffer before it reaches the HID class driver. For media/brightness/volume actions it also exposes a virtual Consumer Control HID device (via VHF) that reports the corresponding usage code. All behavior comes from the rules in the registry; the driver has no built-in key tables. While a keyboard is connected the driver also has a control device that makes it re-read the rules without a restart (see [Applying Changes](#applying-changes)).
 - **Agent** (`4MagicKeysPlusAgent`) - a small WinForms background process (no tray icon): registers global hotkeys for the launch entries in the registry, and polls the keyboard battery.
-- **Configuration app** (`4MagicKeysPlus`) - WPF app. Needs the .NET 10 Desktop Runtime.
+- **Configuration app** (`4MagicKeysPlus`) - WPF app. Needs the .NET 10 Desktop Runtime and runs as administrator (see [Agent and Configuration App](#agent-and-configuration-app)).
 - **Core** (`4MagicKeysPlusCore`) - class library shared by the app and the agent: finds the connected keyboard over HID and reads its battery.
 
 ### Installation
@@ -60,7 +68,22 @@ bcdedit.exe -set TESTSIGNING OFF
 
 ### Agent and Configuration App
 
-Both are framework-dependent .NET 10 apps, so they need the **.NET Desktop Runtime 10** installed. There is no installer yet: copy the build output to a folder of your choice (for the agent: the `.exe`, `.dll`, `.runtimeconfig.json`, `.deps.json`, `4MagicKeysPlus.Core.dll` and the `ru` satellite folder; the configuration app needs the same kind of files plus its own). To start the agent at logon, add a string value with its full path to `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`. The configuration app only reads the registry, so it needs no elevation for now.
+Both are framework-dependent .NET 10 apps, so they need the **.NET Desktop Runtime 10** installed. There is no installer yet: copy the build output to a folder of your choice (for the agent: the `.exe`, `.dll`, `.runtimeconfig.json`, `.deps.json`, `4MagicKeysPlus.Core.dll` and the `ru` satellite folder; the configuration app needs the same kind of files plus its own). To start the agent at logon, add a string value with its full path to `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`.
+
+#### Editing rules in the configuration app
+
+The configuration app asks for administrator rights when it starts: it writes the rules under `HKEY_LOCAL_MACHINE` and talks to the driver's control device, and both need them. (When debugging it from Visual Studio, start Visual Studio as administrator.)
+
+- Click a key on the picture to select it. The panel below shows the key and its current rules; click the empty space (or the key again) to unselect it. Keys with a rule are highlighted, and a tooltip shows what they do.
+- **Set mapping** switches to picking the target: the current rules are hidden, the keys that cannot be a target are dimmed, and the keys this keyboard does not have (F20-F24, Print Screen, Home/End on the keyboard without them, ...) and the media keys (play/pause, tracks, volume, brightness) appear in a row of extra keys under the picture. Click the target, or **Cancel** (or Esc) to leave the picking.
+- **Only with Fn** makes it a rule of the Fn layer (and changes which targets are allowed; you can switch it while picking). **Follow Fn Lock** makes that rule `FnLockAware` and only applies to the Fn layer. When a key can be remapped in one layer only, the first option is fixed.
+- **Remove mapping** deletes every rule of the key, in both layers. Be careful with the F-row: removing the Fn+F8 rule also removes the media action, and there is no "reset to defaults" yet.
+- Setting a mapping replaces only the rule of the same key and layer; the key's rules of the other layer stay.
+- Every change is saved to `Parameters\Rules` and the driver is told to reload at once. The glyph at the right of the panel shows how that went: a green check, a yellow triangle (saved, but the driver did not take the rules: no keyboard is connected, the driver is too old to reload, or it ignored some rules; they are loaded when the keyboard connects), or a red cross (nothing was saved). Hover it for the details.
+
+The configuration app only edits key rules. The launch entries and `FnLock` still have to be set in the registry.
+
+All colors of the app are in `4MagicKeysPlus\Themes\Dark.xaml`; the rest of the XAML and the code only refer to those keys. A new theme has to define the same keys, which the tests check.
 
 ### Key Rules
 
@@ -118,7 +141,7 @@ Not supported: a key as the source together with modifiers (e.g. Cmd+L -> F12), 
 - If several rules have the same source, the first one found wins. If two media keys are pressed at once, the first one wins and the other one is swallowed.
 - Keys produced by Fn/Eject -> key rules are added after the key pass and are not remapped again.
 
-Rules are read once at driver load; see [Driver Settings](#driver-settings) for how to reload.
+Rules are read when a keyboard connects and when the driver is told to reload them; see [Applying Changes](#applying-changes).
 
 #### Typical rules
 
@@ -190,19 +213,62 @@ All settings are in the registry at:
 HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters
 ```
 
-Settings and rules are read once at driver load. After changing values, restart the device to reload the driver (Administrative command prompt):
+Settings and rules are read when a keyboard connects and when the driver is told to reload them (see below).
 
-```
-pnputil /restart-device /deviceid "BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&0001004c_PID&026C"
-```
+#### Applying Changes
 
-Replace the device instance ID with the appropriate one for your keyboard model. You can also disconnect/reconnect the keyboard or reboot.
+The configuration app does this for you. After changing the registry by hand, apply the changes in one of these ways:
+
+- Tell the driver to reload (below). It re-reads `FnLock` and all the rules and applies them to every connected keyboard at once.
+- Or restart the device (Administrative command prompt):
+
+  ```
+  pnputil /restart-device /deviceid "BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&0001004c_PID&026C"
+  ```
+
+  Replace the device instance ID with the appropriate one for your keyboard model. You can also disconnect/reconnect the keyboard or reboot.
+
+**Control device.** While at least one keyboard is connected, the driver has a device `\\.\4MagicKeysPlus`, open to administrators and SYSTEM only. The request `IOCTL_MKP_RELOAD_CONFIG` (`0x0022A000`, `CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_WRITE_ACCESS)`) makes the driver reload. It takes no input; the optional output is three DWORDs: the rules read, the rules the driver could interpret and the number of keyboards. The definitions are in `4MagicKeysPlusDriver\DriverInterface.h`.
+
+Open the device, send the request and close the handle at once; never keep it open. An open handle keeps the device alive after the last keyboard is gone, which blocks unloading the driver (an update then needs a reboot) and makes reloading fail the next time a keyboard connects. `CreateFile` fails with error 2 when no keyboard is connected or the driver is older than this feature, and with error 5 when not elevated.
+
+For example, from an elevated Windows PowerShell 5.1:
+
+```powershell
+Add-Type -TypeDefinition @"
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+
+public static class MagicKeysDriver {
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr security, uint disposition, uint flags, IntPtr template);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool DeviceIoControl(SafeFileHandle device, uint code, IntPtr input, uint inputSize, uint[] output, uint outputSize, out uint returned, IntPtr overlapped);
+
+    public static uint[] Reload() {
+        using (SafeFileHandle device = CreateFile(@"\\.\4MagicKeysPlus", 0x40000000, 3, IntPtr.Zero, 3, 0, IntPtr.Zero)) {
+            if (device.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+            uint[] result = new uint[3];
+            uint returned;
+            if (!DeviceIoControl(device, 0x0022A000, IntPtr.Zero, 0, result, 12, out returned, IntPtr.Zero))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            return result;
+        }
+    }
+}
+"@
+$r = [MagicKeysDriver]::Reload()
+"Rules read: $($r[0]), accepted: $($r[1]), keyboards: $($r[2])"
+```
 
 #### FnLock (DWORD)
 
 Used by rules with `FnLockAware=1` (see [How the rules are applied](#how-the-rules-are-applied)); any non-zero value means on. Does not affect rules that are not `FnLockAware`. Default: `0`.
 
-The older `KeyMap`, `ModMap` and `SpecialModMap` binary values are no longer read and can be deleted.
+The older `KeyMap`, `ModMap` and `SpecialModMap` binary values are no longer read and the driver INF no longer creates them; they can be deleted.
 
 ### HID Key Code Reference
 
@@ -288,7 +354,7 @@ Build the `4MagicKeysPlusDriver` project for x64 (Debug or Release). The driver,
 
 - Driver logic (`KeyProcessor`, compiled into the test project as plain user-mode C++): `4MagicKeysPlusDriverTests`, run from Visual Studio's Test Explorer or `vstest.console.exe` on the built DLL.
 - Agent (launch entry loading, battery notice policy): `dotnet test 4MagicKeysPlusAgentTests`.
-- Configuration app (rule decoding, tooltips, key names): `dotnet test 4MagicKeysPlusTests`.
+- Configuration app (rule decoding and encoding, editing, saving rules, tooltips, key names, theme keys): `dotnet test 4MagicKeysPlusTests`. The tests of saving use a scratch key under `HKEY_CURRENT_USER\Software\4MagicKeysPlusTests`, which they delete afterwards; they never touch the driver's rules.
 
 The Debug build of the agent accepts two test switches that are not compiled into Release: `--demo-battery <percent> [delay seconds]` shows the battery notice once and exits, `--battery-interval <seconds>` checks the battery that often and logs every reading.
 
