@@ -5,8 +5,7 @@ namespace _4MagicKeysPlus.Models;
 // Display names are the enum identifiers split into words ("LeftControl" -> "Left Control"),
 // not localized: the keys are labelled in Latin on every keyboard layout this app supports.
 public static class PhysicalKeyNames {
-    // Identifiers that don't read as words: D1 is the digit row, EqualsKey avoids the C# keyword clash.
-    private static readonly IReadOnlyDictionary<PhysicalKey, string> Overrides = new Dictionary<PhysicalKey, string> {
+    private static readonly IReadOnlyDictionary<PhysicalKey, string> overrides = new Dictionary<PhysicalKey, string> {
         [PhysicalKey.D1] = "1",
         [PhysicalKey.D2] = "2",
         [PhysicalKey.D3] = "3",
@@ -21,7 +20,7 @@ public static class PhysicalKeyNames {
     };
 
     public static string GetDisplayName(PhysicalKey key) {
-        return Overrides.TryGetValue(key, out string? name) ? name : SplitWords(key.ToString());
+        return overrides.TryGetValue(key, out string? name) ? name : SplitWords(key.ToString());
     }
 
     internal static string SplitWords(string identifier) {

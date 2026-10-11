@@ -1,0 +1,59 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Every color of the app lives in a theme dictionary like this one; the rest of the XAML and
+         the code only refer to these keys (DynamicResource / ThemeKeys). A theme must define them all. -->
+
+    <!-- Window and text -->
+    <SolidColorBrush x:Key="WindowBackground" Color="#191919"/>
+    <SolidColorBrush x:Key="TextPrimary" Color="#FBFBFB"/>
+    <SolidColorBrush x:Key="TextSecondary" Color="#9CA3AF"/>
+    <SolidColorBrush x:Key="TextDisabled" Color="#4B5563"/>
+
+    <!-- Buttons and navigation tabs -->
+    <SolidColorBrush x:Key="ControlHoverBackground" Color="#1F2937"/>
+    <SolidColorBrush x:Key="ControlCheckedBackground" Color="#374151"/>
+    <SolidColorBrush x:Key="ControlBorder" Color="#4B5563"/>
+    <SolidColorBrush x:Key="ControlActiveBorder" Color="#6B7280"/>
+
+    <!-- Status badge in the header -->
+    <SolidColorBrush x:Key="BadgeBackground" Color="#111827"/>
+    <SolidColorBrush x:Key="BadgeBorder" Color="#9CA3AF"/>
+    <SolidColorBrush x:Key="FnBadgeOnBackground" Color="#374151"/>
+    <SolidColorBrush x:Key="FnBadgeOnForeground" Color="White"/>
+    <SolidColorBrush x:Key="FnBadgeOffBackground" Color="Transparent"/>
+    <SolidColorBrush x:Key="FnBadgeOffForeground" Color="#374151"/>
+    <SolidColorBrush x:Key="BatteryLow" Color="#EF4444"/>
+    <SolidColorBrush x:Key="BatteryMedium" Color="#F59E0B"/>
+    <SolidColorBrush x:Key="BatteryGood" Color="#10B981"/>
+    <SolidColorBrush x:Key="BatteryUnknown" Color="#9CA3AF"/>
+
+    <!-- Tooltips and the key status panel -->
+    <SolidColorBrush x:Key="TooltipBackground" Color="#1F2937"/>
+    <SolidColorBrush x:Key="TooltipBorder" Color="#4B5563"/>
+    <SolidColorBrush x:Key="TooltipForeground" Color="#FBFBFB"/>
+    <SolidColorBrush x:Key="PanelBackground" Color="#1F2937"/>
+    <SolidColorBrush x:Key="PanelBorder" Color="#4B5563"/>
+
+    <!-- Check boxes -->
+    <SolidColorBrush x:Key="CheckBoxBackground" Color="#111827"/>
+    <SolidColorBrush x:Key="CheckBoxBorder" Color="#9CA3AF"/>
+    <SolidColorBrush x:Key="CheckBoxHoverBorder" Color="#FBFBFB"/>
+    <SolidColorBrush x:Key="CheckBoxMark" Color="#FBFBFB"/>
+    <SolidColorBrush x:Key="CheckBoxCheckedBackground" Color="#10B981"/>
+    <SolidColorBrush x:Key="CheckBoxCheckedBorder" Color="#10B981"/>
+    <SolidColorBrush x:Key="CheckBoxDisabledBackground" Color="#1F2937"/>
+    <SolidColorBrush x:Key="CheckBoxDisabledBorder" Color="#374151"/>
+    <SolidColorBrush x:Key="CheckBoxDisabledMark" Color="#4B5563"/>
+
+    <!-- Keyboard picture -->
+    <SolidColorBrush x:Key="KeyboardBodyBackground" Color="Silver"/>
+    <SolidColorBrush x:Key="KeyBackground" Color="White"/>
+    <SolidColorBrush x:Key="KeyBorder" Color="#9CA3AF"/>
+    <SolidColorBrush x:Key="KeyForeground" Color="Black"/>
+    <SolidColorBrush x:Key="KeyRemappedForeground" Color="#B45309"/>
+    <SolidColorBrush x:Key="KeyAccentBorder" Color="#10B981"/>
+    <SolidColorBrush x:Key="KeySelectedBackground" Color="#D1FAE5"/>
+    <SolidColorBrush x:Key="KeyDisabledBackground" Color="#8B9098"/>
+    <SolidColorBrush x:Key="KeyDisabledBorder" Color="#6B7280"/>
+    <SolidColorBrush x:Key="KeyDisabledForeground" Color="#4B5563"/>
+</ResourceDictionary>

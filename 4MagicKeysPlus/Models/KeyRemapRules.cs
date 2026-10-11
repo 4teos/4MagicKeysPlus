@@ -33,12 +33,16 @@ public static class KeyRemapRules {
 
     private static readonly IReadOnlyList<PhysicalKey> NavigationTargets = [.. Navigation, PhysicalKey.Insert];
 
-    public static bool CanRemap(PhysicalKey source) {
-        return GetCandidates(source).Count > 0;
+    // What a key can be remapped to while Fn is held. Any key but the modifiers and Fn/Eject can be
+    // a source; the targets are the keys Apple keyboards lack.
+    private static readonly IReadOnlyList<PhysicalKey> FnLayerTargets = [.. NavigationTargets.Union(ExtendedTargets)];
+
+    public static bool CanRemap(PhysicalKey source, bool fnLayer = false) {
+        return GetCandidates(source, fnLayer).Count > 0;
     }
 
-    public static IReadOnlyList<PhysicalKey> GetAllowedTargets(PhysicalKey source) {
-        return GetCandidates(source).Where(target => target != source).ToList();
+    public static IReadOnlyList<RemapTarget> GetAllowedTargets(PhysicalKey source, bool fnLayer = false) {
+        return GetCandidates(source, fnLayer).Where(target => target != source).ToList();
     }
 
     // The key the source is remapped to on the base layer (no Fn), or null when it is not remapped
@@ -63,26 +67,40 @@ public static class KeyRemapRules {
         return null;
     }
 
-    private static IReadOnlyList<PhysicalKey> GetCandidates(PhysicalKey source) {
+    // Only a key source can send a media usage: the driver has no rule shape for a modifier or
+    // Fn/Eject source with a consumer target.
+    private static IReadOnlyList<RemapTarget> GetCandidates(PhysicalKey source, bool fnLayer) {
+        if (fnLayer) {
+            bool isKey = source != PhysicalKey.None && !Modifiers.Contains(source) && !VirtualKeys.Contains(source);
+            return isKey ? KeysAndMedia(FnLayerTargets) : [];
+        }
         if (Modifiers.Contains(source)) {
-            return ModifierTargets;
+            return Keys(ModifierTargets);
         }
         if (VirtualKeys.Contains(source)) {
-            return VirtualKeyTargets;
+            return Keys(VirtualKeyTargets);
         }
         if (Typing.Contains(source)) {
-            return Typing;
+            return KeysAndMedia(Typing);
         }
         if (Navigation.Contains(source)) {
-            return NavigationTargets;
+            return KeysAndMedia(NavigationTargets);
         }
         if (ExtendedSources.Contains(source)) {
-            return ExtendedTargets;
+            return KeysAndMedia(ExtendedTargets);
         }
         if (source == PhysicalKey.NumPadEquals) {
             return [PhysicalKey.EqualsKey];
         }
         return [];
+    }
+
+    private static List<RemapTarget> Keys(IEnumerable<PhysicalKey> keys) {
+        return [.. keys.Select(key => (RemapTarget)key)];
+    }
+
+    private static List<RemapTarget> KeysAndMedia(IEnumerable<PhysicalKey> keys) {
+        return [.. Keys(keys), .. ConsumerUsageNames.Usages.Select(RemapTarget.Media)];
     }
 
     private static List<PhysicalKey> KeysInRange(PhysicalKey first, PhysicalKey last) {

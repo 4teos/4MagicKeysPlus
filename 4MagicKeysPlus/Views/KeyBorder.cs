@@ -1,23 +1,18 @@
 ﻿using _4MagicKeysPlus.Models;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
 namespace _4MagicKeysPlus.Views;
 
 public class KeyBorder : Border {
-    private static readonly BrushConverter BrushConverter = new();
-
-    private static readonly Brush NormalBackground = Brushes.White;
-    private static readonly Brush NormalBorderBrush = (Brush)BrushConverter.ConvertFrom("#9CA3AF")!;
-    private static readonly Brush AccentBorderBrush = (Brush)BrushConverter.ConvertFrom("#10B981")!;
-    private static readonly Brush SelectedBackground = (Brush)BrushConverter.ConvertFrom("#D1FAE5")!;
-
     private const double HoverThicknessMultiplier = 2;
 
     private Thickness normalBorderThickness = new(1);
     private bool isHovered;
+    private bool looksDisabled;
     private List<KeyBorder>? mergedGroup;
 
     public KeyBorder() : this(new KeyLayoutEntry(PhysicalKey.None, "")) {
@@ -25,17 +20,35 @@ public class KeyBorder : Border {
 
     public KeyBorder(KeyLayoutEntry keyLayoutEntry) : base() {
         KeyLayoutEntry = keyLayoutEntry;
-        Background = NormalBackground;
-        BorderBrush = NormalBorderBrush;
-        BorderThickness = normalBorderThickness;
+        ApplyVisualState();
     }
+
+    public event EventHandler? Clicked;
 
     public KeyLayoutEntry KeyLayoutEntry {
         get;
     }
 
+    // A key that is not interactive reacts neither to the mouse nor to clicks.
+    public bool IsInteractive {
+        get; set;
+    } = true;
+
+    public bool LooksDisabled {
+        get => looksDisabled;
+        set {
+            looksDisabled = value;
+            ApplyVisualState();
+        }
+    }
+
     public bool IsSelected {
         get; private set;
+    }
+
+    public void SetSelected(bool selected) {
+        IsSelected = selected;
+        ApplyVisualState();
     }
 
     public Thickness NormalBorderThickness {
@@ -48,11 +61,17 @@ public class KeyBorder : Border {
 
     protected override void OnMouseEnter(MouseEventArgs e) {
         base.OnMouseEnter(e);
+        if (!IsInteractive) {
+            return;
+        }
         GetMergedGroup().ForEach(border => border.SetHovered(true));
     }
 
     protected override void OnMouseLeave(MouseEventArgs e) {
         base.OnMouseLeave(e);
+        if (!IsInteractive) {
+            return;
+        }
 
         List<KeyBorder> group = GetMergedGroup();
         if (group.Any(border => border.IsMouseOver)) {
@@ -64,7 +83,9 @@ public class KeyBorder : Border {
 
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e) {
         base.OnMouseLeftButtonDown(e);
-        ToggleSelected();
+        if (IsInteractive) {
+            Clicked?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void SetHovered(bool hovered) {
@@ -72,39 +93,35 @@ public class KeyBorder : Border {
         ApplyVisualState();
     }
 
-    private void ToggleSelected() {
-        bool newState = !IsSelected;
-
-        if (Parent is Canvas canvas) {
-            foreach (KeyBorder otherBorder in canvas.Children.OfType<KeyBorder>()) {
-                if (otherBorder != this && !AreMerged(KeyLayoutEntry, otherBorder.KeyLayoutEntry)) {
-                    otherBorder.SetSelected(false);
-                }
-            }
-        }
-
-        GetMergedGroup().ForEach(border => border.SetSelected(newState));
-    }
-
-    private void SetSelected(bool selected) {
-        IsSelected = selected;
-        ApplyVisualState();
-    }
-
     private void ApplyVisualState() {
-        if (IsSelected) {
-            Background = SelectedBackground;
-            BorderBrush = AccentBorderBrush;
-            BorderThickness = Scale(normalBorderThickness, HoverThicknessMultiplier);
-        } else if (isHovered) {
-            Background = NormalBackground;
-            BorderBrush = AccentBorderBrush;
-            BorderThickness = Scale(normalBorderThickness, HoverThicknessMultiplier);
+        bool emphasized = false;
+
+        if (looksDisabled) {
+            SetBrushes(ThemeKeys.KeyDisabledBackground, ThemeKeys.KeyDisabledBorder, ThemeKeys.KeyDisabledForeground);
         } else {
-            Background = NormalBackground;
-            BorderBrush = NormalBorderBrush;
-            BorderThickness = normalBorderThickness;
+            emphasized = IsSelected || isHovered;
+            SetBrushes(
+                IsSelected ? ThemeKeys.KeySelectedBackground : ThemeKeys.KeyBackground,
+                emphasized ? ThemeKeys.KeyAccentBorder : ThemeKeys.KeyBorder,
+                ThemeKeys.KeyForeground);
         }
+
+        // The thicker border grows inward: the padding gives up exactly what the border takes, so
+        // the key and its content neither resize nor move.
+        Thickness thickest = Scale(normalBorderThickness, HoverThicknessMultiplier);
+        BorderThickness = emphasized ? thickest : normalBorderThickness;
+        Padding = new Thickness(
+            thickest.Left - BorderThickness.Left,
+            thickest.Top - BorderThickness.Top,
+            thickest.Right - BorderThickness.Right,
+            thickest.Bottom - BorderThickness.Bottom);
+    }
+
+    // Resource references, not brushes, so that the key follows a theme switch.
+    private void SetBrushes(string background, string border, string foreground) {
+        SetResourceReference(BackgroundProperty, background);
+        SetResourceReference(BorderBrushProperty, border);
+        SetResourceReference(TextElement.ForegroundProperty, foreground);
     }
 
     private static Thickness Scale(Thickness thickness, double factor) {

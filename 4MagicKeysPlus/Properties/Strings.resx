@@ -60,4 +60,37 @@
   <data name="KeysModel_MagicKeyboardWithNumpad" xml:space="preserve">
     <value>Magic Keyboard with Numeric Keypad (A1843)</value>
   </data>
+  <data name="KeyActionSetMapping" xml:space="preserve">
+    <value>Set mapping</value>
+  </data>
+  <data name="KeyActionRemoveMapping" xml:space="preserve">
+    <value>Remove mapping</value>
+  </data>
+  <data name="KeyActionCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="KeyOptionWithFn" xml:space="preserve">
+    <value>Only with Fn</value>
+  </data>
+  <data name="KeyOptionFollowFnLock" xml:space="preserve">
+    <value>Follow Fn Lock</value>
+  </data>
+  <data name="KeyOptionFollowFnLockHint" xml:space="preserve">
+    <value>When Fn Lock is off, the mapping works without Fn instead</value>
+  </data>
+  <data name="KeyNotRemapped" xml:space="preserve">
+    <value>Not remapped</value>
+  </data>
+  <data name="KeyCannotRemap" xml:space="preserve">
+    <value>This key can't be remapped</value>
+  </data>
+  <data name="KeyPickPrompt" xml:space="preserve">
+    <value>Pick the key to map to</value>
+  </data>
+  <data name="KeyRuleWithFn" xml:space="preserve">
+    <value>With Fn</value>
+  </data>
+  <data name="KeyRuleFollowsFnLock" xml:space="preserve">
+    <value>follows Fn Lock</value>
+  </data>
 </root>

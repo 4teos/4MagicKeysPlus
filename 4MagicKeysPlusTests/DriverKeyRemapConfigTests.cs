@@ -1,4 +1,6 @@
 using _4MagicKeysPlus.Models;
+using _4MagicKeysPlus.Services;
+using _4MagicKeysPlus.ViewModels;
 
 namespace _4MagicKeysPlusTests;
 
@@ -66,5 +68,50 @@ public class DriverKeyRemapConfigTests {
         KeyRule rule = _4MagicKeysPlus.Services.DriverConfigParser.ParseRule(0x68, 0x00030046, false)!;
 
         Assert.Equal("Left Control + Left Shift + Print Screen", rule.DescribeTarget());
+    }
+
+    [Fact]
+    public void WithRule_ReplacesOnlyTheRuleOfTheSameLayer() {
+        DriverKeyRemapConfig config = UserRules.Config(fnLockEnabled: true);
+        KeyRule plainLeft = DriverRuleEncoder.CreateRule(PhysicalKey.Left, PhysicalKey.Up, fnLayer: false, fnLockAware: false)!;
+
+        DriverKeyRemapConfig edited = config.WithRule(plainLeft).WithRule(
+            DriverRuleEncoder.CreateRule(PhysicalKey.Left, PhysicalKey.Down, fnLayer: false, fnLockAware: false)!);
+
+        Assert.Equal(config.Rules.Count + 1, edited.Rules.Count);
+        Assert.Equal(new[] { "Fn: Home", "Down" }, edited.DescribeTargets(PhysicalKey.Left));
+    }
+
+    [Fact]
+    public void WithoutRules_RemovesEveryLayerOfTheKey() {
+        DriverKeyRemapConfig config = UserRules.Config(fnLockEnabled: true);
+
+        DriverKeyRemapConfig edited = config.WithoutRules(PhysicalKey.F8);
+
+        Assert.False(edited.HasRules(PhysicalKey.F8));
+        Assert.Equal(config.Rules.Count - 1, edited.Rules.Count);
+        Assert.True(edited.HasRules(PhysicalKey.F7));
+    }
+
+    [Fact]
+    public void Editor_KeepsEditsAndLeavesTheOtherLayerAlone() {
+        KeyRemapEditor editor = new(UserRules.Config(fnLockEnabled: true).Rules);
+
+        editor.SetMapping(PhysicalKey.Left, PhysicalKey.F20, fnLayer: false, fnLockAware: false);
+
+        Assert.Equal(26, editor.Rules.Count);
+        Assert.Equal(PhysicalKey.F20, KeyRemapRules.GetCurrentTarget(new DriverKeyRemapConfig(editor.Rules, true), PhysicalKey.Left));
+        Assert.Contains(editor.Rules, rule => rule.FnLayer && rule.Source.Contains(PhysicalKey.Left));
+
+        editor.RemoveMappings(PhysicalKey.Left);
+
+        Assert.Equal(24, editor.Rules.Count);
+    }
+
+    [Fact]
+    public void Editor_RefusesAMappingTheDriverWouldDrop() {
+        KeyRemapEditor editor = new([]);
+
+        Assert.Throws<InvalidOperationException>(() => editor.SetMapping(PhysicalKey.A, PhysicalKey.Fn, fnLayer: false, fnLockAware: false));
     }
 }

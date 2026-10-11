@@ -37,6 +37,10 @@ public static class PhysicalKeyHidMap {
         return PhysicalKey.None;
     }
 
+    public static bool IsModifier(PhysicalKey physicalKey) {
+        return ModifiersByPhysicalKey.ContainsKey(physicalKey);
+    }
+
     public static byte GetKeyByte(PhysicalKey physicalKey) {
         return (byte)physicalKey;
     }

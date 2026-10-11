@@ -104,6 +104,72 @@ public static class Strings
         }
     }
 
+    public static string KeyActionSetMapping {
+        get {
+            return Get(nameof(KeyActionSetMapping));
+        }
+    }
+
+    public static string KeyActionRemoveMapping {
+        get {
+            return Get(nameof(KeyActionRemoveMapping));
+        }
+    }
+
+    public static string KeyActionCancel {
+        get {
+            return Get(nameof(KeyActionCancel));
+        }
+    }
+
+    public static string KeyOptionWithFn {
+        get {
+            return Get(nameof(KeyOptionWithFn));
+        }
+    }
+
+    public static string KeyOptionFollowFnLock {
+        get {
+            return Get(nameof(KeyOptionFollowFnLock));
+        }
+    }
+
+    public static string KeyOptionFollowFnLockHint {
+        get {
+            return Get(nameof(KeyOptionFollowFnLockHint));
+        }
+    }
+
+    public static string KeyNotRemapped {
+        get {
+            return Get(nameof(KeyNotRemapped));
+        }
+    }
+
+    public static string KeyCannotRemap {
+        get {
+            return Get(nameof(KeyCannotRemap));
+        }
+    }
+
+    public static string KeyPickPrompt {
+        get {
+            return Get(nameof(KeyPickPrompt));
+        }
+    }
+
+    public static string KeyRuleWithFn {
+        get {
+            return Get(nameof(KeyRuleWithFn));
+        }
+    }
+
+    public static string KeyRuleFollowsFnLock {
+        get {
+            return Get(nameof(KeyRuleFollowsFnLock));
+        }
+    }
+
     private static string Get(string key) {
         return ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
     }

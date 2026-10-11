@@ -13,6 +13,12 @@ public sealed record KeyRule(
     int? ConsumerUsage,
     bool FnLockAware) {
 
+    // The rule's subkey under Parameters\Rules, when it was read from the registry. Saving has to
+    // delete that very subkey, whatever it is called.
+    public string? RegistryName {
+        get; init;
+    }
+
     public string DescribeTarget() {
         if (ConsumerUsage is int usage) {
             return ConsumerUsageNames.Get(usage);
@@ -29,13 +35,26 @@ public sealed record KeyRule(
 }
 
 public sealed record DriverKeyRemapConfig(IReadOnlyList<KeyRule> Rules, bool FnLockEnabled) {
-
     public IReadOnlySet<PhysicalKey> GetRemappedKeys() {
         HashSet<PhysicalKey> keys = [];
         foreach (KeyRule rule in Rules) {
             keys.UnionWith(rule.Source);
         }
         return keys;
+    }
+
+    public bool HasRules(PhysicalKey key) {
+        return Rules.Any(rule => rule.Source.Contains(key));
+    }
+
+    // Replaces the rule of the same source and layer, leaving the key's rules of the other layer alone.
+    public DriverKeyRemapConfig WithRule(KeyRule rule) {
+        List<KeyRule> rules = [.. Rules.Where(existing => existing.FnLayer != rule.FnLayer || !existing.Source.SetEquals(rule.Source)), rule];
+        return this with { Rules = rules };
+    }
+
+    public DriverKeyRemapConfig WithoutRules(PhysicalKey key) {
+        return this with { Rules = [.. Rules.Where(rule => !rule.Source.Contains(key))] };
     }
 
     // Gets tooltip text with the rule target for the key. A Fn-layer rule is marked "Fn: "

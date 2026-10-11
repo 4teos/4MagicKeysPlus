@@ -5,17 +5,63 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:properties="clr-namespace:_4MagicKeysPlus.Properties"
              mc:Ignorable="d">
-    <StackPanel>
-        <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Center" VerticalAlignment="Top">
-            <Border CornerRadius="12" Background="Silver">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" MinHeight="80"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Viewbox x:Name="KeyboardViewbox" Grid.Row="0" SizeChanged="KeyboardViewbox_SizeChanged" Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <Border CornerRadius="12" Background="{DynamicResource KeyboardBodyBackground}">
                 <Canvas x:Name="KeysCanvas" Margin="8" />
             </Border>
         </Viewbox>
-        <TextBlock x:Name="PlaceholderNotice" Visibility="Collapsed" Foreground="#9CA3AF" FontStyle="Italic"
-                   TextWrapping="Wrap" Margin="12"/>
-        <StackPanel Orientation="Horizontal" Margin="16">
-            <TextBlock Text="{x:Static properties:Strings.KeysModelLabel}" VerticalAlignment="Center" Margin="8"/>
-            <ComboBox x:Name="ModelSelector" Width="300" SelectionChanged="ModelSelector_SelectionChanged" DisplayMemberPath="DeviceDescription" />
+
+        <StackPanel x:Name="VirtualKeysHost" Grid.Row="1" Visibility="Collapsed"
+                    HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0">
+            <WrapPanel x:Name="VirtualKeysPanel"/>
         </StackPanel>
-    </StackPanel>
+
+        <Border x:Name="StatusPanel" Grid.Row="2" Visibility="Collapsed" HorizontalAlignment="Center" MinWidth="880"
+                Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="8" Padding="16,12">
+            <StackPanel Orientation="Horizontal">
+                <ContentControl x:Name="PanelKeyHost" VerticalAlignment="Center" Margin="0,0,16,0"/>
+
+                <StackPanel VerticalAlignment="Center" MinWidth="230" Margin="0,0,24,0">
+                    <TextBlock x:Name="PanelKeyName" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock x:Name="PanelMapping" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <StackPanel x:Name="PanelOptions" VerticalAlignment="Center" Margin="0,0,24,0">
+                    <CheckBox x:Name="WithFnCheck" Content="{x:Static properties:Strings.KeyOptionWithFn}"
+                              Style="{StaticResource PanelCheckBoxStyle}" Click="WithFnCheck_Click"/>
+                    <CheckBox x:Name="FollowFnLockCheck" Content="{x:Static properties:Strings.KeyOptionFollowFnLock}"
+                              ToolTip="{x:Static properties:Strings.KeyOptionFollowFnLockHint}"
+                              Style="{StaticResource PanelCheckBoxStyle}" ToolTipService.ShowOnDisabled="True"
+                              Margin="0,6,0,0" Click="FollowFnLockCheck_Click"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="SetButton" Content="{x:Static properties:Strings.KeyActionSetMapping}"
+                            Style="{StaticResource PanelButtonStyle}" Click="SetButton_Click"/>
+                    <Button x:Name="RemoveButton" Content="{x:Static properties:Strings.KeyActionRemoveMapping}"
+                            Style="{StaticResource PanelButtonStyle}" Margin="8,0,0,0" Click="RemoveButton_Click"/>
+                    <Button x:Name="CancelButton" Content="{x:Static properties:Strings.KeyActionCancel}"
+                            Style="{StaticResource PanelButtonStyle}" Visibility="Collapsed" Click="CancelButton_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <StackPanel Grid.Row="4">
+            <TextBlock x:Name="PlaceholderNotice" Visibility="Collapsed" Foreground="{DynamicResource TextSecondary}" FontStyle="Italic"
+                       TextWrapping="Wrap" Margin="12"/>
+            <StackPanel Orientation="Horizontal" Margin="16">
+                <TextBlock Text="{x:Static properties:Strings.KeysModelLabel}" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8"/>
+                <ComboBox x:Name="ModelSelector" Width="300" SelectionChanged="ModelSelector_SelectionChanged" DisplayMemberPath="DeviceDescription" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
 </UserControl>

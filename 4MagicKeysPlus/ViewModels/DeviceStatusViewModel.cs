@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows.Media;
 using System.Windows.Threading;
 using _4MagicKeysPlus.Core;
 using _4MagicKeysPlus.Models;
@@ -11,27 +10,23 @@ using _4MagicKeysPlus.Views;
 
 namespace _4MagicKeysPlus.ViewModels;
 
+public enum BatteryState {
+    Unknown,
+    Low,
+    Medium,
+    Good,
+}
+
 // Lives for the whole app session (owned by MainWindow), not per-navigation-visit like the old
 // per-screen view models - the header needs to show live status regardless of which page is open.
 public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
-    private static readonly SolidColorBrush LowBatteryBrush = new(Color.FromRgb(0xEF, 0x44, 0x44));
-    private static readonly SolidColorBrush MediumBatteryBrush = new(Color.FromRgb(0xF5, 0x9E, 0x0B));
-    private static readonly SolidColorBrush GoodBatteryBrush = new(Color.FromRgb(0x10, 0xB9, 0x81));
-    private static readonly SolidColorBrush UnknownBatteryBrush = new(Color.FromRgb(0x9C, 0xA3, 0xAF));
-    private static readonly SolidColorBrush FnLockOnBackground = new(Color.FromRgb(0x37, 0x41, 0x51));
-    private static readonly SolidColorBrush FnLockOffBackground = Brushes.Transparent;
-    private static readonly SolidColorBrush FnLockOnForeground = Brushes.White;
-    private static readonly SolidColorBrush FnLockOffForeground = new(Color.FromRgb(0x37, 0x41, 0x51));
-
     private readonly DispatcherTimer timer;
     private DetectedKeyboard? detectedKeyboard;
     private string deviceName = Strings.DeviceNotDetected;
     private string connectionGlyph = "";
     private string batteryGlyph = Glyphs.BatteryLevel(0);
-    private Brush batteryColor = UnknownBatteryBrush;
+    private BatteryState batteryState = BatteryState.Unknown;
     private bool fnLockEnabled;
-    private Brush fnLockBackground = FnLockOffBackground;
-    private Brush fnLockForeground = FnLockOffForeground;
     private string statusTooltip = "";
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -59,24 +54,14 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
         private set => SetField(ref batteryGlyph, value);
     }
 
-    public Brush BatteryColor {
-        get => batteryColor;
-        private set => SetField(ref batteryColor, value);
+    public BatteryState BatteryState {
+        get => batteryState;
+        private set => SetField(ref batteryState, value);
     }
 
     public bool FnLockEnabled {
         get => fnLockEnabled;
         private set => SetField(ref fnLockEnabled, value);
-    }
-
-    public Brush FnLockBackground {
-        get => fnLockBackground;
-        private set => SetField(ref fnLockBackground, value);
-    }
-
-    public Brush FnLockForeground {
-        get => fnLockForeground;
-        private set => SetField(ref fnLockForeground, value);
     }
 
     public string StatusTooltip {
@@ -106,16 +91,14 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
         BatteryGlyph = status == null
             ? Glyphs.BatteryLevel(0)
             : status.IsCharging ? Glyphs.BatteryCharging : Glyphs.BatteryLevel(status.Percent);
-        BatteryColor = status switch {
-            null => UnknownBatteryBrush,
-            { Percent: <= 20 } => LowBatteryBrush,
-            { Percent: <= 50 } => MediumBatteryBrush,
-            _ => GoodBatteryBrush,
+        BatteryState = status switch {
+            null => BatteryState.Unknown,
+            { Percent: <= 20 } => BatteryState.Low,
+            { Percent: <= 50 } => BatteryState.Medium,
+            _ => BatteryState.Good,
         };
 
         FnLockEnabled = fnLock;
-        FnLockBackground = fnLock ? FnLockOnBackground : FnLockOffBackground;
-        FnLockForeground = fnLock ? FnLockOnForeground : FnLockOffForeground;
 
         string batteryValue = status == null
             ? "—"

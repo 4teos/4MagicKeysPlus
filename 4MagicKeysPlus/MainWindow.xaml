@@ -15,7 +15,7 @@
         MinWidth="1100"
         MaxWidth="1600"
         WindowStyle="None"
-        Background="#191919">
+        Background="{DynamicResource WindowBackground}">
 
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome />
@@ -29,23 +29,23 @@
         </Grid.RowDefinitions>
 
         <TextBlock Text="4MagicKeys+" VerticalAlignment="Center" Margin="15,0,15,0"
-                       FontSize="12" Foreground="#FBFBFB" />
+                       FontSize="12" Foreground="{DynamicResource TextPrimary}" />
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="4">
             <Button Content="—" Width="24" Height="24" Click="MinimizeButton_Click"
-                        Background="Transparent" BorderThickness="0" Foreground="#FBFBFB"
+                        Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextPrimary}"
                         shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
 
             <Button Content="✕" Width="24" Height="24" Click="CloseButton_Click"
-                        Background="Transparent" BorderThickness="0" Foreground="#FBFBFB"
+                        Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextPrimary}"
                         shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
         </StackPanel>
 
         <TextBlock Grid.Row="1" Text="{Binding DeviceName}" FontSize="24"
-                           FontWeight="SemiBold" Foreground="#FBFBFB" Margin="14,0"/>
+                           FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="14,0"/>
 
         <StackPanel x:Name="rightSide" Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Border BorderBrush="#9CA3AF" BorderThickness="1" Background="#111827" Padding="8,4" CornerRadius="4" Margin="24,0"
+            <Border BorderBrush="{DynamicResource BadgeBorder}" BorderThickness="1" Background="{DynamicResource BadgeBackground}" Padding="8,4" CornerRadius="4" Margin="24,0"
                     ToolTipService.InitialShowDelay="0"
                     ToolTipService.BetweenShowDelay="0">
                 <Border.ToolTip>
@@ -54,14 +54,52 @@
 
                 <StackPanel x:Name="status" Orientation="Horizontal" HorizontalAlignment="Right">
                     <TextBlock Text="{Binding ConnectionGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="24"
-                           Foreground="#FBFBFB" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                           Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
                     <TextBlock Text="{Binding BatteryGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="24"
-                           Foreground="{Binding BatteryColor}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                           VerticalAlignment="Center" Margin="0,0,10,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource BatteryUnknown}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding BatteryState}" Value="Low">
+                                        <Setter Property="Foreground" Value="{DynamicResource BatteryLow}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding BatteryState}" Value="Medium">
+                                        <Setter Property="Foreground" Value="{DynamicResource BatteryMedium}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding BatteryState}" Value="Good">
+                                        <Setter Property="Foreground" Value="{DynamicResource BatteryGood}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
 
-                    <Border Background="{Binding FnLockBackground}" BorderBrush="#9CA3AF" BorderThickness="1"
+                    <Border BorderBrush="{DynamicResource BadgeBorder}" BorderThickness="1"
                         CornerRadius="4" Padding="5,2" VerticalAlignment="Center">
-                        <TextBlock Text="Fn" FontSize="11" FontWeight="Bold" Foreground="{Binding FnLockForeground}"/>
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{DynamicResource FnBadgeOffBackground}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding FnLockEnabled}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource FnBadgeOnBackground}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="Fn" FontSize="11" FontWeight="Bold">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource FnBadgeOffForeground}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding FnLockEnabled}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource FnBadgeOnForeground}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </Border>
                 </StackPanel>
             </Border>
@@ -79,6 +117,7 @@
             </StackPanel>
         </StackPanel>
 
-        <ContentControl Grid.Row="2" x:Name="MainContent" Margin="24,96,24,24"/>
+        <ContentControl Grid.Row="2" x:Name="MainContent" Margin="24,96,24,24"
+                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     </Grid>
 </Window>

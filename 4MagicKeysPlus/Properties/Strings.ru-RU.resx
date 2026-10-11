@@ -60,4 +60,37 @@
   <data name="KeysModel_MagicKeyboardWithNumpad" xml:space="preserve">
     <value>Magic Keyboard с цифровым блоком (A1843)</value>
   </data>
+  <data name="KeyActionSetMapping" xml:space="preserve">
+    <value>Задать маппинг</value>
+  </data>
+  <data name="KeyActionRemoveMapping" xml:space="preserve">
+    <value>Убрать маппинг</value>
+  </data>
+  <data name="KeyActionCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="KeyOptionWithFn" xml:space="preserve">
+    <value>Только с Fn</value>
+  </data>
+  <data name="KeyOptionFollowFnLock" xml:space="preserve">
+    <value>Учитывать Fn Lock</value>
+  </data>
+  <data name="KeyOptionFollowFnLockHint" xml:space="preserve">
+    <value>Когда Fn Lock выключен, маппинг работает без Fn</value>
+  </data>
+  <data name="KeyNotRemapped" xml:space="preserve">
+    <value>Не назначено</value>
+  </data>
+  <data name="KeyCannotRemap" xml:space="preserve">
+    <value>Эту клавишу нельзя переназначить</value>
+  </data>
+  <data name="KeyPickPrompt" xml:space="preserve">
+    <value>Выберите клавишу, на которую назначить</value>
+  </data>
+  <data name="KeyRuleWithFn" xml:space="preserve">
+    <value>С Fn</value>
+  </data>
+  <data name="KeyRuleFollowsFnLock" xml:space="preserve">
+    <value>учитывает Fn Lock</value>
+  </data>
 </root>

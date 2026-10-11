@@ -18,4 +18,19 @@ public static class Glyphs {
         int index = Math.Clamp(percent / 10, 0, BatteryLevels.Length - 1);
         return BatteryLevels[index];
     }
+
+    // Media targets of the remap editor (checked by rendering them); null for an unknown usage.
+    public static string? ForConsumerUsage(int usage) {
+        return usage switch {
+            0xB6 => "\uE892",
+            0xCD => "\uE768\uE769",
+            0xB5 => "\uE893",
+            0xE2 => "\uE74F",
+            0xEA => "\uE993",
+            0xE9 => "\uE995",
+            0x70 => "\uE706\uE70D",
+            0x6F => "\uE706\uE70E",
+            _ => null,
+        };
+    }
 }
