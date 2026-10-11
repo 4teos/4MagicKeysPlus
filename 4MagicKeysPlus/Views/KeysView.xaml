@@ -25,9 +25,9 @@
             <WrapPanel x:Name="VirtualKeysPanel"/>
         </StackPanel>
 
-        <Border x:Name="StatusPanel" Grid.Row="2" Visibility="Collapsed" HorizontalAlignment="Center" MinWidth="880"
+        <Border x:Name="StatusPanel" Grid.Row="2" Visibility="Collapsed" HorizontalAlignment="Center" MinWidth="920" MouseLeftButtonDown="StatusPanel_MouseLeftButtonDown"
                 Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="8" Padding="16,12">
-            <StackPanel Orientation="Horizontal">
+            <DockPanel LastChildFill="False">
                 <ContentControl x:Name="PanelKeyHost" VerticalAlignment="Center" Margin="0,0,16,0"/>
 
                 <StackPanel VerticalAlignment="Center" MinWidth="230" Margin="0,0,24,0">
@@ -52,7 +52,10 @@
                     <Button x:Name="CancelButton" Content="{x:Static properties:Strings.KeyActionCancel}"
                             Style="{StaticResource PanelButtonStyle}" Visibility="Collapsed" Click="CancelButton_Click"/>
                 </StackPanel>
-            </StackPanel>
+
+                <TextBlock x:Name="ResultGlyph" FontFamily="Segoe MDL2 Assets" FontSize="22" Width="28" TextAlignment="Center"
+                           Margin="12,0,0,0" VerticalAlignment="Center" Visibility="Hidden" DockPanel.Dock="Right"/>
+            </DockPanel>
         </Border>
 
         <StackPanel Grid.Row="4">

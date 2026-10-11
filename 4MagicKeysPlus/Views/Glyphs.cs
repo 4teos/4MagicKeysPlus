@@ -19,6 +19,11 @@ public static class Glyphs {
         return BatteryLevels[index];
     }
 
+    // Outcome of applying a mapping (filled circle with a check, warning triangle, filled circle with a cross).
+    public const string ResultSuccess = "\uEC61";
+    public const string ResultWarning = "\uE814";
+    public const string ResultError = "\uEB90";
+
     // Media targets of the remap editor (checked by rendering them); null for an unknown usage.
     public static string? ForConsumerUsage(int usage) {
         return usage switch {

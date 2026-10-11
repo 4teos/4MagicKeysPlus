@@ -93,4 +93,19 @@
   <data name="KeyRuleFollowsFnLock" xml:space="preserve">
     <value>follows Fn Lock</value>
   </data>
+  <data name="ApplyApplied" xml:space="preserve">
+    <value>Applied</value>
+  </data>
+  <data name="ApplyIgnored" xml:space="preserve">
+    <value>Saved, but the driver ignored {0} rule(s)</value>
+  </data>
+  <data name="ApplySavedNotApplied" xml:space="preserve">
+    <value>Saved. The driver will apply it when the keyboard connects.</value>
+  </data>
+  <data name="ApplyDriverError" xml:space="preserve">
+    <value>Saved, but the driver could not be reached: {0}</value>
+  </data>
+  <data name="ApplySaveFailed" xml:space="preserve">
+    <value>Could not save: {0}</value>
+  </data>
 </root>

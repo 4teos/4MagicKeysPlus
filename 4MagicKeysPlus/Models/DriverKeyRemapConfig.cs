@@ -19,6 +19,15 @@ public sealed record KeyRule(
         get; init;
     }
 
+    // The values the rule was decoded from (or encoded to): saving writes them back as they are.
+    public uint RawSource {
+        get; init;
+    }
+
+    public uint RawTarget {
+        get; init;
+    }
+
     public string DescribeTarget() {
         if (ConsumerUsage is int usage) {
             return ConsumerUsageNames.Get(usage);

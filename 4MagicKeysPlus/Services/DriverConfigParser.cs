@@ -72,11 +72,11 @@ internal static class DriverConfigParser {
         }
 
         if (targetConsumer) {
-            return new KeyRule(sourceKeys, sourceFn, PhysicalKey.None, 0, new HashSet<PhysicalKey>(), (int)targetCode, fnLockAware);
+            return new KeyRule(sourceKeys, sourceFn, PhysicalKey.None, 0, new HashSet<PhysicalKey>(), (int)targetCode, fnLockAware) { RawSource = source, RawTarget = target };
         }
 
         PhysicalKey targetKey = targetCode == 0 ? PhysicalKey.None : PhysicalKeyHidMap.GetPhysicalKey((byte)targetCode);
-        return new KeyRule(sourceKeys, sourceFn, targetKey, (int)targetCode, PhysicalKeyHidMap.DecodeModifiers(targetMods), null, fnLockAware);
+        return new KeyRule(sourceKeys, sourceFn, targetKey, (int)targetCode, PhysicalKeyHidMap.DecodeModifiers(targetMods), null, fnLockAware) { RawSource = source, RawTarget = target };
     }
 
     private static bool IsVirtual(uint code) {

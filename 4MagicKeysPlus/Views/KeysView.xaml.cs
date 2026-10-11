@@ -36,9 +36,11 @@ public partial class KeysView : UserControl {
         Loaded += (_, _) => {
             hostWindow = Window.GetWindow(this);
             hostWindow?.PreviewKeyDown += HostWindow_PreviewKeyDown;
+            hostWindow?.MouseLeftButtonDown += HostWindow_MouseLeftButtonDown;
         };
         Unloaded += (_, _) => {
             hostWindow?.PreviewKeyDown -= HostWindow_PreviewKeyDown;
+            hostWindow?.MouseLeftButtonDown -= HostWindow_MouseLeftButtonDown;
             hostWindow = null;
         };
 
@@ -61,6 +63,18 @@ public partial class KeysView : UserControl {
         VirtualKeysHost.Width = e.NewSize.Width;
     }
 
+    // Keys, buttons and the status panel handle their own clicks; a click that reaches the window
+    // was on empty space and drops the selection.
+    private void HostWindow_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
+        if (!isPicking && selectedKey != null) {
+            SelectKey(null);
+        }
+    }
+
+    private void StatusPanel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
+        e.Handled = true;
+    }
+
     private void HostWindow_PreviewKeyDown(object sender, KeyEventArgs e) {
         if (e.Key == Key.Escape && isPicking) {
             CancelPicking();
@@ -81,6 +95,7 @@ public partial class KeysView : UserControl {
 
     private void SelectKey(PhysicalKey? key) {
         selectedKey = key;
+        ResultGlyph.Visibility = Visibility.Hidden;
         ResetOptions();
 
         foreach (KeyBorder border in KeysCanvas.Children.OfType<KeyBorder>()) {
@@ -91,12 +106,13 @@ public partial class KeysView : UserControl {
 
     private void SetButton_Click(object sender, RoutedEventArgs e) {
         isPicking = true;
+        ResultGlyph.Visibility = Visibility.Hidden;
         Refresh();
     }
 
     private void RemoveButton_Click(object sender, RoutedEventArgs e) {
         if (selectedKey is PhysicalKey key) {
-            editor.RemoveMappings(key);
+            ShowResult(editor.RemoveMappings(key));
             Refresh();
         }
     }
@@ -121,10 +137,28 @@ public partial class KeysView : UserControl {
 
     private void CompletePicking(RemapTarget target) {
         if (selectedKey is PhysicalKey source) {
-            editor.SetMapping(source, target, withFn, followFnLock);
+            ShowResult(editor.SetMapping(source, target, withFn, followFnLock));
         }
         isPicking = false;
         Refresh();
+    }
+
+    private void ShowResult(ApplyResult result) {
+        (string glyph, string brushKey) = result.Outcome switch {
+            ApplyOutcome.Applied => (Glyphs.ResultSuccess, ThemeKeys.ResultSuccess),
+            ApplyOutcome.Warning => (Glyphs.ResultWarning, ThemeKeys.ResultWarning),
+            _ => (Glyphs.ResultError, ThemeKeys.ResultError),
+        };
+
+        ResultGlyph.Text = glyph;
+        ResultGlyph.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
+        ResultGlyph.ToolTip = new ToolTip {
+            Content = new TextBlock { Text = result.Message, TextWrapping = TextWrapping.Wrap, MaxWidth = 360, FontWeight = FontWeights.Normal },
+            Style = (Style)Application.Current.Resources["TooltipAbove"],
+        };
+        ToolTipService.SetInitialShowDelay(ResultGlyph, 0);
+        ToolTipService.SetBetweenShowDelay(ResultGlyph, 0);
+        ResultGlyph.Visibility = Visibility.Visible;
     }
 
     // Defaults of the options for the selected key: the layer is fixed when the key can be
@@ -353,7 +387,7 @@ public partial class KeysView : UserControl {
 
     private static double CalcHeight(KeyRowPosition rowPosition) {
         return rowPosition switch {
-            KeyRowPosition.TWO_ROWS_LOWER_ROW => CalcSizeInDIP(SizeUnit.STANDARD_KEY + SizeUnit.STANDARD_GAP) + 2.0,
+            KeyRowPosition.TWO_ROWS_LOWER_ROW => CalcSizeInDIP(SizeUnit.STANDARD_KEY + SizeUnit.STANDARD_GAP) + 3,
             KeyRowPosition.HALF_ROW_UPPER or KeyRowPosition.HALF_ROW_LOWER => CalcSizeInDIP(SizeUnit.STANDARD_KEY / 2),
             _ => CalcSizeInDIP(SizeUnit.STANDARD_KEY),
         };
@@ -361,7 +395,7 @@ public partial class KeysView : UserControl {
 
     private static double CalcKeyTop(KeyRowPosition rowPosition, double rowY) {
         return rowPosition switch {
-            KeyRowPosition.TWO_ROWS_LOWER_ROW => rowY - CalcSizeInDIP(SizeUnit.STANDARD_GAP) - 2.0,
+            KeyRowPosition.TWO_ROWS_LOWER_ROW => rowY - CalcSizeInDIP(SizeUnit.STANDARD_GAP) - 3,
             KeyRowPosition.HALF_ROW_LOWER => rowY + CalcSizeInDIP(SizeUnit.STANDARD_KEY / 2),
             _ => rowY,
         };

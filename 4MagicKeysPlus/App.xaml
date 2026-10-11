@@ -13,7 +13,6 @@
 
             <Style x:Key="NavToggleButtonStyle" TargetType="RadioButton">
                 <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
-                <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="RadioButton">
@@ -39,7 +38,6 @@
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Foreground" Value="{DynamicResource TextDisabled}"/>
-                                    <Setter Property="Cursor" Value="Arrow"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -49,7 +47,6 @@
 
             <Style x:Key="NavIconOnlyButtonStyle" TargetType="RadioButton">
                 <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
-                <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="ToolTip" Value="{Binding Content, RelativeSource={RelativeSource Self}}"/>
                 <Setter Property="Template">
                     <Setter.Value>
@@ -72,7 +69,6 @@
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Foreground" Value="{DynamicResource TextDisabled}"/>
-                                    <Setter Property="Cursor" Value="Arrow"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -82,7 +78,6 @@
 
             <Style x:Key="PanelButtonStyle" TargetType="Button">
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-                <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
@@ -98,7 +93,6 @@
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Foreground" Value="{DynamicResource TextDisabled}"/>
-                                    <Setter Property="Cursor" Value="Arrow"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -109,7 +103,6 @@
             <Style x:Key="PanelCheckBoxStyle" TargetType="CheckBox">
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
                 <Setter Property="FontSize" Value="12"/>
-                <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="CheckBox">
@@ -133,7 +126,6 @@
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Foreground" Value="{DynamicResource TextDisabled}"/>
-                                    <Setter Property="Cursor" Value="Arrow"/>
                                     <Setter TargetName="Box" Property="Background" Value="{DynamicResource CheckBoxDisabledBackground}"/>
                                     <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource CheckBoxDisabledBorder}"/>
                                     <Setter TargetName="Mark" Property="Stroke" Value="{DynamicResource CheckBoxDisabledMark}"/>
@@ -150,6 +142,9 @@
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="Padding" Value="0"/>
                 <Setter Property="HasDropShadow" Value="False"/>
+                <!-- Content that is an element (not a string) inherits these from the tooltip itself, not from the template. -->
+                <Setter Property="Foreground" Value="{DynamicResource TooltipForeground}"/>
+                <Setter Property="FontWeight" Value="Bold"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ToolTip">

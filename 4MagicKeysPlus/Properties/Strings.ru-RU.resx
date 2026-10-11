@@ -93,4 +93,19 @@
   <data name="KeyRuleFollowsFnLock" xml:space="preserve">
     <value>учитывает Fn Lock</value>
   </data>
+  <data name="ApplyApplied" xml:space="preserve">
+    <value>Применено</value>
+  </data>
+  <data name="ApplyIgnored" xml:space="preserve">
+    <value>Сохранено, но драйвер проигнорировал правил: {0}</value>
+  </data>
+  <data name="ApplySavedNotApplied" xml:space="preserve">
+    <value>Сохранено. Драйвер применит правила при подключении клавиатуры.</value>
+  </data>
+  <data name="ApplyDriverError" xml:space="preserve">
+    <value>Сохранено, но драйвер недоступен: {0}</value>
+  </data>
+  <data name="ApplySaveFailed" xml:space="preserve">
+    <value>Не удалось сохранить: {0}</value>
+  </data>
 </root>

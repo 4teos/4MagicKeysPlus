@@ -7,6 +7,8 @@ internal static class DriverStatus {
     private const string ParametersKeyPath = @"SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters";
     private const string RulesKeyName = "Rules";
 
+    public const string RulesKeyPath = $@"{ParametersKeyPath}\{RulesKeyName}";
+
     public static bool ReadFnLockEnabled() {
         using RegistryKey? key = Registry.LocalMachine.OpenSubKey(ParametersKeyPath);
         return key?.GetValue("FnLock") is int fnLock && fnLock != 0;
@@ -20,7 +22,7 @@ internal static class DriverStatus {
     private static List<KeyRule> ReadRules() {
         List<KeyRule> rules = [];
 
-        using RegistryKey? rulesKey = Registry.LocalMachine.OpenSubKey($@"{ParametersKeyPath}\{RulesKeyName}");
+        using RegistryKey? rulesKey = Registry.LocalMachine.OpenSubKey(RulesKeyPath);
         if (rulesKey is null) {
             return rules;
         }

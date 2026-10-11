@@ -170,6 +170,36 @@ public static class Strings
         }
     }
 
+    public static string ApplyApplied {
+        get {
+            return Get(nameof(ApplyApplied));
+        }
+    }
+
+    public static string ApplyIgnored {
+        get {
+            return Get(nameof(ApplyIgnored));
+        }
+    }
+
+    public static string ApplySavedNotApplied {
+        get {
+            return Get(nameof(ApplySavedNotApplied));
+        }
+    }
+
+    public static string ApplyDriverError {
+        get {
+            return Get(nameof(ApplyDriverError));
+        }
+    }
+
+    public static string ApplySaveFailed {
+        get {
+            return Get(nameof(ApplySaveFailed));
+        }
+    }
+
     private static string Get(string key) {
         return ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
     }

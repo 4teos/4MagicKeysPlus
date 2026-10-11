@@ -2,6 +2,9 @@ namespace _4MagicKeysPlus.Views;
 
 // Keys of the brushes in Themes\*.xaml that code needs (XAML refers to them as DynamicResource).
 internal static class ThemeKeys {
+    public const string ResultSuccess = nameof(ResultSuccess);
+    public const string ResultWarning = nameof(ResultWarning);
+    public const string ResultError = nameof(ResultError);
     public const string KeyBackground = nameof(KeyBackground);
     public const string KeyBorder = nameof(KeyBorder);
     public const string KeyForeground = nameof(KeyForeground);

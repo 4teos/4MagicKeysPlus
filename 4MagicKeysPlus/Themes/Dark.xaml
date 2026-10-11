@@ -27,6 +27,11 @@
     <SolidColorBrush x:Key="BatteryGood" Color="#10B981"/>
     <SolidColorBrush x:Key="BatteryUnknown" Color="#9CA3AF"/>
 
+    <!-- Result of applying a mapping -->
+    <SolidColorBrush x:Key="ResultSuccess" Color="#10B981"/>
+    <SolidColorBrush x:Key="ResultWarning" Color="#F59E0B"/>
+    <SolidColorBrush x:Key="ResultError" Color="#EF4444"/>
+
     <!-- Tooltips and the key status panel -->
     <SolidColorBrush x:Key="TooltipBackground" Color="#1F2937"/>
     <SolidColorBrush x:Key="TooltipBorder" Color="#4B5563"/>

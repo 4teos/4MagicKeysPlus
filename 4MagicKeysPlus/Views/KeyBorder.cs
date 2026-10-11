@@ -86,6 +86,7 @@ public class KeyBorder : Border {
         if (IsInteractive) {
             Clicked?.Invoke(this, EventArgs.Empty);
         }
+        e.Handled = true;
     }
 
     private void SetHovered(bool hovered) {
