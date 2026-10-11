@@ -24,8 +24,10 @@ class KeyProcessor {
 public:
     KeyProcessor() = default;
 
-    // Rules that can't be interpreted (see ClassifyRule) are dropped here.
-    void LoadConfig(DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount);
+    // Replaces the whole configuration. Rules that can't be interpreted (see ClassifyRule)
+    // are dropped here; returns how many were kept. The consumer-usage dedup state is kept,
+    // so a media key held across a reload is still released properly.
+    ULONG LoadConfig(DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount);
 
     ConsumerUsageSubmission Process(BYTE* buf, ULONG size);
 

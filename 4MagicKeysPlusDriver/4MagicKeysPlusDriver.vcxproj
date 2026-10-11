@@ -144,6 +144,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Driver.h" />
+    <ClInclude Include="DriverInterface.h" />
     <ClInclude Include="KeyProcessor.h" />
     <ClInclude Include="KeyProcessorTypes.h" />
   </ItemGroup>

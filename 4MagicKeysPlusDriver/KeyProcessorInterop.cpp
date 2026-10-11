@@ -14,6 +14,14 @@ inline void* operator new(size_t, void* location) noexcept {
 }
 
 namespace {
+    // A reload (passive level, from the control device) can come while Process() runs for a
+    // report (up to dispatch level), so each instance carries the lock that keeps them apart.
+    // KeyProcessor itself stays free of kernel types.
+    struct KeyProcessorInstance {
+        KSPIN_LOCK Lock;
+        KeyProcessor Processor;
+    };
+
     void SubmitConsumerUsageToVhf(USHORT usage, VHFHANDLE vhfHandle) {
         if (!vhfHandle) {
             return;
@@ -38,27 +46,41 @@ namespace {
 extern "C" {
 
 PVOID KeyProcessorCreate(void) {
-    void* mem = ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KeyProcessor), 'pKyT');
+    void* mem = ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KeyProcessorInstance), 'pKyT');
     if (!mem) {
         return nullptr;
     }
-    return new (mem) KeyProcessor();
+    KeyProcessorInstance* instance = new (mem) KeyProcessorInstance();
+    KeInitializeSpinLock(&instance->Lock);
+    return instance;
 }
 
 void KeyProcessorDestroy(PVOID handle) {
     if (!handle) {
         return;
     }
-    static_cast<KeyProcessor*>(handle)->~KeyProcessor();
+    static_cast<KeyProcessorInstance*>(handle)->~KeyProcessorInstance();
     ExFreePool(handle);
 }
 
-void KeyProcessorLoadConfig(PVOID handle, DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount) {
-    static_cast<KeyProcessor*>(handle)->LoadConfig(fnLock, rules, ruleCount);
+ULONG KeyProcessorLoadConfig(PVOID handle, DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount) {
+    KeyProcessorInstance* instance = static_cast<KeyProcessorInstance*>(handle);
+
+    KIRQL oldIrql;
+    KeAcquireSpinLock(&instance->Lock, &oldIrql);
+    ULONG accepted = instance->Processor.LoadConfig(fnLock, rules, ruleCount);
+    KeReleaseSpinLock(&instance->Lock, oldIrql);
+    return accepted;
 }
 
 void KeyProcessorProcess(PVOID handle, BYTE* buf, ULONG size, VHFHANDLE vhfHandle) {
-    ConsumerUsageSubmission submission = static_cast<KeyProcessor*>(handle)->Process(buf, size);
+    KeyProcessorInstance* instance = static_cast<KeyProcessorInstance*>(handle);
+
+    KIRQL oldIrql;
+    KeAcquireSpinLock(&instance->Lock, &oldIrql);
+    ConsumerUsageSubmission submission = instance->Processor.Process(buf, size);
+    KeReleaseSpinLock(&instance->Lock, oldIrql);
+
     if (submission.ShouldSubmit) {
         SubmitConsumerUsageToVhf(submission.Usage, vhfHandle);
     }

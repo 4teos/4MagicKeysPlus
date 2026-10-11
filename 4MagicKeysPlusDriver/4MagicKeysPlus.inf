@@ -8,7 +8,7 @@ Provider=%Provider%
 CatalogFile=4MagicKeysPlus.cat
 DriverPackageDisplayName="4MagicKeys+"
 DriverPackageType=PlugAndPlay
-DriverVer=10/10/2026,2.1.0.32
+DriverVer=10/11/2026,2.2.0.34
 PnpLockdown=1
 
 [ControlFlags]
@@ -87,14 +87,6 @@ AddReg = HIDKbFlt_Service_AddReg
 
 [HIDKbFlt_Service_AddReg]
 HKR,Parameters,FnLock,0x00010003, 0
-; Example: HKR,Parameters,KeyMap,0x00000003, F0,4C
-HKR,Parameters,KeyMap,0x00000003, 0
-; ModMap: modifier bit remapping, pairs of [source_bit, target_bit]
-; Example Alt<->Cmd swap: 04,08,08,04,40,80,80,40
-HKR,Parameters,ModMap,0x00000003, 0
-; SpecialModMap: special keys <-> modifier bit remapping
-; Example Fn<->LeftCtrl swap: 01,F1,F1,01
-HKR,Parameters,SpecialModMap,0x00000003, 0
 
 [Dri_BTH_Inst.NT.HW]
 Include = keyboard.inf

@@ -73,7 +73,7 @@ KeyProcessor::RuleKind KeyProcessor::ClassifyRule(DWORD source, DWORD target) {
     return RuleInvalid;
 }
 
-void KeyProcessor::LoadConfig(DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount) {
+ULONG KeyProcessor::LoadConfig(DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount) {
     m_FnLock = fnLock;
     m_RuleCount = 0;
 
@@ -85,6 +85,7 @@ void KeyProcessor::LoadConfig(DWORD fnLock, const KEY_RULE* rules, ULONG ruleCou
         }
         m_Rules[m_RuleCount++] = { rules[i].Source, rules[i].Target, kind, rules[i].FnLockAware };
     }
+    return m_RuleCount;
 }
 
 void KeyProcessor::InjectKey(BYTE* buf, BYTE keyCode) {

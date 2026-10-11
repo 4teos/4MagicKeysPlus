@@ -10,6 +10,23 @@ DWORD g_dwFnLock = 0;
 KEY_RULE g_Rules[MAX_RULES] = {0};
 ULONG g_RuleCount = 0;
 
+static WCHAR g_ParametersPathBuffer[512];
+static WCHAR g_RulesPathBuffer[512];
+static UNICODE_STRING g_ParametersPath;
+static UNICODE_STRING g_RulesPath;
+
+// g_StateLock guards the configuration globals above, g_DeviceCollection (every filtered
+// keyboard's WDFDEVICE) and g_ControlDevice, so that a reload and a keyboard being added or
+// removed never see each other half done.
+static WDFWAITLOCK g_StateLock;
+static WDFCOLLECTION g_DeviceCollection;
+static WDFDEVICE g_ControlDevice;
+
+DECLARE_CONST_UNICODE_STRING(g_ControlDeviceName, MKP_CONTROL_DEVICE_NAME);
+DECLARE_CONST_UNICODE_STRING(g_ControlSymbolicLink, MKP_CONTROL_SYMLINK_NAME);
+// Only SYSTEM and administrators may open the control device.
+DECLARE_CONST_UNICODE_STRING(g_ControlSddl, L"D:P(A;;GA;;;SY)(A;;GA;;;BA)");
+
 ///////////////////////////////////////////////////////////////////////////////
 // Read a REG_DWORD value from an open key. *pValue is only written on success.
 //
@@ -97,6 +114,127 @@ static void ReadRules(PUNICODE_STRING rulesPath) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// (Re)read FnLock and the rules from the registry into the globals. A missing value or
+// key means the defaults: FnLock off, no rules. The caller serializes access to the globals.
+//
+static void LoadConfiguration(void) {
+    PAGED_CODE();
+
+    g_dwFnLock = 0;
+
+    HANDLE hParams;
+    OBJECT_ATTRIBUTES paramOa;
+    InitializeObjectAttributes(&paramOa, &g_ParametersPath, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
+    if (NT_SUCCESS(ZwOpenKey(&hParams, KEY_READ, &paramOa))) {
+        ReadDwordValue(hParams, L"FnLock", &g_dwFnLock);
+        ZwClose(hParams);
+    }
+
+    ReadRules(&g_RulesPath);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Hand the current configuration to every filtered keyboard. Returns how many there are;
+// *pAccepted is how many rules the processors kept. The caller holds g_StateLock.
+//
+static ULONG ApplyConfigurationToDevices(ULONG* pAccepted) {
+    ULONG count = WdfCollectionGetCount(g_DeviceCollection);
+    *pAccepted = 0;
+
+    for (ULONG i = 0; i < count; i++) {
+        PDEVICE_CONTEXT context = GetDeviceContext((WDFDEVICE)WdfCollectionGetItem(g_DeviceCollection, i));
+        *pAccepted = KeyProcessorLoadConfig(context->KeyProcessorHandle, g_dwFnLock, g_Rules, g_RuleCount);
+    }
+    return count;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Control device: lets the configuration app tell the driver to reload its rules.
+//
+static VOID EvtControlIoDeviceControl(IN WDFQUEUE queue, IN WDFREQUEST request, IN size_t outputBufferLength, IN size_t inputBufferLength, IN ULONG ioControlCode) {
+    UNREFERENCED_PARAMETER(queue);
+    UNREFERENCED_PARAMETER(inputBufferLength);
+
+    if (ioControlCode != IOCTL_MKP_RELOAD_CONFIG) {
+        WdfRequestComplete(request, STATUS_INVALID_DEVICE_REQUEST);
+        return;
+    }
+
+    MKP_RELOAD_RESULT result = {0};
+
+    WdfWaitLockAcquire(g_StateLock, NULL);
+    LoadConfiguration();
+    result.RulesRead = g_RuleCount;
+    result.Devices = ApplyConfigurationToDevices(&result.RulesAccepted);
+    WdfWaitLockRelease(g_StateLock);
+
+    DebugPrint("Config reloaded: FnLock=%lu, rules read: %lu, accepted: %lu, keyboards: %lu\n",
+        g_dwFnLock, result.RulesRead, result.RulesAccepted, result.Devices);
+
+    size_t bytesWritten = 0;
+    NTSTATUS status = STATUS_SUCCESS;
+    if (outputBufferLength >= sizeof(result)) {
+        PVOID output;
+        status = WdfRequestRetrieveOutputBuffer(request, sizeof(result), &output, NULL);
+        if (NT_SUCCESS(status)) {
+            RtlCopyMemory(output, &result, sizeof(result));
+            bytesWritten = sizeof(result);
+        }
+    }
+    WdfRequestCompleteWithInformation(request, status, bytesWritten);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Creates the control device. Called with g_StateLock held, when the first keyboard appears;
+// a failure only costs live reload, so the caller carries on without it.
+//
+static NTSTATUS CreateControlDevice(WDFDRIVER driver) {
+    PAGED_CODE();
+
+    PWDFDEVICE_INIT init = WdfControlDeviceInitAllocate(driver, &g_ControlSddl);
+    if (!init) {
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+
+    WdfDeviceInitSetExclusive(init, FALSE);
+    NTSTATUS status = WdfDeviceInitAssignName(init, &g_ControlDeviceName);
+    if (!NT_SUCCESS(status)) {
+        WdfDeviceInitFree(init);
+        return status;
+    }
+
+    WDF_OBJECT_ATTRIBUTES attributes;
+    WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
+    attributes.ExecutionLevel = WdfExecutionLevelPassive;
+
+    WDFDEVICE controlDevice;
+    status = WdfDeviceCreate(&init, &attributes, &controlDevice);
+    if (!NT_SUCCESS(status)) {
+        if (init) {
+            WdfDeviceInitFree(init);
+        }
+        return status;
+    }
+
+    WDF_IO_QUEUE_CONFIG queueConfig;
+    WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&queueConfig, WdfIoQueueDispatchSequential);
+    queueConfig.EvtIoDeviceControl = EvtControlIoDeviceControl;
+
+    status = WdfIoQueueCreate(controlDevice, &queueConfig, WDF_NO_OBJECT_ATTRIBUTES, WDF_NO_HANDLE);
+    if (NT_SUCCESS(status)) {
+        status = WdfDeviceCreateSymbolicLink(controlDevice, &g_ControlSymbolicLink);
+    }
+    if (!NT_SUCCESS(status)) {
+        WdfObjectDelete(controlDevice);
+        return status;
+    }
+
+    WdfControlFinishInitializing(controlDevice);
+    g_ControlDevice = controlDevice;
+    return STATUS_SUCCESS;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Driver Entry
 //
 NTSTATUS DriverEntry(IN PDRIVER_OBJECT driverObject, IN PUNICODE_STRING registryPath) {
@@ -111,25 +249,21 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT driverObject, IN PUNICODE_STRING registry
         return status;
     }
 
-    // Build Parameters subkey path
-    WCHAR paramPathBuf[512];
-    UNICODE_STRING paramPath;
-    RtlStringCbPrintfW(paramPathBuf, sizeof(paramPathBuf), L"%wZ\\Parameters", registryPath);
-    RtlInitUnicodeString(&paramPath, paramPathBuf);
-
-    HANDLE hParams;
-    OBJECT_ATTRIBUTES paramOa;
-    InitializeObjectAttributes(&paramOa, &paramPath, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
-    if (NT_SUCCESS(ZwOpenKey(&hParams, KEY_READ, &paramOa))) {
-        ReadDwordValue(hParams, L"FnLock", &g_dwFnLock);
-        ZwClose(hParams);
+    status = WdfWaitLockCreate(WDF_NO_OBJECT_ATTRIBUTES, &g_StateLock);
+    if (NT_SUCCESS(status)) {
+        status = WdfCollectionCreate(WDF_NO_OBJECT_ATTRIBUTES, &g_DeviceCollection);
+    }
+    if (!NT_SUCCESS(status)) {
+        DebugPrint("DriverEntry(): creating the device list failed: 0x%x\n", status);
+        return status;
     }
 
-    WCHAR rulesPathBuf[512];
-    UNICODE_STRING rulesPath;
-    RtlStringCbPrintfW(rulesPathBuf, sizeof(rulesPathBuf), L"%wZ\\Rules", &paramPath);
-    RtlInitUnicodeString(&rulesPath, rulesPathBuf);
-    ReadRules(&rulesPath);
+    RtlStringCbPrintfW(g_ParametersPathBuffer, sizeof(g_ParametersPathBuffer), L"%wZ\\Parameters", registryPath);
+    RtlInitUnicodeString(&g_ParametersPath, g_ParametersPathBuffer);
+    RtlStringCbPrintfW(g_RulesPathBuffer, sizeof(g_RulesPathBuffer), L"%wZ\\Rules", &g_ParametersPath);
+    RtlInitUnicodeString(&g_RulesPath, g_RulesPathBuffer);
+
+    LoadConfiguration();
 
     DebugPrint("FnLock=%lu, rules loaded: %lu\n", g_dwFnLock, g_RuleCount);
 
@@ -140,8 +274,6 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT driverObject, IN PUNICODE_STRING registry
 // EvtDriverDeviceAdd - creates the KMDF filter device object and its I/O queue
 //
 NTSTATUS EvtDriverDeviceAdd(IN WDFDRIVER driver, IN PWDFDEVICE_INIT deviceInit) {
-    UNREFERENCED_PARAMETER(driver);
-
     DebugPrint("EvtDriverDeviceAdd()\n");
 
     WdfFdoInitSetFilter(deviceInit);
@@ -176,7 +308,28 @@ NTSTATUS EvtDriverDeviceAdd(IN WDFDRIVER driver, IN PWDFDEVICE_INIT deviceInit) 
         DebugPrint("EvtDriverDeviceAdd(): KeyProcessorCreate failed\n");
         return STATUS_INSUFFICIENT_RESOURCES;
     }
+
+    // From here on the device takes part in config reloads. The first keyboard also brings the
+    // control device along. The registry is read afresh: rules saved while no keyboard was
+    // connected (so there was no control device to tell) apply to it now.
+    WdfWaitLockAcquire(g_StateLock, NULL);
+    LoadConfiguration();
     KeyProcessorLoadConfig(deviceContext->KeyProcessorHandle, g_dwFnLock, g_Rules, g_RuleCount);
+    status = WdfCollectionAdd(g_DeviceCollection, hDevice);
+    if (NT_SUCCESS(status)) {
+        deviceContext->InDeviceCollection = TRUE;
+        if (!g_ControlDevice) {
+            NTSTATUS controlStatus = CreateControlDevice(driver);
+            if (!NT_SUCCESS(controlStatus)) {
+                DebugPrint("EvtDriverDeviceAdd(): the control device was not created: 0x%x\n", controlStatus);
+            }
+        }
+    }
+    WdfWaitLockRelease(g_StateLock);
+    if (!NT_SUCCESS(status)) {
+        DebugPrint("EvtDriverDeviceAdd(): WdfCollectionAdd failed: 0x%x\n", status);
+        return status;
+    }
 
     VHF_CONFIG vhfConfig;
     VHF_CONFIG_INIT(&vhfConfig, WdfDeviceWdmGetDeviceObject(hDevice), sizeof(g_ConsumerReportDescriptor), (PUCHAR)g_ConsumerReportDescriptor);
@@ -217,6 +370,24 @@ VOID EvtVhfReadyForNextReadReport(IN PVOID VhfClientContext) {
 //
 void EvtDeviceContextCleanup(IN WDFOBJECT object) {
     PDEVICE_CONTEXT deviceContext = GetDeviceContext(object);
+
+    // The last keyboard takes the control device with it. It is deleted outside the lock: that
+    // waits for a running IOCTL, which may itself be waiting for the lock.
+    WDFDEVICE controlDevice = NULL;
+    WdfWaitLockAcquire(g_StateLock, NULL);
+    if (deviceContext->InDeviceCollection) {
+        WdfCollectionRemove(g_DeviceCollection, object);
+        deviceContext->InDeviceCollection = FALSE;
+        if (WdfCollectionGetCount(g_DeviceCollection) == 0) {
+            controlDevice = g_ControlDevice;
+            g_ControlDevice = NULL;
+        }
+    }
+    WdfWaitLockRelease(g_StateLock);
+    if (controlDevice) {
+        WdfObjectDelete(controlDevice);
+    }
+
     if (deviceContext->VhfHandle) {
         DebugPrint("EvtDeviceContextCleanup(): deleting virtual HID device\n");
         VhfDelete(deviceContext->VhfHandle, TRUE);

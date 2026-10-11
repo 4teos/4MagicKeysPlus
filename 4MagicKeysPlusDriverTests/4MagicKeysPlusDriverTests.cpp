@@ -528,4 +528,87 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)CONSUMER_USAGE_PLAYPAUSE, (int)mediaResult.Usage);
         }
     };
+
+    // The control device's reload calls LoadConfig again on a processor that is already in use.
+    TEST_CLASS(ReloadTests)
+    {
+    public:
+        TEST_METHOD(LoadConfigReturnsHowManyRulesWereKept)
+        {
+            KeyProcessor kp;
+            const KEY_RULE rules[] = {
+                { HidKeyB, HidKeyT, false },
+                { HidKeyB, VIRTUAL_FN, false },  // key -> Fn is not a supported shape
+                { HidKeyP, HidKeyT, false },
+            };
+
+            Assert::AreEqual(2, (int)kp.LoadConfig(0, rules, 3));
+            Assert::AreEqual(0, (int)kp.LoadConfig(0, nullptr, 0));
+        }
+
+        TEST_METHOD(LoadingAgainReplacesTheWholeConfiguration)
+        {
+            KeyProcessor kp;
+            const KEY_RULE first[] = { { HidKeyB, HidKeyT, false } };
+            const KEY_RULE second[] = { { HidKeyP, HidKeyT, false } };
+            Load(kp, 0, first);
+            Load(kp, 0, second);
+
+            Report report;
+            report.Key(0, HidKeyB).Key(1, HidKeyP);
+            kp.Process(report.bytes, sizeof(report.bytes));
+
+            Assert::AreEqual((int)HidKeyB, (int)report.bytes[2]);
+            Assert::AreEqual((int)HidKeyT, (int)report.bytes[3]);
+        }
+
+        TEST_METHOD(RemovingAllRulesRestoresPlainKeys)
+        {
+            KeyProcessor kp;
+            Load(kp, 0, kUserRules);
+            LoadNone(kp);
+
+            Report report;
+            report.Key(0, HidKeyB).Modifier(HidLeftAltMask);
+            auto result = kp.Process(report.bytes, sizeof(report.bytes));
+
+            Assert::IsFalse(result.ShouldSubmit);
+            Assert::AreEqual((int)HidKeyB, (int)report.bytes[2]);
+            Assert::AreEqual((int)HidLeftAltMask, (int)report.bytes[0]);
+        }
+
+        TEST_METHOD(FnLockChangeAppliesFromTheNextReport)
+        {
+            KeyProcessor kp;
+            Load(kp, 1, kUserRules);
+            Load(kp, 0, kUserRules);
+
+            Report report;
+            report.Key(0, HidF8);
+            auto result = kp.Process(report.bytes, sizeof(report.bytes));
+
+            Assert::IsTrue(result.ShouldSubmit);
+            Assert::AreEqual((int)CONSUMER_USAGE_PLAYPAUSE, (int)result.Usage);
+        }
+
+        // A media key still held when its rule is removed must be released: the dedup state
+        // survives the reload, so the release report is submitted and the usage doesn't stick.
+        TEST_METHOD(MediaKeyHeldAcrossAReloadIsStillReleased)
+        {
+            KeyProcessor kp;
+            Load(kp, 0, kUserRules);
+
+            Report pressed;
+            pressed.Key(0, HidF8);
+            kp.Process(pressed.bytes, sizeof(pressed.bytes));
+
+            LoadNone(kp);
+
+            Report released;
+            auto result = kp.Process(released.bytes, sizeof(released.bytes));
+
+            Assert::IsTrue(result.ShouldSubmit);
+            Assert::AreEqual((int)CONSUMER_USAGE_NONE, (int)result.Usage);
+        }
+    };
 }

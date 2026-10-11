@@ -26,6 +26,7 @@ extern "C" {
 // encoding and MAX_RULES, VIRTUAL_EJECT/FN and CONSUMER_USAGE_* constants,
 // shared as-is with the portable KeyProcessor class and its user-mode unit tests.
 #include "KeyProcessorTypes.h"
+#include "DriverInterface.h"
 
 #if defined(DBG)
 #define DebugPrintBuffer(text, buffer, length) KdPrintBuffer(text, buffer, length)
@@ -49,6 +50,7 @@ extern "C" {
     typedef struct _DEVICE_CONTEXT {
         VHFHANDLE VhfHandle;
         PVOID KeyProcessorHandle;
+        BOOLEAN InDeviceCollection;
     } DEVICE_CONTEXT, * PDEVICE_CONTEXT;
 
     WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, GetDeviceContext)
@@ -93,10 +95,12 @@ extern "C" {
     // KeyProcessor - opaque C wrapper around the KeyProcessor C++ class
     // (KeyProcessor.h/.cpp, wrapped for kernel use in KeyProcessorInterop.cpp).
     // One instance per physical device, owned by that device's DEVICE_CONTEXT.
+    // LoadConfig may run at the same time as Process; the wrapper serializes them.
+    // LoadConfig returns how many of the rules it kept.
     //
     PVOID KeyProcessorCreate(void);
     void KeyProcessorDestroy(PVOID handle);
-    void KeyProcessorLoadConfig(PVOID handle, DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount);
+    ULONG KeyProcessorLoadConfig(PVOID handle, DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount);
     void KeyProcessorProcess(PVOID handle, BYTE* buf, ULONG size, VHFHANDLE vhfHandle);
 
 #ifdef __cplusplus

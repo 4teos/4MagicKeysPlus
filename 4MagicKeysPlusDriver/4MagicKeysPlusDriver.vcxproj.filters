@@ -34,6 +34,9 @@
     <ClInclude Include="Driver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DriverInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="KeyProcessor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
