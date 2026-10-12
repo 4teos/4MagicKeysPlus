@@ -13,15 +13,28 @@ Originally forked from the [samartzidis/winAppleKey](https://github.com/samartzi
 
 ### Features
 
-- Configurable key remapping via registry (`KeyMap`) — remap any key to any other key, including Fn and Eject
-- Configurable modifier remapping via registry (`ModMap`) — swap or remap Alt, Cmd, Ctrl, Shift
-- Configurable Fn/Eject ↔ modifier remapping via registry (`SpecialModMap`) — e.g. swap Fn and Left Ctrl
-- Fn-key combinations for missing Windows keys (Home, End, Page Up/Down, Insert, Print Screen, Scroll Lock, Pause/Break)
-- F1-F12 act as media/brightness/volume keys by default, or as regular function keys with `FnLock` set (and vice versa while holding Fn)
+- One list of key rules in the registry (`Parameters\Rules`) replaces all the old remap tables: remap any key to another key, swap modifiers, map Fn/Eject to a modifier or a key (and back), turn a key into a modifier combination, or into a media/brightness/volume action
+- Fn layer: any key can have a separate "with Fn" rule (Home/End/Page Up/Down, Insert, Print Screen, etc. are ordinary rules now, nothing is hardcoded)
+- `FnLock`-aware rules, so the F-row media keys can behave as media keys by default or as regular function keys, with Fn flipping them
+- A small agent (`4MagicKeysPlusAgent`) that launches an application on a hotkey, and warns when the keyboard battery runs low
+- A configuration app (`4MagicKeysPlus`) that shows the connected keyboard, its battery/connection/Fn Lock state, highlights the remapped keys and lets you edit the rules on a picture of the keyboard. Changes are saved to the registry and applied by the driver at once, no restart needed
+
+### Planned
+
+- A screen for the launch entries (the hotkey and the application, now only set in the registry)
+- Separate settings for each keyboard, so that several keyboards can be used at the same time
+- A toggle for Fn Lock in the app
+- Application settings (theme, language)
+- An installer, and a way to store and apply the default settings
 
 ### Technical Details
 
-4MagicKeys+ is a HIDCLASS LowerFilter WDM kernel mode driver. It intercepts HID input at the Bluetooth (L2CAP) or USB (URB) level and transforms the 9-byte keyboard report buffer before it reaches the HID class driver. For the F1-F12 media/brightness/volume actions it also exposes a virtual Consumer Control HID device (via VHF) that reports the corresponding usage code.
+4MagicKeys+ consists of four parts:
+
+- **Driver** (`4MagicKeysPlusDriver`) - a HIDCLASS LowerFilter WDM kernel mode driver. It intercepts HID input at the Bluetooth (L2CAP) or USB (URB) level and transforms the 9-byte keyboard report buffer before it reaches the HID class driver. For media/brightness/volume actions it also exposes a virtual Consumer Control HID device (via VHF) that reports the corresponding usage code. All behavior comes from the rules in the registry; the driver has no built-in key tables. While a keyboard is connected the driver also has a control device that makes it re-read the rules without a restart (see [Applying Changes](#applying-changes)).
+- **Agent** (`4MagicKeysPlusAgent`) - a small WinForms background process (no tray icon): registers global hotkeys for the launch entries in the registry, and polls the keyboard battery.
+- **Configuration app** (`4MagicKeysPlus`) - WPF app. Needs the .NET 10 Desktop Runtime and runs as administrator (see [Agent and Configuration App](#agent-and-configuration-app)).
+- **Core** (`4MagicKeysPlusCore`) - class library shared by the app and the agent: finds the connected keyboard over HID and reads its battery.
 
 ### Installation
 
@@ -53,39 +66,144 @@ To uninstall, revert to the default driver via Device Manager, then disable TEST
 bcdedit.exe -set TESTSIGNING OFF
 ```
 
-### Default Key Mappings
+### Agent and Configuration App
 
-These Fn-combinations are always active (built into the driver, independent of `FnLock`):
+Both are framework-dependent .NET 10 apps, so they need the **.NET Desktop Runtime 10** installed. There is no installer yet: copy the build output to a folder of your choice (for the agent: the `.exe`, `.dll`, `.runtimeconfig.json`, `.deps.json`, `4MagicKeysPlus.Core.dll` and the `ru` satellite folder; the configuration app needs the same kind of files plus its own). To start the agent at logon, add a string value with its full path to `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`.
+
+#### Editing rules in the configuration app
+
+The configuration app asks for administrator rights when it starts: it writes the rules under `HKEY_LOCAL_MACHINE` and talks to the driver's control device, and both need them. (When debugging it from Visual Studio, start Visual Studio as administrator.)
+
+- Click a key on the picture to select it. The panel below shows the key and its current rules; click the empty space (or the key again) to unselect it. Keys with a rule are highlighted, and a tooltip shows what they do.
+- **Set mapping** switches to picking the target: the current rules are hidden, the keys that cannot be a target are dimmed, and the keys this keyboard does not have (F20-F24, Print Screen, Home/End on the keyboard without them, ...) and the media keys (play/pause, tracks, volume, brightness) appear in a row of extra keys under the picture. Click the target, or **Cancel** (or Esc) to leave the picking.
+- **Only with Fn** makes it a rule of the Fn layer (and changes which targets are allowed; you can switch it while picking). **Follow Fn Lock** makes that rule `FnLockAware` and only applies to the Fn layer. When a key can be remapped in one layer only, the first option is fixed.
+- **Remove mapping** deletes every rule of the key, in both layers. Be careful with the F-row: removing the Fn+F8 rule also removes the media action, and there is no "reset to defaults" yet.
+- Setting a mapping replaces only the rule of the same key and layer; the key's rules of the other layer stay.
+- Every change is saved to `Parameters\Rules` and the driver is told to reload at once. The glyph at the right of the panel shows how that went: a green check, a yellow triangle (saved, but the driver did not take the rules: no keyboard is connected, the driver is too old to reload, or it ignored some rules; they are loaded when the keyboard connects), or a red cross (nothing was saved). Hover it for the details.
+
+The configuration app only edits key rules. The launch entries and `FnLock` still have to be set in the registry.
+
+All colors of the app are in `4MagicKeysPlus\Themes\Dark.xaml`; the rest of the XAML and the code only refer to those keys. A new theme has to define the same keys, which the tests check.
+
+### Key Rules
+
+The driver has no built-in key mappings. Everything - Fn combinations, media keys, modifier swaps - is a rule under:
 
 ```
-Fn + Left       ->  Home
-Fn + Right      ->  End
-Fn + Up         ->  Page Up
-Fn + Down       ->  Page Down
-Fn + Return     ->  Insert
-Fn + P          ->  Print Screen
-Fn + S          ->  Scroll Lock
-Fn + B          ->  Pause/Break
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\<subkey>
 ```
 
-### Multimedia Keys (F1-F12)
+The subkey name does not matter to the driver; the convention is the 8-digit hex of `Source` (`01000041`), which also keeps two rules from sharing a source. Values:
 
-F1-F12 report a Consumer Control usage instead of their regular HID code by default; F3-F6 have no assigned action and always behave as regular function keys.
+| Value | Type | |
+|-------|------|-|
+| `Source` | DWORD | what is remapped |
+| `Target` | DWORD | what it becomes |
+| `FnLockAware` | DWORD | optional, default `0` (see below) |
+| `Comment` | SZ | optional, ignored by the driver |
+
+A subkey without both `Source` and `Target` is not a key rule (it may be a launch entry, see [Launch Entries](#launch-entries)). Rules the driver cannot interpret are ignored, as are rules beyond the first 128.
+
+#### Source and Target encoding
+
+Both are the same 32-bit value:
 
 ```
-F1  ->  Brightness Down
-F2  ->  Brightness Up
-F7  ->  Previous Track
-F8  ->  Play/Pause
-F9  ->  Next Track
-F10 ->  Mute
-F11 ->  Volume Down
-F12 ->  Volume Up
+bits  0-15   code: a HID key code (see the reference below), F0 = Eject, F1 = Fn,
+             or, in a Target with the consumer flag, a Consumer Control usage
+bits 16-23   modifier mask (see Modifier Bits below)
+bit  24      Source: "only while Fn is held" (Fn layer)
+             Target: the code is a Consumer Control usage, not a key
+bits 25-31   reserved, a rule with any of these set is ignored
 ```
 
-Holding Fn while pressing an F-key sends the regular F1-F12 code instead. Setting `FnLock` to `1` swaps the default: F-keys behave as regular function keys, and holding Fn gives the media action.
+Supported rule shapes:
 
-No default `KeyMap` is set out of the box (nothing to remap unless you configure one).
+| Source | Target | Example |
+|--------|--------|---------|
+| key | key (optionally plus modifiers) | `Source=0x68` (F13), `Target=0x46` (Print Screen) |
+| key | modifiers only | `Source=0x01000068`, `Target=0x00030000` (Fn+F13 -> Ctrl+Shift) |
+| key | consumer usage | `Source=0x01000041`, `Target=0x010000CD` (Fn+F8 -> Play/Pause) |
+| modifier(s) | modifier(s) | `Source=0x00040000`, `Target=0x00080000` (Left Alt -> Left Cmd) |
+| modifier(s) | Fn / Eject | `Source=0x00010000`, `Target=0xF1` (Left Ctrl -> Fn) |
+| Fn / Eject | modifier(s) | `Source=0xF1`, `Target=0x00010000` (Fn -> Left Ctrl) |
+| Fn / Eject | Fn / Eject | `Source=0xF0`, `Target=0xF1` (Eject -> Fn) |
+| Fn / Eject | key | `Source=0xF1`, `Target=0x49` (Fn -> Insert) |
+
+Not supported: a key as the source together with modifiers (e.g. Cmd+L -> F12), a key mapped to Fn/Eject, and a modifier mapped to a key. Windows receives a modifier before the key that follows it, so a replaced combination would leak the modifier (the Start menu opening on a Win tap, Alt activating menus).
+
+#### How the rules are applied
+
+- Each keyboard report is processed in one pass from its original state. Rules do not chain: a rule producing Fn does not trigger the Fn rules in the same report, and a swap (Alt <-> Cmd) stays a swap.
+- Only the source side of a rule is cleared; the target is added.
+- A Fn-layer rule (bit 24 in the source) applies while Fn is held and wins over the plain rule of the same key. Otherwise the plain rule applies, so e.g. a plain `F13 -> Print Screen` keeps working while Fn is held.
+- `FnLockAware` flips the Fn requirement of a Fn-layer rule while `FnLock` is `0`. With `FnLock=1`, F8 is F8 and Fn+F8 is Play/Pause; with `FnLock=0` it is the other way round. One `Fn+F8 -> Play/Pause` rule with `FnLockAware=1` covers both. Rules without `FnLockAware` ignore `FnLock`.
+- If several rules have the same source, the first one found wins. If two media keys are pressed at once, the first one wins and the other one is swallowed.
+- Keys produced by Fn/Eject -> key rules are added after the key pass and are not remapped again.
+
+Rules are read when a keyboard connects and when the driver is told to reload them; see [Applying Changes](#applying-changes).
+
+#### Typical rules
+
+The usual Apple-keyboard set (Fn combinations for the keys a Windows keyboard has, and the F-row actions). `FnLockAware` is `1` for the media rows only:
+
+```
+Fn+Left   -> Home           Source=0x01000050  Target=0x0000004A
+Fn+Right  -> End            Source=0x0100004F  Target=0x0000004D
+Fn+Up     -> Page Up        Source=0x01000052  Target=0x0000004B
+Fn+Down   -> Page Down      Source=0x01000051  Target=0x0000004E
+Fn+Return -> Insert         Source=0x01000028  Target=0x00000049
+Fn+P      -> Print Screen   Source=0x01000013  Target=0x00000046
+Fn+S      -> Scroll Lock    Source=0x01000016  Target=0x00000047
+Fn+B      -> Pause/Break    Source=0x01000005  Target=0x00000048
+
+Fn+F1  -> Brightness Down   Source=0x0100003A  Target=0x01000070
+Fn+F2  -> Brightness Up     Source=0x0100003B  Target=0x0100006F
+Fn+F7  -> Previous Track    Source=0x01000040  Target=0x010000B6
+Fn+F8  -> Play/Pause        Source=0x01000041  Target=0x010000CD
+Fn+F9  -> Next Track        Source=0x01000042  Target=0x010000B5
+Fn+F10 -> Mute              Source=0x01000043  Target=0x010000E2
+Fn+F11 -> Volume Down       Source=0x01000044  Target=0x010000EA
+Fn+F12 -> Volume Up         Source=0x01000045  Target=0x010000E9
+```
+
+Consumer usages used above: `6F` Brightness Up, `70` Brightness Down, `B5` Scan Next Track, `B6` Scan Previous Track, `CD` Play/Pause, `E2` Mute, `E9` Volume Up, `EA` Volume Down.
+
+Adding one rule from an administrative command prompt (Fn+F8 -> Play/Pause):
+
+```
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\01000041" /v Source /t REG_DWORD /d 0x01000041 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\01000041" /v Target /t REG_DWORD /d 0x010000CD /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\01000041" /v FnLockAware /t REG_DWORD /d 1 /f
+```
+
+Other examples: swap Left Alt and Left Cmd needs two rules (`0x00040000 -> 0x00080000` and `0x00080000 -> 0x00040000`); Eject as Fn is `0xF0 -> 0xF1`; Fn typing Insert is `0xF1 -> 0x49`.
+
+The configuration app is not able to edit rules yet. Hand editing is meant for development and for advanced users.
+
+### Launch Entries
+
+The agent starts an application on a hotkey. An entry is a subkey of the same `Rules` key with:
+
+| Value | Type | |
+|-------|------|-|
+| `VkKey` | DWORD | Windows virtual-key code of the hotkey ([list](https://learn.microsoft.com/windows/win32/inputdev/virtual-key-codes)) |
+| `VkModifier` | DWORD | optional modifiers, default `0`: `1` Alt, `2` Ctrl, `4` Shift, `8` Win (sum them) |
+| `Path` | SZ | what to start: an executable, shortcut, ... |
+| `Comment` | SZ | optional label used in the agent log |
+
+Both `VkKey` and `Path` are needed; the driver ignores these subkeys when they have no `Source`/`Target`. A subkey with exactly one of the two gets a warning in the agent log. Example, a calculator on F16 (virtual-key `0x7F`):
+
+```
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\Launch_00_7F" /v VkKey /t REG_DWORD /d 0x7F /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\Launch_00_7F" /v Path /t REG_SZ /d "C:\Windows\System32\calc.exe" /f
+```
+
+The agent reads the entries at start and registers the hotkeys; restart it after changes. The agent sees ordinary Windows keystrokes, so Fn cannot be a part of a hotkey directly (map Fn+key to a free key such as F20 with a rule and launch on that). Hotkey registration errors and other problems go to `%LOCALAPPDATA%\4MagicKeysPlus\agent.log`.
+
+### Battery Notice
+
+The agent reads the keyboard battery (the vendor HID report `0x90` of the keyboard, no driver involved) every 15 minutes, the first time 15 minutes after it starts, and shows a small always-on-top notice at the bottom center of the screen when the charge reaches 20% and again at 5%. It does not take focus, closes by itself after a few seconds or on a click, and stays quiet while the keyboard is charging. Plugging the keyboard in re-arms both warnings.
 
 ### Driver Settings
 
@@ -95,62 +213,66 @@ All settings are in the registry at:
 HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters
 ```
 
-Settings are read once at driver load. After changing values, restart the device to reload the driver (Administrative command prompt):
+Settings and rules are read when a keyboard connects and when the driver is told to reload them (see below).
 
-```
-pnputil /restart-device /deviceid "BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&0001004c_PID&026C"
-```
+#### Applying Changes
 
-Replace the device instance ID with the appropriate one for your keyboard model. You can also disconnect/reconnect the keyboard or reboot.
+The configuration app does this for you. After changing the registry by hand, apply the changes in one of these ways:
+
+- Tell the driver to reload (below). It re-reads `FnLock` and all the rules and applies them to every connected keyboard at once.
+- Or restart the device (Administrative command prompt):
+
+  ```
+  pnputil /restart-device /deviceid "BTHENUM\{00001124-0000-1000-8000-00805f9b34fb}_VID&0001004c_PID&026C"
+  ```
+
+  Replace the device instance ID with the appropriate one for your keyboard model. You can also disconnect/reconnect the keyboard or reboot.
+
+**Control device.** While at least one keyboard is connected, the driver has a device `\\.\4MagicKeysPlus`, open to administrators and SYSTEM only. The request `IOCTL_MKP_RELOAD_CONFIG` (`0x0022A000`, `CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_WRITE_ACCESS)`) makes the driver reload. It takes no input; the optional output is three DWORDs: the rules read, the rules the driver could interpret and the number of keyboards. The definitions are in `4MagicKeysPlusDriver\DriverInterface.h`.
+
+Open the device, send the request and close the handle at once; never keep it open. An open handle keeps the device alive after the last keyboard is gone, which blocks unloading the driver (an update then needs a reboot) and makes reloading fail the next time a keyboard connects. `CreateFile` fails with error 2 when no keyboard is connected or the driver is older than this feature, and with error 5 when not elevated.
+
+For example, from an elevated Windows PowerShell 5.1:
+
+```powershell
+Add-Type -TypeDefinition @"
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+
+public static class MagicKeysDriver {
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr security, uint disposition, uint flags, IntPtr template);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    static extern bool DeviceIoControl(SafeFileHandle device, uint code, IntPtr input, uint inputSize, uint[] output, uint outputSize, out uint returned, IntPtr overlapped);
+
+    public static uint[] Reload() {
+        using (SafeFileHandle device = CreateFile(@"\\.\4MagicKeysPlus", 0x40000000, 3, IntPtr.Zero, 3, 0, IntPtr.Zero)) {
+            if (device.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+            uint[] result = new uint[3];
+            uint returned;
+            if (!DeviceIoControl(device, 0x0022A000, IntPtr.Zero, 0, result, 12, out returned, IntPtr.Zero))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            return result;
+        }
+    }
+}
+"@
+$r = [MagicKeysDriver]::Reload()
+"Rules read: $($r[0]), accepted: $($r[1]), keyboards: $($r[2])"
+```
 
 #### FnLock (DWORD)
 
-Controls the default behavior of F1-F12 (see [Multimedia Keys](#multimedia-keys-f1-f12)). When `0` (default), F-keys act as media/brightness/volume controls by default and send their regular F1-F12 code while Fn is held. When set to `1`, this is reversed: F-keys act as regular function keys by default, and holding Fn gives the media action instead. Does not affect the other Fn-combinations (Home, End, Page Up/Down, etc.), which always require holding Fn. Default: `0`.
+Used by rules with `FnLockAware=1` (see [How the rules are applied](#how-the-rules-are-applied)); any non-zero value means on. Does not affect rules that are not `FnLockAware`. Default: `0`.
 
-#### KeyMap (REG_BINARY)
-
-Pairs of bytes `[source, target, source, target, ...]` that remap keycodes. Applied to all 6 key slots in the HID report.
-
-Special virtual codes for keys in the Apple-specific byte:
-- `F0` — Eject key
-- `F1` — Fn key
-
-When Fn is mapped to a key via KeyMap, it sends that key instead of acting as a modifier.
-
-Default: none (empty).
-
-Example — remap F13/F14/F15 and Fn:
-```
-KeyMap = hex:F0,4C,F1,49,68,46,69,47,6A,48
-```
-Means: Eject→Delete, Fn→Insert, F13→PrtScr, F14→ScrLck, F15→Pause/Break.
-
-#### ModMap (REG_BINARY)
-
-Pairs of bytes `[source_bit, target_bit, ...]` that remap modifier keys. Applied to the modifier bitmask byte.
-
-Example — swap Alt and Cmd (both sides):
-```
-ModMap = hex:04,08,08,04,40,80,80,40
-```
-
-Default: not set (no modifier remapping).
-
-#### SpecialModMap (REG_BINARY)
-
-Pairs of bytes `[source, target, ...]` that remap between a real modifier bit and the virtual Fn (`F1`) / Eject (`F0`) codes. Each pair has exactly one modifier-bit side and one virtual-code side; the direction is inferred per pair, so a bidirectional swap needs both pairs (modifier→virtual and virtual→modifier).
-
-Example — swap Fn and Left Ctrl (both directions):
-```
-SpecialModMap = hex:01,F1,F1,01
-```
-Means: Left Ctrl press acts as Fn, and Fn press acts as Left Ctrl.
-
-Default: not set (no remapping).
+The older `KeyMap`, `ModMap` and `SpecialModMap` binary values are no longer read and the driver INF no longer creates them; they can be deleted.
 
 ### HID Key Code Reference
 
-#### Regular Keys (for KeyMap)
+#### Regular Keys
 
 ```
 04=A    05=B    06=C    07=D    08=E    09=F    0A=G    0B=H
@@ -191,21 +313,23 @@ Default: not set (no remapping).
 #### Numeric Keypad
 
 ```
-53=Num Lock     54=KP /     55=KP *     56=KP -
-57=KP +         58=KP Enter
-59=KP 1     5A=KP 2     5B=KP 3
-5C=KP 4     5D=KP 5     5E=KP 6
-5F=KP 7     60=KP 8     61=KP 9
-62=KP 0     63=KP .
+53=Num Lock     54=KP /        55=KP *     56=KP -
+57=KP +         58=KP Enter    
+59=KP 1         5A=KP 2        5B=KP 3
+5C=KP 4         5D=KP 5        5E=KP 6
+5F=KP 7         60=KP 8        61=KP 9
+62=KP 0         63=KP .
 ```
 
 #### Virtual Codes (Apple-specific keys)
 
 ```
-F0=Eject    F1=Fn
+F0=Eject    F1=Fn   (as the code of a rule value)
 ```
 
-#### Modifier Bits (for ModMap)
+#### Modifier Bits (bits 16-23 of a rule value)
+
+The bit goes to the mask shifted by 16: Left Alt (`04`) in a rule value is `0x00040000`.
 
 ```
 01=Left Ctrl        02=Left Shift
@@ -218,16 +342,25 @@ F0=Eject    F1=Fn
 
 Requirements:
 - Visual Studio 2026 with the **Desktop development with C++** workload
-- The **Windows Driver Kit** individual component (installed via the Visual Studio Installer — adds the driver project templates and build tooling)
+- The **Windows Driver Kit** individual component (installed via the Visual Studio Installer - adds the driver project templates and build tooling)
 - A Windows SDK whose build number matches your installed WDK build number exactly (e.g. both `10.0.28000.x`)
+- The .NET 10 SDK for the agent, the configuration app and their tests
 
-This project currently targets KMDF 1.35, which ships with the latest WDK (`10.0.28000.x`, for Visual Studio 2026) — it won't build against an older WDK/SDK pair (e.g. the `10.0.26100.x` kit that ships for Visual Studio 2022) without changes. If you want to build on Visual Studio 2022 instead, either install the latest WDK/SDK alongside it, or lower `KMDF_VERSION_MAJOR`/`KMDF_VERSION_MINOR` in `4MagicKeysPlus\4MagicKeysPlus.vcxproj` to a version your installed WDK actually provides (check `C:\Program Files (x86)\Windows Kits\10\Lib\wdf\kmdf\x64\` for the KMDF versions installed on your machine).
+This project currently targets KMDF 1.35, which ships with the latest WDK (`10.0.28000.x`, for Visual Studio 2026) - it won't build against an older WDK/SDK pair (e.g. the `10.0.26100.x` kit that ships for Visual Studio 2022) without changes. If you want to build on Visual Studio 2022 instead, either install the latest WDK/SDK alongside it, or lower `KMDF_VERSION_MAJOR`/`KMDF_VERSION_MINOR` in `4MagicKeysPlusDriver\4MagicKeysPlusDriver.vcxproj` to a version your installed WDK actually provides (check `C:\Program Files (x86)\Windows Kits\10\Lib\wdf\kmdf\x64\` for the KMDF versions installed on your machine).
 
-Build the `4MagicKeysPlus` project for x64 (Debug or Release). The driver, INF and catalog will be in the output directory.
+Build the `4MagicKeysPlusDriver` project for x64 (Debug or Release). The driver, INF and catalog will be in the output directory. The .NET projects build with `dotnet build`, or from the solution in Visual Studio.
+
+#### Tests
+
+- Driver logic (`KeyProcessor`, compiled into the test project as plain user-mode C++): `4MagicKeysPlusDriverTests`, run from Visual Studio's Test Explorer or `vstest.console.exe` on the built DLL.
+- Agent (launch entry loading, battery notice policy): `dotnet test 4MagicKeysPlusAgentTests`.
+- Configuration app (rule decoding and encoding, editing, saving rules, tooltips, key names, theme keys): `dotnet test 4MagicKeysPlusTests`. The tests of saving use a scratch key under `HKEY_CURRENT_USER\Software\4MagicKeysPlusTests`, which they delete afterwards; they never touch the driver's rules.
+
+The Debug build of the agent accepts two test switches that are not compiled into Release: `--demo-battery <percent> [delay seconds]` shows the battery notice once and exits, `--battery-interval <seconds>` checks the battery that often and logs every reading.
 
 #### Test Certificate
 
-The build test-signs the driver using `4MagicKeysPlus\4MagicKeysPlus.pfx`, which is **not checked into git** (`.pfx` is gitignored, since it bundles the private key). If you get an MSBuild error like `Invalid argument <...4MagicKeysPlus.pfx> for property <TestCertificate>`, generate a new self-signed test certificate locally (PowerShell, run from the `4MagicKeysPlus\` folder):
+The build test-signs the driver using `4MagicKeysPlusDriver\4MagicKeysPlus.pfx`, which is **not checked into git** (`.pfx` is gitignored, since it bundles the private key). If you get an MSBuild error like `Invalid argument <...4MagicKeysPlus.pfx> for property <TestCertificate>`, generate a new self-signed test certificate locally (PowerShell, run from the `4MagicKeysPlusDriver\` folder):
 
 ```powershell
 $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=4MagicKeysPlus" -CertStoreLocation Cert:\CurrentUser\My -HashAlgorithm SHA256 -KeyExportPolicy Exportable -Provider "Microsoft Strong Cryptographic Provider" -NotAfter (Get-Date "2040-01-01")

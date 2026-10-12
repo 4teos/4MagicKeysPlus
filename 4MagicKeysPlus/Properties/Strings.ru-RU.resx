@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NavKeys" xml:space="preserve">
+    <value>Клавиши</value>
+  </data>
+  <data name="NavQuickLaunch" xml:space="preserve">
+    <value>Быстрый запуск</value>
+  </data>
+  <data name="NavAdvanced" xml:space="preserve">
+    <value>Дополнительно</value>
+  </data>
+  <data name="DeviceNotDetected" xml:space="preserve">
+    <value>Устройство не найдено</value>
+  </data>
+  <data name="ConnectionUsb" xml:space="preserve">
+    <value>USB</value>
+  </data>
+  <data name="ConnectionBluetooth" xml:space="preserve">
+    <value>Bluetooth</value>
+  </data>
+  <data name="BatteryCharging" xml:space="preserve">
+    <value>заряжается</value>
+  </data>
+  <data name="FnLockEnabled" xml:space="preserve">
+    <value>Включен</value>
+  </data>
+  <data name="FnLockDisabled" xml:space="preserve">
+    <value>Выключен</value>
+  </data>
+  <data name="StatusBatteryLabel" xml:space="preserve">
+    <value>Заряд батареи</value>
+  </data>
+  <data name="StatusConnectionLabel" xml:space="preserve">
+    <value>Подключение</value>
+  </data>
+  <data name="StatusFnLockLabel" xml:space="preserve">
+    <value>Fn Lock</value>
+  </data>
+  <data name="QuickLaunchPlaceholderNotice" xml:space="preserve">
+    <value>Экран «Быстрый запуск» ещё не готов — здесь временно показана раскладка клавиш.</value>
+  </data>
+  <data name="KeysModelLabel" xml:space="preserve">
+    <value>Модель клавиатуры:</value>
+  </data>
+  <data name="KeysModel_MagicKeyboard" xml:space="preserve">
+    <value>Magic Keyboard (без цифрового блока, A1644)</value>
+  </data>
+  <data name="KeysModel_MagicKeyboardWithNumpad" xml:space="preserve">
+    <value>Magic Keyboard с цифровым блоком (A1843)</value>
+  </data>
+  <data name="KeyActionSetMapping" xml:space="preserve">
+    <value>Задать маппинг</value>
+  </data>
+  <data name="KeyActionRemoveMapping" xml:space="preserve">
+    <value>Убрать маппинг</value>
+  </data>
+  <data name="KeyActionCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="KeyOptionWithFn" xml:space="preserve">
+    <value>Только с Fn</value>
+  </data>
+  <data name="KeyOptionFollowFnLock" xml:space="preserve">
+    <value>Учитывать Fn Lock</value>
+  </data>
+  <data name="KeyOptionFollowFnLockHint" xml:space="preserve">
+    <value>Когда Fn Lock выключен, маппинг работает без Fn</value>
+  </data>
+  <data name="KeyNotRemapped" xml:space="preserve">
+    <value>Не назначено</value>
+  </data>
+  <data name="KeyCannotRemap" xml:space="preserve">
+    <value>Эту клавишу нельзя переназначить</value>
+  </data>
+  <data name="KeyPickPrompt" xml:space="preserve">
+    <value>Выберите клавишу, на которую назначить</value>
+  </data>
+  <data name="KeyRuleWithFn" xml:space="preserve">
+    <value>С Fn</value>
+  </data>
+  <data name="KeyRuleFollowsFnLock" xml:space="preserve">
+    <value>учитывает Fn Lock</value>
+  </data>
+  <data name="ApplyApplied" xml:space="preserve">
+    <value>Применено</value>
+  </data>
+  <data name="ApplyIgnored" xml:space="preserve">
+    <value>Сохранено, но драйвер проигнорировал правил: {0}</value>
+  </data>
+  <data name="ApplySavedNotApplied" xml:space="preserve">
+    <value>Сохранено. Драйвер применит правила при подключении клавиатуры.</value>
+  </data>
+  <data name="ApplyDriverError" xml:space="preserve">
+    <value>Сохранено, но драйвер недоступен: {0}</value>
+  </data>
+  <data name="ApplySaveFailed" xml:space="preserve">
+    <value>Не удалось сохранить: {0}</value>
+  </data>
+</root>

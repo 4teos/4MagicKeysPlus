@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NavKeys" xml:space="preserve">
+    <value>Keys</value>
+  </data>
+  <data name="NavQuickLaunch" xml:space="preserve">
+    <value>Quick Launch</value>
+  </data>
+  <data name="NavAdvanced" xml:space="preserve">
+    <value>Advanced</value>
+  </data>
+  <data name="DeviceNotDetected" xml:space="preserve">
+    <value>No device detected</value>
+  </data>
+  <data name="ConnectionUsb" xml:space="preserve">
+    <value>USB</value>
+  </data>
+  <data name="ConnectionBluetooth" xml:space="preserve">
+    <value>Bluetooth</value>
+  </data>
+  <data name="BatteryCharging" xml:space="preserve">
+    <value>charging</value>
+  </data>
+  <data name="FnLockEnabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="FnLockDisabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="StatusBatteryLabel" xml:space="preserve">
+    <value>Battery charge</value>
+  </data>
+  <data name="StatusConnectionLabel" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="StatusFnLockLabel" xml:space="preserve">
+    <value>Fn Lock</value>
+  </data>
+  <data name="QuickLaunchPlaceholderNotice" xml:space="preserve">
+    <value>Quick Launch isn't built yet - this is a placeholder showing the key layout screen.</value>
+  </data>
+  <data name="KeysModelLabel" xml:space="preserve">
+    <value>Keyboard model:</value>
+  </data>
+  <data name="KeysModel_MagicKeyboard" xml:space="preserve">
+    <value>Magic Keyboard (no numeric keypad, A1644)</value>
+  </data>
+  <data name="KeysModel_MagicKeyboardWithNumpad" xml:space="preserve">
+    <value>Magic Keyboard with Numeric Keypad (A1843)</value>
+  </data>
+  <data name="KeyActionSetMapping" xml:space="preserve">
+    <value>Set mapping</value>
+  </data>
+  <data name="KeyActionRemoveMapping" xml:space="preserve">
+    <value>Remove mapping</value>
+  </data>
+  <data name="KeyActionCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="KeyOptionWithFn" xml:space="preserve">
+    <value>Only with Fn</value>
+  </data>
+  <data name="KeyOptionFollowFnLock" xml:space="preserve">
+    <value>Follow Fn Lock</value>
+  </data>
+  <data name="KeyOptionFollowFnLockHint" xml:space="preserve">
+    <value>When Fn Lock is off, the mapping works without Fn instead</value>
+  </data>
+  <data name="KeyNotRemapped" xml:space="preserve">
+    <value>Not remapped</value>
+  </data>
+  <data name="KeyCannotRemap" xml:space="preserve">
+    <value>This key can't be remapped</value>
+  </data>
+  <data name="KeyPickPrompt" xml:space="preserve">
+    <value>Pick the key to map to</value>
+  </data>
+  <data name="KeyRuleWithFn" xml:space="preserve">
+    <value>With Fn</value>
+  </data>
+  <data name="KeyRuleFollowsFnLock" xml:space="preserve">
+    <value>follows Fn Lock</value>
+  </data>
+  <data name="ApplyApplied" xml:space="preserve">
+    <value>Applied</value>
+  </data>
+  <data name="ApplyIgnored" xml:space="preserve">
+    <value>Saved, but the driver ignored {0} rule(s)</value>
+  </data>
+  <data name="ApplySavedNotApplied" xml:space="preserve">
+    <value>Saved. The driver will apply it when the keyboard connects.</value>
+  </data>
+  <data name="ApplyDriverError" xml:space="preserve">
+    <value>Saved, but the driver could not be reached: {0}</value>
+  </data>
+  <data name="ApplySaveFailed" xml:space="preserve">
+    <value>Could not save: {0}</value>
+  </data>
+</root>
