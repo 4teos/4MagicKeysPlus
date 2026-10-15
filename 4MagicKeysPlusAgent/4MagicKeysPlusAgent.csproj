@@ -10,10 +10,16 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 
+  <!-- The uiAccess manifest only starts from Program Files, so Debug runs from the build folder keep the default one. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <SigningCertificate Condition="'$(SigningCertificate)' == ''">$(MSBuildThisFileDirectory)..\4MagicKeysPlusDriver\4MagicKeysPlus.pfx</SigningCertificate>
+  </PropertyGroup>
+
   <PropertyGroup>
-    <Version>2.2.1</Version>
-    <AssemblyVersion>2.2.1.12</AssemblyVersion>
-    <FileVersion>2.2.1.12</FileVersion>
+    <Version>2.2.2</Version>
+    <AssemblyVersion>2.2.2.13</AssemblyVersion>
+    <FileVersion>2.2.2.13</FileVersion>
 	<Copyright>© 2026 4teos https://github.com/4teos</Copyright>
   </PropertyGroup>
 
@@ -26,5 +32,18 @@
   <ItemGroup>
     <ProjectReference Include="..\4MagicKeysPlusCore\4MagicKeysPlusCore.csproj" />
   </ItemGroup>
+
+  <!-- Signs the apphost in obj, so the copies in bin and in the publish folder are both signed. -->
+  <Target Name="SignAgentExe" AfterTargets="_CreateAppHost" Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <SignToolCandidate Include="$(MSBuildProgramFiles32)\Windows Kits\10\bin\*\x64\signtool.exe" />
+    </ItemGroup>
+    <PropertyGroup>
+      <SignToolPath Condition="'$(SignToolPath)' == ''">%(SignToolCandidate.FullPath)</SignToolPath>
+    </PropertyGroup>
+    <Warning Condition="!Exists('$(SigningCertificate)')" Text="Signing certificate '$(SigningCertificate)' not found. The exe stays unsigned and will not start with uiAccess." />
+    <Warning Condition="Exists('$(SigningCertificate)') And '$(SignToolPath)' == ''" Text="signtool.exe not found under the Windows Kits. The exe stays unsigned and will not start with uiAccess." />
+    <Exec Condition="Exists('$(SigningCertificate)') And '$(SignToolPath)' != ''" Command="&quot;$(SignToolPath)&quot; sign /f &quot;$(SigningCertificate)&quot; /fd SHA256 &quot;$(AppHostIntermediatePath)&quot;" />
+  </Target>
 
 </Project>
