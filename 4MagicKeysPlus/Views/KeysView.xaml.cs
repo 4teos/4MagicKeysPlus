@@ -24,14 +24,9 @@ public partial class KeysView : UserControl {
     private bool followFnLock;
     private Window? hostWindow;
 
-    public KeysView(KeyRemapEditor editor, string? placeholderNotice = null) {
+    public KeysView(KeyRemapEditor editor) {
         InitializeComponent();
         this.editor = editor;
-
-        if (!string.IsNullOrEmpty(placeholderNotice)) {
-            PlaceholderNotice.Text = placeholderNotice;
-            PlaceholderNotice.Visibility = Visibility.Visible;
-        }
 
         Loaded += (_, _) => {
             hostWindow = Window.GetWindow(this);

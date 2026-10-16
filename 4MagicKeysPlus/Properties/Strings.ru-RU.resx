@@ -48,9 +48,6 @@
   <data name="StatusFnLockLabel" xml:space="preserve">
     <value>Fn Lock</value>
   </data>
-  <data name="QuickLaunchPlaceholderNotice" xml:space="preserve">
-    <value>Экран «Быстрый запуск» ещё не готов — здесь временно показана раскладка клавиш.</value>
-  </data>
   <data name="KeysModelLabel" xml:space="preserve">
     <value>Модель клавиатуры:</value>
   </data>
@@ -113,5 +110,47 @@
   </data>
   <data name="HotkeyNotRegistered" xml:space="preserve">
     <value>Горячих клавиш, которые не удалось зарегистрировать: {0}</value>
+  </data>
+  <data name="HotkeyAlreadyAssigned" xml:space="preserve">
+    <value>Уже назначено: {0}</value>
+  </data>
+  <data name="HotkeyDeleted" xml:space="preserve">
+    <value>Удалено: {0}</value>
+  </data>
+  <data name="HotkeyUndo" xml:space="preserve">
+    <value>Отменить</value>
+  </data>
+  <data name="HotkeyAdd" xml:space="preserve">
+    <value>Добавить привязку</value>
+  </data>
+  <data name="HotkeyAddFirst" xml:space="preserve">
+    <value>Назначить первую клавишу</value>
+  </data>
+  <data name="HotkeyCapturePrompt" xml:space="preserve">
+    <value>Нажмите комбинацию...</value>
+  </data>
+  <data name="HotkeyNotSet" xml:space="preserve">
+    <value>Не задано</value>
+  </data>
+  <data name="HotkeyBrowse" xml:space="preserve">
+    <value>Обзор...</value>
+  </data>
+  <data name="HotkeyBrowseFilter" xml:space="preserve">
+    <value>Программы и ярлыки|*.exe;*.lnk;*.bat;*.cmd|Все файлы|*.*</value>
+  </data>
+  <data name="HotkeyStartAgent" xml:space="preserve">
+    <value>Запустить</value>
+  </data>
+  <data name="HotkeyAgentNotFound" xml:space="preserve">
+    <value>Файл агента не найден: {0}</value>
+  </data>
+  <data name="HotkeyEdit" xml:space="preserve">
+    <value>Изменить</value>
+  </data>
+  <data name="HotkeyDone" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="HotkeyDelete" xml:space="preserve">
+    <value>Удалить</value>
   </data>
 </root>

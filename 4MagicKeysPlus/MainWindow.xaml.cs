@@ -8,6 +8,7 @@ namespace _4MagicKeysPlus;
 public partial class MainWindow : Window {
     // Shared by the screens, so unsaved edits survive switching between them.
     private readonly KeyRemapEditor keyRemapEditor = new();
+    private readonly HotkeyEditor hotkeyEditor = new();
 
     public MainWindow() {
         InitializeComponent();
@@ -20,7 +21,7 @@ public partial class MainWindow : Window {
     }
 
     private void NavApps_Checked(object sender, RoutedEventArgs e) {
-        MainContent?.Content = new KeysView(keyRemapEditor, Strings.QuickLaunchPlaceholderNotice);
+        MainContent?.Content = new HotkeyListView(hotkeyEditor);
     }
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e) {

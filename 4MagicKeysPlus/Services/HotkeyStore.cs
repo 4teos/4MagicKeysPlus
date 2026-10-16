@@ -14,7 +14,8 @@ internal interface IHotkeyStore {
 // What saving changes under Parameters\Rules, worked out without touching the registry. An entry
 // keeps its subkey (whatever it is called) as long as its key combination stays the same, so a
 // new name or path is written in place. A new entry, or one whose combination changed, goes
-// under Hotkey_<modifiers>_<key>, and the subkey it left is released.
+// under Hotkey_<modifiers>_<key>, and the subkey it left is released. The position in the
+// wanted list is each entry's Order, so changing a combination does not move a card.
 internal sealed record HotkeysPlan(IReadOnlyList<string> Release, IReadOnlyList<HotkeyEntry> Write, IReadOnlyList<HotkeyEntry> Result) {
     public static HotkeysPlan Create(IReadOnlyList<HotkeyEntry> saved, IReadOnlyList<HotkeyEntry> wanted) {
         Dictionary<string, HotkeyEntry> savedByName = [];
@@ -31,15 +32,17 @@ internal sealed record HotkeysPlan(IReadOnlyList<string> Release, IReadOnlyList<
         List<HotkeyEntry> result = [];
         List<HotkeyEntry> write = [];
         foreach (HotkeyEntry entry in wanted) {
+            int order = result.Count;
             if (KeepsItsSubkey(entry, savedByName)) {
-                result.Add(entry);
-                if (savedByName[entry.RegistryName!] != entry) {
-                    write.Add(entry);
+                HotkeyEntry kept = entry with { Order = order };
+                result.Add(kept);
+                if (savedByName[entry.RegistryName!] != kept) {
+                    write.Add(kept);
                 }
                 continue;
             }
 
-            HotkeyEntry placed = entry with { RegistryName = FreeName(entry, taken) };
+            HotkeyEntry placed = entry with { RegistryName = FreeName(entry, taken), Order = order };
             taken.Add(placed.RegistryName!);
             result.Add(placed);
             write.Add(placed);
@@ -101,9 +104,12 @@ internal sealed class RegistryHotkeyStore : IHotkeyStore {
 
             uint modifiers = key.GetValue("VkModifier") is int raw ? (uint)raw & AllowedModifiers : 0;
             string label = key.GetValue("Comment") is string comment && !string.IsNullOrWhiteSpace(comment) ? comment : HotkeyNames.FromPath(path);
-            entries.Add(new HotkeyEntry(name, label, path, (uint)virtualKey, modifiers));
+            int? order = key.GetValue("Order") is int position ? position : null;
+            entries.Add(new HotkeyEntry(name, label, path, (uint)virtualKey, modifiers, order));
         }
-        return entries;
+
+        // Subkeys come in name order; entries that were never given an Order stay in that order, after the others.
+        return [.. entries.OrderBy(entry => entry.Order ?? int.MaxValue)];
     }
 
     public IReadOnlyList<HotkeyEntry> Save(IReadOnlyList<HotkeyEntry> saved, IReadOnlyList<HotkeyEntry> wanted) {
@@ -124,6 +130,7 @@ internal sealed class RegistryHotkeyStore : IHotkeyStore {
             } else {
                 key.DeleteValue("VkModifier", throwOnMissingValue: false);
             }
+            key.SetValue("Order", entry.Order ?? 0, RegistryValueKind.DWord);
             key.SetValue("Path", entry.Path, RegistryValueKind.String);
             key.SetValue("Comment", entry.Name, RegistryValueKind.String);
         }

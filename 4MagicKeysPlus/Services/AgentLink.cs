@@ -11,6 +11,8 @@ internal interface IAgentPause : IDisposable {
 // The configuration app's side of the agent's pipe. Every call answers null when the agent is
 // not running.
 internal interface IAgentLink {
+    Task<bool> IsRunningAsync();
+
     Task<AgentResponse?> ReloadAsync();
 
     Task<IAgentPause?> PauseAsync();
@@ -23,6 +25,11 @@ internal sealed class AgentLink : IAgentLink {
 
     public AgentLink(string pipeName = AgentProtocol.PipeName) {
         this.pipeName = pipeName;
+    }
+
+    public async Task<bool> IsRunningAsync() {
+        using AgentConnection? connection = await AgentConnection.ConnectAsync(ConnectTimeout, pipeName);
+        return connection is not null;
     }
 
     public async Task<AgentResponse?> ReloadAsync() {

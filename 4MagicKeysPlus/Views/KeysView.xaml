@@ -59,8 +59,6 @@
         </Border>
 
         <StackPanel Grid.Row="4">
-            <TextBlock x:Name="PlaceholderNotice" Visibility="Collapsed" Foreground="{DynamicResource TextSecondary}" FontStyle="Italic"
-                       TextWrapping="Wrap" Margin="12"/>
             <StackPanel Orientation="Horizontal" Margin="16">
                 <TextBlock Text="{x:Static properties:Strings.KeysModelLabel}" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8"/>
                 <ComboBox x:Name="ModelSelector" Width="300" SelectionChanged="ModelSelector_SelectionChanged" DisplayMemberPath="DeviceDescription" />

@@ -28,6 +28,10 @@ public sealed class HotkeyEditor {
 
     public IReadOnlyList<HotkeyEntry> Entries => entries;
 
+    internal Task<bool> IsAgentRunningAsync() {
+        return agent.IsRunningAsync();
+    }
+
     // Releases the agent's hotkeys while a key is being captured; null when the agent is not running.
     internal Task<IAgentPause?> PauseAgentAsync() {
         return agent.PauseAsync();

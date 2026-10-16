@@ -17,9 +17,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>2.2.2</Version>
-    <AssemblyVersion>2.2.2.13</AssemblyVersion>
-    <FileVersion>2.2.2.13</FileVersion>
+    <Version>2.3.0</Version>
+    <AssemblyVersion>2.3.0.14</AssemblyVersion>
+    <FileVersion>2.3.0.14</FileVersion>
 	<Copyright>© 2026 4teos https://github.com/4teos</Copyright>
   </PropertyGroup>
 

@@ -20,4 +20,9 @@
     <ProjectReference Include="..\4MagicKeysPlusCore\4MagicKeysPlusCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\HandOpen.png" LogicalName="HandOpen.png" />
+    <EmbeddedResource Include="Resources\HandClosed.png" LogicalName="HandClosed.png" />
+  </ItemGroup>
+
 </Project>

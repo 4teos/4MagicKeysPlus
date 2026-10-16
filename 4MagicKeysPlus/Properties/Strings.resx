@@ -48,9 +48,6 @@
   <data name="StatusFnLockLabel" xml:space="preserve">
     <value>Fn Lock</value>
   </data>
-  <data name="QuickLaunchPlaceholderNotice" xml:space="preserve">
-    <value>Quick Launch isn't built yet - this is a placeholder showing the key layout screen.</value>
-  </data>
   <data name="KeysModelLabel" xml:space="preserve">
     <value>Keyboard model:</value>
   </data>
@@ -113,5 +110,47 @@
   </data>
   <data name="HotkeyNotRegistered" xml:space="preserve">
     <value>Hotkeys that could not be registered: {0}</value>
+  </data>
+  <data name="HotkeyAlreadyAssigned" xml:space="preserve">
+    <value>Already assigned: {0}</value>
+  </data>
+  <data name="HotkeyDeleted" xml:space="preserve">
+    <value>Deleted: {0}</value>
+  </data>
+  <data name="HotkeyUndo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="HotkeyAdd" xml:space="preserve">
+    <value>Add hotkey</value>
+  </data>
+  <data name="HotkeyAddFirst" xml:space="preserve">
+    <value>Assign the first hotkey</value>
+  </data>
+  <data name="HotkeyCapturePrompt" xml:space="preserve">
+    <value>Press a combination...</value>
+  </data>
+  <data name="HotkeyNotSet" xml:space="preserve">
+    <value>Not set</value>
+  </data>
+  <data name="HotkeyBrowse" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+  <data name="HotkeyBrowseFilter" xml:space="preserve">
+    <value>Programs and shortcuts|*.exe;*.lnk;*.bat;*.cmd|All files|*.*</value>
+  </data>
+  <data name="HotkeyStartAgent" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="HotkeyAgentNotFound" xml:space="preserve">
+    <value>The agent was not found: {0}</value>
+  </data>
+  <data name="HotkeyEdit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="HotkeyDone" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="HotkeyDelete" xml:space="preserve">
+    <value>Delete</value>
   </data>
 </root>

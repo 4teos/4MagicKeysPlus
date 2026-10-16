@@ -5,8 +5,8 @@ using _4MagicKeysPlus.Services;
 namespace _4MagicKeysPlusTests;
 
 public class HotkeysPlanTests {
-    private static HotkeyEntry Entry(string? name, uint virtualKey = 0x7F, uint modifiers = 0, string label = "Calc", string path = @"C:\calc.exe") {
-        return new HotkeyEntry(name, label, path, virtualKey, modifiers);
+    private static HotkeyEntry Entry(string? name, uint virtualKey = 0x7F, uint modifiers = 0, string label = "Calc", string path = @"C:\calc.exe", int? order = null) {
+        return new HotkeyEntry(name, label, path, virtualKey, modifiers, order);
     }
 
     [Fact]
@@ -20,7 +20,7 @@ public class HotkeysPlanTests {
 
     [Fact]
     public void AnUnchangedEntry_IsNotWrittenAgain() {
-        HotkeyEntry saved = Entry("Launch_00_7F");
+        HotkeyEntry saved = Entry("Launch_00_7F", order: 0);
 
         HotkeysPlan plan = HotkeysPlan.Create([saved], [saved]);
 
@@ -30,7 +30,7 @@ public class HotkeysPlanTests {
 
     [Fact]
     public void ANewNameOrPath_IsWrittenInPlaceWhateverTheSubkeyIsCalled() {
-        HotkeyEntry saved = Entry("Launch_00_7F");
+        HotkeyEntry saved = Entry("Launch_00_7F", order: 0);
 
         HotkeysPlan plan = HotkeysPlan.Create([saved], [saved with { Name = "Renamed", Path = @"C:\new.exe" }]);
 
@@ -40,7 +40,7 @@ public class HotkeysPlanTests {
 
     [Fact]
     public void AChangedCombination_MovesToANewSubkeyAndReleasesTheOldOne() {
-        HotkeyEntry saved = Entry("Launch_00_7F");
+        HotkeyEntry saved = Entry("Launch_00_7F", order: 0);
 
         HotkeysPlan plan = HotkeysPlan.Create([saved], [saved with { VirtualKey = 0x80 }]);
 
@@ -51,8 +51,8 @@ public class HotkeysPlanTests {
 
     [Fact]
     public void ARemovedEntry_IsReleased() {
-        HotkeyEntry kept = Entry("Hotkey_00_80", virtualKey: 0x80);
-        HotkeyEntry removed = Entry("Hotkey_00_7F");
+        HotkeyEntry kept = Entry("Hotkey_00_80", virtualKey: 0x80, order: 0);
+        HotkeyEntry removed = Entry("Hotkey_00_7F", order: 1);
 
         HotkeysPlan plan = HotkeysPlan.Create([kept, removed], [kept]);
 
@@ -62,7 +62,7 @@ public class HotkeysPlanTests {
 
     [Fact]
     public void ANewEntry_MayTakeTheSubkeyOfARemovedOneWithoutReleasingIt() {
-        HotkeyEntry removed = Entry("Hotkey_00_7F");
+        HotkeyEntry removed = Entry("Hotkey_00_7F", order: 0);
 
         HotkeysPlan plan = HotkeysPlan.Create([removed], [Entry(null, label: "Other", path: @"C:\other.exe")]);
 
@@ -72,11 +72,50 @@ public class HotkeysPlanTests {
 
     [Fact]
     public void TwoEntries_NeverShareASubkey() {
-        HotkeyEntry odd = Entry("Hotkey_00_7F", virtualKey: 0x80);
+        HotkeyEntry odd = Entry("Hotkey_00_7F", virtualKey: 0x80, order: 0);
 
         HotkeysPlan plan = HotkeysPlan.Create([odd], [odd, Entry(null)]);
 
         Assert.Equal("Hotkey_00_7F_2", Assert.Single(plan.Write).RegistryName);
+    }
+
+    [Fact]
+    public void ThePositionInTheList_IsTheOrder() {
+        HotkeysPlan plan = HotkeysPlan.Create([], [Entry(null), Entry(null, virtualKey: 0x80)]);
+
+        Assert.Equal([0, 1], plan.Result.Select(entry => entry.Order));
+    }
+
+    [Fact]
+    public void AnEntryThatMoved_IsWrittenWithItsNewOrder() {
+        HotkeyEntry first = Entry("Hotkey_00_7F", order: 0);
+        HotkeyEntry second = Entry("Hotkey_00_80", virtualKey: 0x80, order: 1);
+
+        HotkeysPlan plan = HotkeysPlan.Create([first, second], [second, first]);
+
+        Assert.Equal([0, 1], plan.Write.Select(entry => entry.Order));
+        Assert.Equal(["Hotkey_00_80", "Hotkey_00_7F"], plan.Write.Select(entry => entry.RegistryName));
+        Assert.Empty(plan.Release);
+    }
+
+    [Fact]
+    public void AnEntryWithoutAnOrder_GetsOneOnTheFirstSave() {
+        HotkeyEntry legacy = Entry("Launch_00_7F");
+
+        HotkeysPlan plan = HotkeysPlan.Create([legacy], [legacy]);
+
+        Assert.Equal(0, Assert.Single(plan.Write).Order);
+    }
+
+    [Fact]
+    public void ChangingTheCombination_KeepsThePosition() {
+        HotkeyEntry first = Entry("Hotkey_00_7F", order: 0);
+        HotkeyEntry second = Entry("Hotkey_00_80", virtualKey: 0x80, order: 1);
+
+        HotkeysPlan plan = HotkeysPlan.Create([first, second], [first with { VirtualKey = 0x90 }, second]);
+
+        Assert.Equal(["Hotkey_00_90", "Hotkey_00_80"], plan.Result.Select(entry => entry.RegistryName));
+        Assert.Equal(0, Assert.Single(plan.Write).Order);
     }
 }
 
@@ -120,6 +159,7 @@ public sealed class RegistryHotkeyStoreTests : IDisposable {
         Assert.Equal(0x03, key.GetValue("VkModifier"));
         Assert.Equal(@"C:\edit.exe", key.GetValue("Path"));
         Assert.Equal("Editor", key.GetValue("Comment"));
+        Assert.Equal(0, key.GetValue("Order"));
         Assert.Equal("Hotkey_03_41", Assert.Single(saved).RegistryName);
     }
 
@@ -192,6 +232,27 @@ public sealed class RegistryHotkeyStoreTests : IDisposable {
         IReadOnlyList<HotkeyEntry> saved = store.Save([], wanted);
 
         Assert.Equal(saved.OrderBy(entry => entry.RegistryName), store.Load().OrderBy(entry => entry.RegistryName));
+    }
+
+    [Fact]
+    public void Load_KeepsTheOrderOfTheListWhateverTheSubkeysAreCalled() {
+        IReadOnlyList<HotkeyEntry> first = store.Save([], [Entry(null, virtualKey: 0x7F), Entry(null, virtualKey: 0x80, label: "Notes")]);
+
+        store.Save(first, [first[0] with { VirtualKey = 0x90 }, first[1]]);
+
+        Assert.Equal(["Hotkey_00_90", "Hotkey_00_80"], store.Load().Select(entry => entry.RegistryName));
+    }
+
+    [Fact]
+    public void Load_PutsEntriesWithoutAnOrderAfterTheOthersInSubkeyOrder() {
+        store.Save([], [Entry(null, virtualKey: 0x80)]);
+        foreach (string name in new[] { "B_legacy", "A_legacy" }) {
+            using RegistryKey key = Registry.CurrentUser.CreateSubKey($@"{rulesPath}\{name}");
+            key.SetValue("VkKey", 0x7F, RegistryValueKind.DWord);
+            key.SetValue("Path", @"C:\calc.exe");
+        }
+
+        Assert.Equal(["Hotkey_00_80", "A_legacy", "B_legacy"], store.Load().Select(entry => entry.RegistryName));
     }
 
     [Fact]

@@ -27,6 +27,10 @@ internal sealed class FakeAgentLink : IAgentLink {
     public AgentResponse? Reply { get; set; } = AgentResponse.Success([]);
     public int Reloads { get; private set; }
 
+    public Task<bool> IsRunningAsync() {
+        return Task.FromResult(Reply is not null);
+    }
+
     public Task<AgentResponse?> ReloadAsync() {
         Reloads++;
         return Task.FromResult(Reply);

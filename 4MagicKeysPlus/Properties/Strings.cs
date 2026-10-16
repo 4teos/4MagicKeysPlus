@@ -80,11 +80,6 @@ public static class Strings
         }
     }
 
-    public static string QuickLaunchPlaceholderNotice {
-        get {
-            return Get(nameof(QuickLaunchPlaceholderNotice));
-        }
-    }
 
     public static string KeysModelLabel {
         get {
@@ -209,6 +204,90 @@ public static class Strings
     public static string HotkeyNotRegistered {
         get {
             return Get(nameof(HotkeyNotRegistered));
+        }
+    }
+
+    public static string HotkeyAlreadyAssigned {
+        get {
+            return Get(nameof(HotkeyAlreadyAssigned));
+        }
+    }
+
+    public static string HotkeyDeleted {
+        get {
+            return Get(nameof(HotkeyDeleted));
+        }
+    }
+
+    public static string HotkeyUndo {
+        get {
+            return Get(nameof(HotkeyUndo));
+        }
+    }
+
+    public static string HotkeyAdd {
+        get {
+            return Get(nameof(HotkeyAdd));
+        }
+    }
+
+    public static string HotkeyAddFirst {
+        get {
+            return Get(nameof(HotkeyAddFirst));
+        }
+    }
+
+    public static string HotkeyCapturePrompt {
+        get {
+            return Get(nameof(HotkeyCapturePrompt));
+        }
+    }
+
+    public static string HotkeyNotSet {
+        get {
+            return Get(nameof(HotkeyNotSet));
+        }
+    }
+
+    public static string HotkeyBrowse {
+        get {
+            return Get(nameof(HotkeyBrowse));
+        }
+    }
+
+    public static string HotkeyBrowseFilter {
+        get {
+            return Get(nameof(HotkeyBrowseFilter));
+        }
+    }
+
+    public static string HotkeyStartAgent {
+        get {
+            return Get(nameof(HotkeyStartAgent));
+        }
+    }
+
+    public static string HotkeyAgentNotFound {
+        get {
+            return Get(nameof(HotkeyAgentNotFound));
+        }
+    }
+
+    public static string HotkeyEdit {
+        get {
+            return Get(nameof(HotkeyEdit));
+        }
+    }
+
+    public static string HotkeyDone {
+        get {
+            return Get(nameof(HotkeyDone));
+        }
+    }
+
+    public static string HotkeyDelete {
+        get {
+            return Get(nameof(HotkeyDelete));
         }
     }
 

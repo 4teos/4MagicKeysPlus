@@ -19,6 +19,17 @@ public static class Glyphs {
         return BatteryLevels[index];
     }
 
+    // Quick launch cards: edit (pencil), done (check), delete (cross), add (plus), and the stand-in
+    // for a file that has no icon of its own (all-apps grid).
+    public const string Edit = "";
+    public const string Accept = "";
+    public const string Delete = "";
+    public const string Add = "";
+    public const string AppFallback = "";
+
+    // Drag handle of a Quick launch card.
+    public const string Grip = "\uE76F";
+
     // Outcome of applying a mapping (filled circle with a check, warning triangle, filled circle with a cross).
     public const string ResultSuccess = "\uEC61";
     public const string ResultWarning = "\uE814";

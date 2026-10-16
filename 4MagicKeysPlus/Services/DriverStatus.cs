@@ -18,7 +18,7 @@ internal static class DriverStatus {
         return new DriverKeyRemapConfig(ReadRules(), ReadFnLockEnabled());
     }
 
-    // Subkeys without both Source and Target as DWORDs (e.g. launch-only entries) are not driver rules.
+    // Subkeys without both Source and Target as DWORDs (e.g. hotkey-only entries) are not driver rules.
     private static List<KeyRule> ReadRules() {
         List<KeyRule> rules = [];
 

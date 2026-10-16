@@ -61,4 +61,8 @@
     <SolidColorBrush x:Key="KeyDisabledBackground" Color="#8B9098"/>
     <SolidColorBrush x:Key="KeyDisabledBorder" Color="#6B7280"/>
     <SolidColorBrush x:Key="KeyDisabledForeground" Color="#4B5563"/>
+
+    <!-- Quick launch cards -->
+    <SolidColorBrush x:Key="InputBackground" Color="#111827"/>
+    <SolidColorBrush x:Key="AccentBorder" Color="#10B981"/>
 </ResourceDictionary>

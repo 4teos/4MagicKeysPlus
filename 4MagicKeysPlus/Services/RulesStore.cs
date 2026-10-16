@@ -77,7 +77,7 @@ internal sealed class RegistryRulesStore : IRulesStore {
         return plan.Result;
     }
 
-    // A subkey that is also a launch entry (the agent's VkKey/Path) keeps those values: only
+    // A subkey that is also a hotkey entry (the agent's VkKey/Path) keeps those values: only
     // its part as a driver rule is removed.
     private static void Delete(RegistryKey rulesKey, string name) {
         using (RegistryKey? ruleKey = rulesKey.OpenSubKey(name, writable: true)) {
