@@ -15,4 +15,10 @@
   <data name="LowBatteryMessage" xml:space="preserve">
     <value>Keyboard battery: {0}%</value>
   </data>
+  <data name="HotkeyErrorsTitle" xml:space="preserve">
+    <value>An error occurred registering the following hotkeys:</value>
+  </data>
+  <data name="NoticeDismissHint" xml:space="preserve">
+    <value>Click to close</value>
+  </data>
 </root>

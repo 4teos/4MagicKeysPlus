@@ -108,4 +108,10 @@
   <data name="ApplySaveFailed" xml:space="preserve">
     <value>Не удалось сохранить: {0}</value>
   </data>
+  <data name="HotkeyAgentNotRunning" xml:space="preserve">
+    <value>Агент не запущен, поэтому горячие клавиши не работают.</value>
+  </data>
+  <data name="HotkeyNotRegistered" xml:space="preserve">
+    <value>Горячих клавиш, которые не удалось зарегистрировать: {0}</value>
+  </data>
 </root>

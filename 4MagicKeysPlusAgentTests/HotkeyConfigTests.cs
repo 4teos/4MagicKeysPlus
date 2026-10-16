@@ -3,7 +3,7 @@ using _4MagicKeysPlusAgent;
 
 namespace _4MagicKeysPlusAgentTests;
 
-public class AppLaunchConfigTests {
+public class HotkeyConfigTests {
     private const uint VkF16 = 0x7F;
 
     private static Mock<IRegistryKeyReader> CreateAppKeyMock(string? path, object? key, object? modifier = null, string? comment = null) {
@@ -17,7 +17,7 @@ public class AppLaunchConfigTests {
 
     [Fact]
     public void Load_ReturnsEmpty_WhenRootKeyIsNull() {
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load(null);
+        List<HotkeyEntry> entries = HotkeyConfig.Load(null);
 
         Assert.Empty(entries);
     }
@@ -27,7 +27,7 @@ public class AppLaunchConfigTests {
         Mock<IRegistryKeyReader> root = new Mock<IRegistryKeyReader>();
         root.Setup(r => r.GetSubKeyNames()).Returns([]);
 
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+        List<HotkeyEntry> entries = HotkeyConfig.Load(root.Object);
 
         Assert.Empty(entries);
     }
@@ -39,9 +39,9 @@ public class AppLaunchConfigTests {
         Mock<IRegistryKeyReader> appKey = CreateAppKeyMock(@"C:\Windows\System32\notepad.exe", (int)VkF16);
         root.Setup(r => r.OpenSubKey("Notepad")).Returns(appKey.Object);
 
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+        List<HotkeyEntry> entries = HotkeyConfig.Load(root.Object);
 
-        AppLaunchEntry entry = Assert.Single(entries);
+        HotkeyEntry entry = Assert.Single(entries);
         Assert.Equal("Notepad", entry.Name);
         Assert.Equal(VkF16, entry.VirtualKey);
         Assert.Equal(0u, entry.Modifiers);
@@ -59,9 +59,9 @@ public class AppLaunchConfigTests {
         root.Setup(r => r.OpenSubKey("01000041")).Returns(driverRule.Object);
         root.Setup(r => r.OpenSubKey("Launch_00_7F")).Returns(CreateAppKeyMock(@"C:\calc.exe", (int)VkF16).Object);
 
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+        List<HotkeyEntry> entries = HotkeyConfig.Load(root.Object);
 
-        AppLaunchEntry entry = Assert.Single(entries);
+        HotkeyEntry entry = Assert.Single(entries);
         Assert.Equal("Launch_00_7F", entry.Name);
         Assert.Equal(1, entry.HotkeyId);
     }
@@ -72,7 +72,7 @@ public class AppLaunchConfigTests {
         root.Setup(r => r.GetSubKeyNames()).Returns(["Launch_00_7F"]);
         root.Setup(r => r.OpenSubKey("Launch_00_7F")).Returns(CreateAppKeyMock(@"C:\calc.exe", (int)VkF16, comment: "Calculator").Object);
 
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+        List<HotkeyEntry> entries = HotkeyConfig.Load(root.Object);
 
         Assert.Equal("Calculator", Assert.Single(entries).Name);
     }
@@ -83,7 +83,7 @@ public class AppLaunchConfigTests {
         root.Setup(r => r.GetSubKeyNames()).Returns(["Ghost"]);
         root.Setup(r => r.OpenSubKey("Ghost")).Returns((IRegistryKeyReader?)null);
 
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+        List<HotkeyEntry> entries = HotkeyConfig.Load(root.Object);
 
         Assert.Empty(entries);
     }
@@ -98,7 +98,7 @@ public class AppLaunchConfigTests {
         Mock<IRegistryKeyReader> appKey = CreateAppKeyMock(path, (int)VkF16);
         root.Setup(r => r.OpenSubKey("Broken")).Returns(appKey.Object);
 
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+        List<HotkeyEntry> entries = HotkeyConfig.Load(root.Object);
 
         Assert.Empty(entries);
     }
@@ -110,7 +110,7 @@ public class AppLaunchConfigTests {
         Mock<IRegistryKeyReader> appKey = CreateAppKeyMock(@"C:\app.exe", key: null);
         root.Setup(r => r.OpenSubKey("Broken")).Returns(appKey.Object);
 
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+        List<HotkeyEntry> entries = HotkeyConfig.Load(root.Object);
 
         Assert.Empty(entries);
     }
@@ -122,7 +122,7 @@ public class AppLaunchConfigTests {
         Mock<IRegistryKeyReader> appKey = CreateAppKeyMock(@"C:\app.exe", key: "not a dword");
         root.Setup(r => r.OpenSubKey("Broken")).Returns(appKey.Object);
 
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+        List<HotkeyEntry> entries = HotkeyConfig.Load(root.Object);
 
         Assert.Empty(entries);
     }
@@ -134,7 +134,7 @@ public class AppLaunchConfigTests {
         Mock<IRegistryKeyReader> appKey = CreateAppKeyMock(@"C:\app.exe", (int)VkF16, modifier: null);
         root.Setup(r => r.OpenSubKey("Notepad")).Returns(appKey.Object);
 
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+        List<HotkeyEntry> entries = HotkeyConfig.Load(root.Object);
 
         Assert.Equal(0u, Assert.Single(entries).Modifiers);
     }
@@ -147,7 +147,7 @@ public class AppLaunchConfigTests {
         Mock<IRegistryKeyReader> appKey = CreateAppKeyMock(@"C:\app.exe", (int)VkF16, modifier: 0x1F);
         root.Setup(r => r.OpenSubKey("Notepad")).Returns(appKey.Object);
 
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+        List<HotkeyEntry> entries = HotkeyConfig.Load(root.Object);
 
         Assert.Equal(0x0Fu, Assert.Single(entries).Modifiers);
     }
@@ -159,7 +159,7 @@ public class AppLaunchConfigTests {
         root.Setup(r => r.OpenSubKey("AppA")).Returns(CreateAppKeyMock(@"C:\a.exe", (int)VkF16).Object);
         root.Setup(r => r.OpenSubKey("AppB")).Returns(CreateAppKeyMock(@"C:\b.exe", (int)VkF16).Object);
 
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load(root.Object);
+        List<HotkeyEntry> entries = HotkeyConfig.Load(root.Object);
 
         Assert.Equal(2, entries.Count);
         Assert.Equal(1, entries[0].HotkeyId);
@@ -173,7 +173,7 @@ public class AppLaunchConfigTests {
         Mock<IRegistryKeyReader> appKey = CreateAppKeyMock(@"C:\app.exe", (int)VkF16);
         root.Setup(r => r.OpenSubKey("Notepad")).Returns(appKey.Object);
 
-        AppLaunchConfig.Load(root.Object);
+        HotkeyConfig.Load(root.Object);
 
         appKey.Verify(k => k.Dispose(), Times.Once);
     }

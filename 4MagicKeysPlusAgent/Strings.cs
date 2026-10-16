@@ -11,4 +11,16 @@ internal static class Strings {
             return ResourceManager.GetString(nameof(LowBatteryMessage)) ?? nameof(LowBatteryMessage);
         }
     }
+
+    public static string HotkeyErrorsTitle {
+        get {
+            return ResourceManager.GetString(nameof(HotkeyErrorsTitle)) ?? nameof(HotkeyErrorsTitle);
+        }
+    }
+
+    public static string NoticeDismissHint {
+        get {
+            return ResourceManager.GetString(nameof(NoticeDismissHint)) ?? nameof(NoticeDismissHint);
+        }
+    }
 }

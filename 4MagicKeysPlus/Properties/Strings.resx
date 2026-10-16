@@ -108,4 +108,10 @@
   <data name="ApplySaveFailed" xml:space="preserve">
     <value>Could not save: {0}</value>
   </data>
+  <data name="HotkeyAgentNotRunning" xml:space="preserve">
+    <value>The agent is not running, so the hotkeys do not work.</value>
+  </data>
+  <data name="HotkeyNotRegistered" xml:space="preserve">
+    <value>Hotkeys that could not be registered: {0}</value>
+  </data>
 </root>

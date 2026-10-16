@@ -1,15 +1,29 @@
 using System.Diagnostics;
+using _4MagicKeysPlus.Core;
 
 namespace _4MagicKeysPlusAgent;
 
 internal static class Program {
+    private static readonly TimeSpan PauseTimeout = TimeSpan.FromSeconds(30);
+
     [STAThread]
     private static void Main(string[] args) {
         ApplicationConfiguration.Initialize();
 
 #if DEBUG
         // Test switches, Debug builds only: --demo-battery <percent> [delay seconds] shows the
-        // notice once, after the delay, and exits.
+        // notice once, after the delay, and exits; --demo-hotkey-errors shows the registration
+        // errors notice with sample lines until it is clicked.
+        if (args.Contains("--demo-hotkey-errors")) {
+            using HotkeyErrorsForm errorsDemo = new HotkeyErrorsForm([
+                "Windows Terminal (Ctrl+Alt+T): Hot key is already registered.",
+                "Notepad (Ctrl+Shift+N): Hot key is already registered.",
+                "Visual Studio Code with a deliberately long name to see how the window wraps it (Ctrl+Alt+F9): Hot key is already registered.",
+            ]);
+            Application.Run(errorsDemo);
+            return;
+        }
+
         int? demoPercent = IntArgument(args, "--demo-battery");
         if (demoPercent is not null) {
             using LowBatteryForm demo = new LowBatteryForm(demoPercent.Value);
@@ -25,27 +39,44 @@ internal static class Program {
         }
 #endif
 
-        List<AppLaunchEntry> entries = AppLaunchConfig.Load();
+        // Two agents would both answer on the pipe and both fight for the same hotkeys.
+        using Mutex singleInstance = new Mutex(true, @"Local\4MagicKeysPlusAgent", out bool firstInstance);
+        if (!firstInstance) {
+            return;
+        }
 
         using HotkeyWindow window = new HotkeyWindow();
-        Dictionary<int, string> pathById = entries.ToDictionary(e => e.HotkeyId, e => e.ExecutablePath);
+        // Hands work from the pipe's threads to this one, which owns the hotkey window.
+        using Control uiThread = new Control();
+        _ = uiThread.Handle;
 
-        foreach (AppLaunchEntry entry in entries) {
-            if (!window.RegisterHotKey(entry, out int win32Error)) {
-                Logger.Warn($"Failed to register hotkey '{entry.Name}' (vk=0x{entry.VirtualKey:X2}, mod=0x{entry.Modifiers:X2}), Win32 error {win32Error}.");
+        HotkeyManager hotkeys = new HotkeyManager(window, () => HotkeyConfig.Load());
+        window.HotKeyPressed += id => {
+            if (hotkeys.FindPath(id) is { } path) {
+                LaunchApp(path);
             }
+        };
+
+        IReadOnlyList<HotkeyRegistration> registrations = hotkeys.Reload();
+        IReadOnlyList<string> failures = hotkeys.DescribeFailures(registrations);
+        if (failures.Count > 0) {
+            uiThread.BeginInvoke(() => ShowHotkeyFailures(failures));
         }
 
         using BatteryMonitor batteryMonitor = CreateBatteryMonitor(args);
         batteryMonitor.Start();
 
-        window.HotKeyPressed += id => {
-            if (pathById.TryGetValue(id, out string? path)) {
-                LaunchApp(path);
-            }
-        };
+        AgentCommandHandler commands = new AgentCommandHandler(hotkeys, work => (AgentResponse)uiThread.Invoke(work));
+        using AgentPipeServer pipeServer = new AgentPipeServer(commands, PauseTimeout);
+        pipeServer.Start();
 
         Application.Run();
+    }
+
+    private static void ShowHotkeyFailures(IReadOnlyList<string> failures) {
+        HotkeyErrorsForm form = new HotkeyErrorsForm(failures);
+        form.FormClosed += (_, _) => form.Dispose();
+        form.Show();
     }
 
     private static BatteryMonitor CreateBatteryMonitor(string[] args) {

@@ -15,4 +15,10 @@
   <data name="LowBatteryMessage" xml:space="preserve">
     <value>Батарея клавиатуры: {0}%</value>
   </data>
+  <data name="HotkeyErrorsTitle" xml:space="preserve">
+    <value>Произошла ошибка при регистрации следующих горячих клавиш:</value>
+  </data>
+  <data name="NoticeDismissHint" xml:space="preserve">
+    <value>Нажмите, чтобы закрыть</value>
+  </data>
 </root>

@@ -2,11 +2,11 @@ using Microsoft.Win32;
 
 namespace _4MagicKeysPlusAgent;
 
-internal sealed record AppLaunchEntry(int HotkeyId, string Name, uint VirtualKey, uint Modifiers, string ExecutablePath);
+internal sealed record HotkeyEntry(int HotkeyId, string RegistryName, string Name, uint VirtualKey, uint Modifiers, string ExecutablePath);
 
-// Reads the launch entries from HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules.
+// Reads the hotkey entries from HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules.
 // The same subkeys also hold the driver's key rules (Source/Target), which are not this
-// loader's business: a subkey is a launch entry only if it has both
+// loader's business: a subkey is a hotkey entry only if it has both
 //   VkKey      REG_DWORD  Win32 virtual-key code
 //   Path       REG_SZ     what to launch (executable, shortcut, ...)
 // plus the optional
@@ -16,12 +16,12 @@ internal sealed record AppLaunchEntry(int HotkeyId, string Name, uint VirtualKey
 // reaches here it's already an ordinary Windows keystroke, so the config speaks
 // plain Win32 VK codes too. No restriction on which VK/modifier combos are allowed here -
 // that's a UI-level concern, not this loader's.
-internal static class AppLaunchConfig {
+internal static class HotkeyConfig {
     private const string RegistryKeyPath = @"SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules";
 
     private const uint AllowedModifiers = NativeMethods.MOD_ALT | NativeMethods.MOD_CONTROL | NativeMethods.MOD_SHIFT | NativeMethods.MOD_WIN;
 
-    public static List<AppLaunchEntry> Load() {
+    public static List<HotkeyEntry> Load() {
         RegistryKey? rootKey = Registry.LocalMachine.OpenSubKey(RegistryKeyPath);
         using IRegistryKeyReader? reader = rootKey is null ? null : new Win32RegistryKeyReader(rootKey);
         return Load(reader);
@@ -29,8 +29,8 @@ internal static class AppLaunchConfig {
 
     // The actual parsing/validation logic, decoupled from the real registry so it can be
     // unit-tested against a fake IRegistryKeyReader instead of touching HKLM.
-    internal static List<AppLaunchEntry> Load(IRegistryKeyReader? rootKey) {
-        List<AppLaunchEntry> entries = new List<AppLaunchEntry>();
+    internal static List<HotkeyEntry> Load(IRegistryKeyReader? rootKey) {
+        List<HotkeyEntry> entries = new List<HotkeyEntry>();
         if (rootKey is null) {
             Logger.Warn($@"Registry key HKLM\{RegistryKeyPath} does not exist, nothing to load.");
             return entries;
@@ -68,7 +68,7 @@ internal static class AppLaunchConfig {
             }
 
             string name = ruleKey.GetValue("Comment") is string comment && !string.IsNullOrWhiteSpace(comment) ? comment : ruleName;
-            entries.Add(new AppLaunchEntry(nextId++, name, vk, mod, path));
+            entries.Add(new HotkeyEntry(nextId++, ruleName, name, vk, mod, path));
         }
 
         return entries;

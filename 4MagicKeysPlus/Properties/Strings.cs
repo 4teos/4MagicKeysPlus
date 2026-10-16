@@ -200,6 +200,18 @@ public static class Strings
         }
     }
 
+    public static string HotkeyAgentNotRunning {
+        get {
+            return Get(nameof(HotkeyAgentNotRunning));
+        }
+    }
+
+    public static string HotkeyNotRegistered {
+        get {
+            return Get(nameof(HotkeyNotRegistered));
+        }
+    }
+
     private static string Get(string key) {
         return ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
     }
