@@ -17,6 +17,7 @@ public partial class KeysView : UserControl {
     private const double ChipMargin = 2;
 
     private readonly KeyRemapEditor editor;
+    private readonly FnLockEditor fnLock;
     private KeyboardModel? model;
     private PhysicalKey? selectedKey;
     private bool isPicking;
@@ -24,9 +25,11 @@ public partial class KeysView : UserControl {
     private bool followFnLock;
     private Window? hostWindow;
 
-    public KeysView(KeyRemapEditor editor) {
+    public KeysView(KeyRemapEditor editor, FnLockEditor fnLock) {
         InitializeComponent();
         this.editor = editor;
+        this.fnLock = fnLock;
+        FnLockToggle.IsChecked = fnLock.IsEnabled;
 
         Loaded += (_, _) => {
             hostWindow = Window.GetWindow(this);
@@ -56,6 +59,7 @@ public partial class KeysView : UserControl {
     // The strip of extra keys is as wide as the keyboard.
     private void KeyboardViewbox_SizeChanged(object sender, SizeChangedEventArgs e) {
         VirtualKeysHost.Width = e.NewSize.Width;
+        Toolbar.Width = e.NewSize.Width;
     }
 
     // Keys, buttons and the status panel handle their own clicks; a click that reaches the window
@@ -138,22 +142,35 @@ public partial class KeysView : UserControl {
         Refresh();
     }
 
+    private void FnLockToggle_Click(object sender, RoutedEventArgs e) {
+        bool wanted = FnLockToggle.IsChecked == true;
+        ApplyResult result = fnLock.Set(wanted);
+        if (result.Outcome == ApplyOutcome.Failed) {
+            FnLockToggle.IsChecked = !wanted;
+        }
+        ShowResult(FnLockResult, result);
+    }
+
     private void ShowResult(ApplyResult result) {
+        ShowResult(ResultGlyph, result);
+    }
+
+    private static void ShowResult(TextBlock target, ApplyResult result) {
         (string glyph, string brushKey) = result.Outcome switch {
             ApplyOutcome.Applied => (Glyphs.ResultSuccess, ThemeKeys.ResultSuccess),
             ApplyOutcome.Warning => (Glyphs.ResultWarning, ThemeKeys.ResultWarning),
             _ => (Glyphs.ResultError, ThemeKeys.ResultError),
         };
 
-        ResultGlyph.Text = glyph;
-        ResultGlyph.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
-        ResultGlyph.ToolTip = new ToolTip {
+        target.Text = glyph;
+        target.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
+        target.ToolTip = new ToolTip {
             Content = new TextBlock { Text = result.Message, TextWrapping = TextWrapping.Wrap, MaxWidth = 360, FontWeight = FontWeights.Normal },
             Style = (Style)Application.Current.Resources["TooltipAbove"],
         };
-        ToolTipService.SetInitialShowDelay(ResultGlyph, 0);
-        ToolTipService.SetBetweenShowDelay(ResultGlyph, 0);
-        ResultGlyph.Visibility = Visibility.Visible;
+        ToolTipService.SetInitialShowDelay(target, 0);
+        ToolTipService.SetBetweenShowDelay(target, 0);
+        target.Visibility = Visibility.Visible;
     }
 
     // Defaults of the options for the selected key: the layer is fixed when the key can be

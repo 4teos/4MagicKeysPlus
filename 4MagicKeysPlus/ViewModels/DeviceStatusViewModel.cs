@@ -69,7 +69,7 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
         private set => SetField(ref statusTooltip, value);
     }
 
-    private void Refresh() {
+    public void Refresh() {
         detectedKeyboard ??= KeyboardDetector.DetectConnectedKeyboard();
 
         KeyboardBatteryStatus? status = KeyboardBattery.ReadStatus(detectedKeyboard);

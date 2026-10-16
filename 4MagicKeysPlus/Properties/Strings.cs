@@ -291,6 +291,18 @@ public static class Strings
         }
     }
 
+    public static string FnLockToggleLabel {
+        get {
+            return Get(nameof(FnLockToggleLabel));
+        }
+    }
+
+    public static string FnLockToggleHint {
+        get {
+            return Get(nameof(FnLockToggleHint));
+        }
+    }
+
     private static string Get(string key) {
         return ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
     }

@@ -9,15 +9,18 @@ public partial class MainWindow : Window {
     // Shared by the screens, so unsaved edits survive switching between them.
     private readonly KeyRemapEditor keyRemapEditor = new();
     private readonly HotkeyEditor hotkeyEditor = new();
+    private readonly FnLockEditor fnLockEditor = new();
 
     public MainWindow() {
         InitializeComponent();
-        DataContext = new DeviceStatusViewModel();
-        MainContent.Content = new KeysView(keyRemapEditor);
+        DeviceStatusViewModel deviceStatus = new();
+        DataContext = deviceStatus;
+        fnLockEditor.Changed += deviceStatus.Refresh;
+        MainContent.Content = new KeysView(keyRemapEditor, fnLockEditor);
     }
 
     private void NavKeys_Checked(object sender, RoutedEventArgs e) {
-        MainContent?.Content = new KeysView(keyRemapEditor);
+        MainContent?.Content = new KeysView(keyRemapEditor, fnLockEditor);
     }
 
     private void NavApps_Checked(object sender, RoutedEventArgs e) {

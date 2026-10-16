@@ -56,6 +56,11 @@ public sealed class KeyRemapEditor {
             return new ApplyResult(ApplyOutcome.Failed, string.Format(Strings.ApplySaveFailed, exception.Message));
         }
 
+        return ReloadDriver(driver);
+    }
+
+    // Tells the driver to read what has been saved, and what came of it.
+    internal static ApplyResult ReloadDriver(IDriverControl driver) {
         try {
             DriverReloadResult? reload = driver.Reload();
             if (reload is null) {

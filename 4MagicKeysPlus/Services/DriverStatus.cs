@@ -4,7 +4,7 @@ using _4MagicKeysPlus.Models;
 namespace _4MagicKeysPlus.Services;
 
 internal static class DriverStatus {
-    private const string ParametersKeyPath = @"SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters";
+    internal const string ParametersKeyPath = @"SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters";
     private const string RulesKeyName = "Rules";
 
     public const string RulesKeyPath = $@"{ParametersKeyPath}\{RulesKeyName}";

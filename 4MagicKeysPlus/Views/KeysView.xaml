@@ -8,24 +8,41 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto" MinHeight="80"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Viewbox x:Name="KeyboardViewbox" Grid.Row="0" SizeChanged="KeyboardViewbox_SizeChanged" Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Center" VerticalAlignment="Top">
+        <Grid x:Name="Toolbar" Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock x:Name="FnLockResult" FontFamily="Segoe MDL2 Assets" FontSize="18" Width="24" TextAlignment="Center"
+                           Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Hidden"/>
+                <ToggleButton x:Name="FnLockToggle" Content="{x:Static properties:Strings.FnLockToggleLabel}"
+                              Style="{StaticResource ToggleSwitchStyle}" Click="FnLockToggle_Click"
+                              ToolTipService.InitialShowDelay="0" ToolTipService.BetweenShowDelay="0">
+                    <ToggleButton.ToolTip>
+                        <ToolTip Style="{StaticResource TooltipBelow}">
+                            <TextBlock Text="{x:Static properties:Strings.FnLockToggleHint}" MaxWidth="360" TextWrapping="Wrap" FontWeight="Normal"/>
+                        </ToolTip>
+                    </ToggleButton.ToolTip>
+                </ToggleButton>
+            </StackPanel>
+        </Grid>
+
+        <Viewbox x:Name="KeyboardViewbox" Grid.Row="1" SizeChanged="KeyboardViewbox_SizeChanged" Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Center" VerticalAlignment="Top">
             <Border CornerRadius="12" Background="{DynamicResource KeyboardBodyBackground}">
                 <Canvas x:Name="KeysCanvas" Margin="8" />
             </Border>
         </Viewbox>
 
-        <StackPanel x:Name="VirtualKeysHost" Grid.Row="1" Visibility="Collapsed"
+        <StackPanel x:Name="VirtualKeysHost" Grid.Row="2" Visibility="Collapsed"
                     HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,8,0,0">
             <WrapPanel x:Name="VirtualKeysPanel"/>
         </StackPanel>
 
-        <Border x:Name="StatusPanel" Grid.Row="2" Visibility="Collapsed" HorizontalAlignment="Center" MinWidth="920" MouseLeftButtonDown="StatusPanel_MouseLeftButtonDown"
+        <Border x:Name="StatusPanel" Grid.Row="3" Visibility="Collapsed" HorizontalAlignment="Center" MinWidth="920" MouseLeftButtonDown="StatusPanel_MouseLeftButtonDown"
                 Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}" BorderThickness="1" CornerRadius="8" Padding="16,12">
             <DockPanel LastChildFill="False">
                 <ContentControl x:Name="PanelKeyHost" VerticalAlignment="Center" Margin="0,0,16,0"/>
@@ -58,7 +75,7 @@
             </DockPanel>
         </Border>
 
-        <StackPanel Grid.Row="4">
+        <StackPanel Grid.Row="5">
             <StackPanel Orientation="Horizontal" Margin="16">
                 <TextBlock Text="{x:Static properties:Strings.KeysModelLabel}" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8"/>
                 <ComboBox x:Name="ModelSelector" Width="300" SelectionChanged="ModelSelector_SelectionChanged" DisplayMemberPath="DeviceDescription" />

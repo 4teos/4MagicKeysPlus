@@ -87,6 +87,7 @@ public class RulesPlanTests {
     }
 }
 
+[Collection(TestCollections.Registry)]
 public sealed class RegistryRulesStoreTests : IDisposable {
     private const string ScratchRoot = @"Software\4MagicKeysPlusTests";
     private readonly string rulesPath = $@"{ScratchRoot}\{Guid.NewGuid():N}\Rules";
