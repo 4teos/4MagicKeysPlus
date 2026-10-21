@@ -402,7 +402,9 @@ public partial class HotkeyListView : UserControl {
 
     private void Browse_Click(object sender, RoutedEventArgs e) {
         HotkeyCardViewModel card = CardFrom(sender);
-        Microsoft.Win32.OpenFileDialog dialog = new() { Filter = Strings.HotkeyBrowseFilter, CheckFileExists = true };
+        Microsoft.Win32.OpenFileDialog dialog = new() {
+            Filter = Strings.HotkeyBrowseFilter, CheckFileExists = true
+        };
         if (dialog.ShowDialog(Window.GetWindow(this)) == true) {
             card.SetDraftFile(dialog.FileName, HotkeyNames.FromPath(dialog.FileName));
         }

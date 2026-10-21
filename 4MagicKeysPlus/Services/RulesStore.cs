@@ -27,7 +27,9 @@ internal sealed record RulesPlan(IReadOnlyList<string> Delete, IReadOnlyList<Rul
 
             string name = rule.RawSource.ToString("X8");
             write.Add(new RuleWrite(name, rule.RawSource, rule.RawTarget, rule.FnLockAware));
-            result.Add(rule with { RegistryName = name });
+            result.Add(rule with {
+                RegistryName = name
+            });
         }
 
         HashSet<string> kept = new(result.Select(rule => rule.RegistryName!), StringComparer.OrdinalIgnoreCase);

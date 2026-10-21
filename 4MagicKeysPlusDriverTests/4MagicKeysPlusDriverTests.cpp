@@ -5,23 +5,38 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace My4MagicKeysPlusDriverTests
-{
+namespace My4MagicKeysPlusDriverTests {
     namespace {
         // 9-byte HID report layout Process() expects: [0]=modifiers,
         // [1]=reserved, [2..7]=keycodes, [8]=virtual Fn/Eject bits.
         struct Report {
             BYTE bytes[9] = {};
-            Report& Modifier(BYTE mask) { bytes[0] = mask; return *this; }
-            Report& Key(int slot, BYTE code) { bytes[2 + slot] = code; return *this; }
-            Report& Fn() { bytes[8] |= 0x2; return *this; }
-            Report& Eject() { bytes[8] |= 0x1; return *this; }
+            Report& Modifier(BYTE mask) {
+                bytes[0] = mask;
+                return *this;
+            }
+            Report& Key(int slot, BYTE code) {
+                bytes[2 + slot] = code;
+                return *this;
+            }
+            Report& Fn() {
+                bytes[8] |= 0x2;
+                return *this;
+            }
+            Report& Eject() {
+                bytes[8] |= 0x1;
+                return *this;
+            }
         };
 
         const DWORD kFn = RULE_SOURCE_FN;
 
-        DWORD Mods(BYTE mask) { return (DWORD)mask << RULE_MODS_SHIFT; }
-        DWORD Consumer(USHORT usage) { return RULE_TARGET_CONSUMER | usage; }
+        DWORD Mods(BYTE mask) {
+            return (DWORD)mask << RULE_MODS_SHIFT;
+        }
+        DWORD Consumer(USHORT usage) {
+            return RULE_TARGET_CONSUMER | usage;
+        }
 
         template <size_t N>
         void Load(KeyProcessor& kp, DWORD fnLock, const KEY_RULE (&rules)[N]) {
@@ -36,41 +51,39 @@ namespace My4MagicKeysPlusDriverTests
         // setup (their old KeyMap/ModMap plus the Fn behavior that used to be
         // hardcoded in the driver). Keep identical to the registry script.
         const KEY_RULE kUserRules[] = {
-            { 0x000000F0, 0x000000F1, false }, // Eject -> Fn
-            { 0x000000F1, 0x00000049, false }, // Fn -> Insert
-            { 0x00000068, 0x00000046, false }, // F13 -> PrintScreen
-            { 0x00000069, 0x00000047, false }, // F14 -> ScrollLock
-            { 0x0000006A, 0x00000048, false }, // F15 -> Pause
-            { 0x00040000, 0x00080000, false }, // LeftOption -> LeftCommand
-            { 0x00080000, 0x00040000, false }, // LeftCommand -> LeftOption
-            { 0x00400000, 0x00800000, false }, // RightOption -> RightCommand
-            { 0x00800000, 0x00400000, false }, // RightCommand -> RightOption
-            { 0x01000050, 0x0000004A, false }, // Fn+Left -> Home
-            { 0x0100004F, 0x0000004D, false }, // Fn+Right -> End
-            { 0x01000052, 0x0000004B, false }, // Fn+Up -> PageUp
-            { 0x01000051, 0x0000004E, false }, // Fn+Down -> PageDown
-            { 0x01000028, 0x00000049, false }, // Fn+Enter -> Insert
-            { 0x01000013, 0x00000046, false }, // Fn+P -> PrintScreen
-            { 0x01000005, 0x00000048, false }, // Fn+B -> Pause
-            { 0x01000016, 0x00000047, false }, // Fn+S -> ScrollLock
-            { 0x0100003A, 0x01000070, true }, // Fn+F1 -> Brightness Down
-            { 0x0100003B, 0x0100006F, true }, // Fn+F2 -> Brightness Up
-            { 0x01000040, 0x010000B6, true }, // Fn+F7 -> Previous Track
-            { 0x01000041, 0x010000CD, true }, // Fn+F8 -> Play/Pause
-            { 0x01000042, 0x010000B5, true }, // Fn+F9 -> Next Track
-            { 0x01000043, 0x010000E2, true }, // Fn+F10 -> Mute
-            { 0x01000044, 0x010000EA, true }, // Fn+F11 -> Volume Down
-            { 0x01000045, 0x010000E9, true }, // Fn+F12 -> Volume Up
+            {0x000000F0, 0x000000F1, false}, // Eject -> Fn
+            {0x000000F1, 0x00000049, false}, // Fn -> Insert
+            {0x00000068, 0x00000046, false}, // F13 -> PrintScreen
+            {0x00000069, 0x00000047, false}, // F14 -> ScrollLock
+            {0x0000006A, 0x00000048, false}, // F15 -> Pause
+            {0x00040000, 0x00080000, false}, // LeftOption -> LeftCommand
+            {0x00080000, 0x00040000, false}, // LeftCommand -> LeftOption
+            {0x00400000, 0x00800000, false}, // RightOption -> RightCommand
+            {0x00800000, 0x00400000, false}, // RightCommand -> RightOption
+            {0x01000050, 0x0000004A, false}, // Fn+Left -> Home
+            {0x0100004F, 0x0000004D, false}, // Fn+Right -> End
+            {0x01000052, 0x0000004B, false}, // Fn+Up -> PageUp
+            {0x01000051, 0x0000004E, false}, // Fn+Down -> PageDown
+            {0x01000028, 0x00000049, false}, // Fn+Enter -> Insert
+            {0x01000013, 0x00000046, false}, // Fn+P -> PrintScreen
+            {0x01000005, 0x00000048, false}, // Fn+B -> Pause
+            {0x01000016, 0x00000047, false}, // Fn+S -> ScrollLock
+            {0x0100003A, 0x01000070, true}, // Fn+F1 -> Brightness Down
+            {0x0100003B, 0x0100006F, true}, // Fn+F2 -> Brightness Up
+            {0x01000040, 0x010000B6, true}, // Fn+F7 -> Previous Track
+            {0x01000041, 0x010000CD, true}, // Fn+F8 -> Play/Pause
+            {0x01000042, 0x010000B5, true}, // Fn+F9 -> Next Track
+            {0x01000043, 0x010000E2, true}, // Fn+F10 -> Mute
+            {0x01000044, 0x010000EA, true}, // Fn+F11 -> Volume Down
+            {0x01000045, 0x010000E9, true}, // Fn+F12 -> Volume Up
         };
     }
 
-    TEST_CLASS(KeyRuleTests)
-    {
+    TEST_CLASS(KeyRuleTests) {
     public:
-        TEST_METHOD(RemapsNormalKey)
-        {
+        TEST_METHOD(RemapsNormalKey) {
             KeyProcessor kp;
-            const KEY_RULE rules[] = { { HidKeyB, HidKeyT, false } };
+            const KEY_RULE rules[] = {{HidKeyB, HidKeyT, false}};
             Load(kp, 0, rules);
 
             Report report;
@@ -81,8 +94,7 @@ namespace My4MagicKeysPlusDriverTests
             Assert::IsFalse(result.ShouldSubmit);
         }
 
-        TEST_METHOD(UnmappedKeyPassesThrough)
-        {
+        TEST_METHOD(UnmappedKeyPassesThrough) {
             KeyProcessor kp;
             LoadNone(kp);
 
@@ -93,10 +105,9 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)HidKeyB, (int)report.bytes[2]);
         }
 
-        TEST_METHOD(PlainRuleStillAppliesWhileFnIsHeld)
-        {
+        TEST_METHOD(PlainRuleStillAppliesWhileFnIsHeld) {
             KeyProcessor kp;
-            const KEY_RULE rules[] = { { HidF13, HidPrtScr, false } };
+            const KEY_RULE rules[] = {{HidF13, HidPrtScr, false}};
             Load(kp, 0, rules);
 
             Report report;
@@ -106,10 +117,9 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)HidPrtScr, (int)report.bytes[2]);
         }
 
-        TEST_METHOD(KeyCanBecomeModifiers)
-        {
+        TEST_METHOD(KeyCanBecomeModifiers) {
             KeyProcessor kp;
-            const KEY_RULE rules[] = { { kFn | HidF13, Mods(HidLeftCtrlMask | HidLeftShiftMask), false } };
+            const KEY_RULE rules[] = {{kFn | HidF13, Mods(HidLeftCtrlMask | HidLeftShiftMask), false}};
             Load(kp, 0, rules);
 
             Report report;
@@ -120,12 +130,11 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual(0, (int)report.bytes[2]);
         }
 
-        TEST_METHOD(UninterpretableRulesAreIgnored)
-        {
+        TEST_METHOD(UninterpretableRulesAreIgnored) {
             KeyProcessor kp;
             const KEY_RULE rules[] = {
-                { HidKeyB, VIRTUAL_FN, false },              // key -> Fn is not a supported shape
-                { 0x02000000UL | HidKeyP, HidKeyT, false },  // reserved flag bit set
+                {HidKeyB, VIRTUAL_FN, false},              // key -> Fn is not a supported shape
+                {0x02000000UL | HidKeyP, HidKeyT, false},  // reserved flag bit set
             };
             Load(kp, 0, rules);
 
@@ -138,15 +147,13 @@ namespace My4MagicKeysPlusDriverTests
         }
     };
 
-    TEST_CLASS(ModifierRuleTests)
-    {
+    TEST_CLASS(ModifierRuleTests) {
     public:
-        TEST_METHOD(SwapsCtrlAndAlt)
-        {
+        TEST_METHOD(SwapsCtrlAndAlt) {
             KeyProcessor kp;
             const KEY_RULE rules[] = {
-                { Mods(HidLeftCtrlMask), Mods(HidLeftAltMask), false },
-                { Mods(HidLeftAltMask), Mods(HidLeftCtrlMask), false },
+                {Mods(HidLeftCtrlMask), Mods(HidLeftAltMask), false},
+                {Mods(HidLeftAltMask), Mods(HidLeftCtrlMask), false},
             };
             Load(kp, 0, rules);
 
@@ -157,12 +164,11 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)HidLeftAltMask, (int)report.bytes[0]);
         }
 
-        TEST_METHOD(SwapKeepsBothWhenBothHeld)
-        {
+        TEST_METHOD(SwapKeepsBothWhenBothHeld) {
             KeyProcessor kp;
             const KEY_RULE rules[] = {
-                { Mods(HidLeftCtrlMask), Mods(HidLeftAltMask), false },
-                { Mods(HidLeftAltMask), Mods(HidLeftCtrlMask), false },
+                {Mods(HidLeftCtrlMask), Mods(HidLeftAltMask), false},
+                {Mods(HidLeftAltMask), Mods(HidLeftCtrlMask), false},
             };
             Load(kp, 0, rules);
 
@@ -178,15 +184,13 @@ namespace My4MagicKeysPlusDriverTests
     // ProcessModifiersAndVirtualKeys: an earlier draft decided from values it
     // had already written earlier in the same pass, which let independently
     // configured rules silently cancel or chain into each other.
-    TEST_CLASS(VirtualKeyRuleTests)
-    {
+    TEST_CLASS(VirtualKeyRuleTests) {
     public:
-        TEST_METHOD(ModifierMapsToFn)
-        {
+        TEST_METHOD(ModifierMapsToFn) {
             KeyProcessor kp;
             const KEY_RULE rules[] = {
-                { Mods(HidLeftCmdMask), VIRTUAL_FN, false },
-                { kFn | HidLeft, HidHome, false },
+                {Mods(HidLeftCmdMask), VIRTUAL_FN, false},
+                {kFn | HidLeft, HidHome, false},
             };
             Load(kp, 0, rules);
 
@@ -199,16 +203,15 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)HidHome, (int)report.bytes[2]);
         }
 
-        TEST_METHOD(IndependentRulesDoNotChainInSamePass)
-        {
+        TEST_METHOD(IndependentRulesDoNotChainInSamePass) {
             // LeftCmd->Fn and Fn->LeftAlt configured together. Only LeftCmd is
             // actually pressed, so Fn->LeftAlt must NOT also fire just because
             // LeftCmd->Fn produced Fn earlier in this same call.
             KeyProcessor kp;
             const KEY_RULE rules[] = {
-                { Mods(HidLeftCmdMask), VIRTUAL_FN, false },
-                { VIRTUAL_FN, Mods(HidLeftAltMask), false },
-                { kFn | HidLeft, HidHome, false },
+                {Mods(HidLeftCmdMask), VIRTUAL_FN, false},
+                {VIRTUAL_FN, Mods(HidLeftAltMask), false},
+                {kFn | HidLeft, HidHome, false},
             };
             Load(kp, 0, rules);
 
@@ -221,12 +224,11 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual(0, report.bytes[0] & HidLeftAltMask);
         }
 
-        TEST_METHOD(FnMapsToModifierAndIsNoLongerFn)
-        {
+        TEST_METHOD(FnMapsToModifierAndIsNoLongerFn) {
             KeyProcessor kp;
             const KEY_RULE rules[] = {
-                { VIRTUAL_FN, Mods(HidLeftCtrlMask), false },
-                { kFn | HidLeft, HidHome, false },
+                {VIRTUAL_FN, Mods(HidLeftCtrlMask), false},
+                {kFn | HidLeft, HidHome, false},
             };
             Load(kp, 0, rules);
 
@@ -240,13 +242,12 @@ namespace My4MagicKeysPlusDriverTests
 
         // The user's own setup: Eject acts as Fn, the physical Fn types Insert.
         // Neither may leak into the other within one report.
-        TEST_METHOD(EjectActsAsFnAndFnTypesInsert)
-        {
+        TEST_METHOD(EjectActsAsFnAndFnTypesInsert) {
             KeyProcessor kp;
             const KEY_RULE rules[] = {
-                { VIRTUAL_EJECT, VIRTUAL_FN, false },
-                { VIRTUAL_FN, HidInsert, false },
-                { kFn | HidLeft, HidHome, false },
+                {VIRTUAL_EJECT, VIRTUAL_FN, false},
+                {VIRTUAL_FN, HidInsert, false},
+                {kFn | HidLeft, HidHome, false},
             };
             Load(kp, 0, rules);
 
@@ -268,13 +269,12 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)HidInsert, (int)fnWithLeft.bytes[3]);
         }
 
-        TEST_METHOD(FnAndEjectSwapWithoutChaining)
-        {
+        TEST_METHOD(FnAndEjectSwapWithoutChaining) {
             KeyProcessor kp;
             const KEY_RULE rules[] = {
-                { VIRTUAL_FN, VIRTUAL_EJECT, false },
-                { VIRTUAL_EJECT, VIRTUAL_FN, false },
-                { kFn | HidLeft, HidHome, false },
+                {VIRTUAL_FN, VIRTUAL_EJECT, false},
+                {VIRTUAL_EJECT, VIRTUAL_FN, false},
+                {kFn | HidLeft, HidHome, false},
             };
             Load(kp, 0, rules);
 
@@ -290,13 +290,11 @@ namespace My4MagicKeysPlusDriverTests
         }
     };
 
-    TEST_CLASS(FnLayerTests)
-    {
+    TEST_CLASS(FnLayerTests) {
     public:
-        TEST_METHOD(FnLeftBecomesHomeOnlyWithFn)
-        {
+        TEST_METHOD(FnLeftBecomesHomeOnlyWithFn) {
             KeyProcessor kp;
-            const KEY_RULE rules[] = { { kFn | HidLeft, HidHome, false } };
+            const KEY_RULE rules[] = {{kFn | HidLeft, HidHome, false}};
             Load(kp, 0, rules);
 
             Report withFn;
@@ -310,8 +308,7 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)HidLeft, (int)withoutFn.bytes[2]);
         }
 
-        TEST_METHOD(NoRulesMeansNoFnBehavior)
-        {
+        TEST_METHOD(NoRulesMeansNoFnBehavior) {
             KeyProcessor kp;
             LoadNone(kp);
 
@@ -327,10 +324,9 @@ namespace My4MagicKeysPlusDriverTests
             Assert::IsFalse(result.ShouldSubmit);
         }
 
-        TEST_METHOD(FnLockDoesNotAffectNonAwareRules)
-        {
+        TEST_METHOD(FnLockDoesNotAffectNonAwareRules) {
             KeyProcessor kp;
-            const KEY_RULE rules[] = { { kFn | HidLeft, HidHome, false } };
+            const KEY_RULE rules[] = {{kFn | HidLeft, HidHome, false}};
             Load(kp, 1, rules);
 
             Report withoutFn;
@@ -346,13 +342,11 @@ namespace My4MagicKeysPlusDriverTests
     };
 
     // FnLock on: F8 is F8 and Fn+F8 is Play/Pause. FnLock off: the opposite.
-    TEST_CLASS(FnLockAwareTests)
-    {
+    TEST_CLASS(FnLockAwareTests) {
     public:
-        TEST_METHOD(FnLockOffMediaWithoutFn)
-        {
+        TEST_METHOD(FnLockOffMediaWithoutFn) {
             KeyProcessor kp;
-            const KEY_RULE rules[] = { { kFn | HidF8, Consumer(CONSUMER_USAGE_PLAYPAUSE), true } };
+            const KEY_RULE rules[] = {{kFn | HidF8, Consumer(CONSUMER_USAGE_PLAYPAUSE), true}};
             Load(kp, 0, rules);
 
             Report report;
@@ -364,10 +358,9 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual(0, (int)report.bytes[2]);
         }
 
-        TEST_METHOD(FnLockOffPlainF8WithFn)
-        {
+        TEST_METHOD(FnLockOffPlainF8WithFn) {
             KeyProcessor kp;
-            const KEY_RULE rules[] = { { kFn | HidF8, Consumer(CONSUMER_USAGE_PLAYPAUSE), true } };
+            const KEY_RULE rules[] = {{kFn | HidF8, Consumer(CONSUMER_USAGE_PLAYPAUSE), true}};
             Load(kp, 0, rules);
 
             Report report;
@@ -378,10 +371,9 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)HidF8, (int)report.bytes[2]);
         }
 
-        TEST_METHOD(FnLockOnPlainF8WithoutFn)
-        {
+        TEST_METHOD(FnLockOnPlainF8WithoutFn) {
             KeyProcessor kp;
-            const KEY_RULE rules[] = { { kFn | HidF8, Consumer(CONSUMER_USAGE_PLAYPAUSE), true } };
+            const KEY_RULE rules[] = {{kFn | HidF8, Consumer(CONSUMER_USAGE_PLAYPAUSE), true}};
             Load(kp, 1, rules);
 
             Report report;
@@ -392,10 +384,9 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)HidF8, (int)report.bytes[2]);
         }
 
-        TEST_METHOD(FnLockOnMediaWithFn)
-        {
+        TEST_METHOD(FnLockOnMediaWithFn) {
             KeyProcessor kp;
-            const KEY_RULE rules[] = { { kFn | HidF8, Consumer(CONSUMER_USAGE_PLAYPAUSE), true } };
+            const KEY_RULE rules[] = {{kFn | HidF8, Consumer(CONSUMER_USAGE_PLAYPAUSE), true}};
             Load(kp, 1, rules);
 
             Report report;
@@ -408,11 +399,9 @@ namespace My4MagicKeysPlusDriverTests
         }
     };
 
-    TEST_CLASS(ConsumerUsageTests)
-    {
+    TEST_CLASS(ConsumerUsageTests) {
     public:
-        TEST_METHOD(SubmitsOnceThenDedupesRepeatedReports)
-        {
+        TEST_METHOD(SubmitsOnceThenDedupesRepeatedReports) {
             KeyProcessor kp;
             Load(kp, 0, kUserRules);
 
@@ -429,8 +418,7 @@ namespace My4MagicKeysPlusDriverTests
             Assert::IsFalse(second.ShouldSubmit);
         }
 
-        TEST_METHOD(ReleaseSubmitsNoneUsage)
-        {
+        TEST_METHOD(ReleaseSubmitsNoneUsage) {
             KeyProcessor kp;
             Load(kp, 0, kUserRules);
 
@@ -450,8 +438,7 @@ namespace My4MagicKeysPlusDriverTests
         // g_LastConsumerUsage, so an identical key press on the second keyboard
         // was silently swallowed. Two independent KeyProcessor instances (one per
         // DEVICE_CONTEXT in the real driver) must not do that.
-        TEST_METHOD(TwoDevicesDoNotShareDedupState)
-        {
+        TEST_METHOD(TwoDevicesDoNotShareDedupState) {
             KeyProcessor deviceA;
             KeyProcessor deviceB;
             Load(deviceA, 0, kUserRules);
@@ -470,11 +457,9 @@ namespace My4MagicKeysPlusDriverTests
         }
     };
 
-    TEST_CLASS(UserRulesTests)
-    {
+    TEST_CLASS(UserRulesTests) {
     public:
-        TEST_METHOD(EjectPlusLeftIsHome)
-        {
+        TEST_METHOD(EjectPlusLeftIsHome) {
             KeyProcessor kp;
             Load(kp, 1, kUserRules);
 
@@ -486,8 +471,7 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual(0, (int)report.bytes[3]);
         }
 
-        TEST_METHOD(F13IsPrintScreenEvenWithEjectHeld)
-        {
+        TEST_METHOD(F13IsPrintScreenEvenWithEjectHeld) {
             KeyProcessor kp;
             Load(kp, 1, kUserRules);
 
@@ -498,8 +482,7 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)HidPrtScr, (int)report.bytes[2]);
         }
 
-        TEST_METHOD(OptionAndCommandAreSwapped)
-        {
+        TEST_METHOD(OptionAndCommandAreSwapped) {
             KeyProcessor kp;
             Load(kp, 1, kUserRules);
 
@@ -510,8 +493,7 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)(HidLeftCmdMask | HidRightAltMask), (int)report.bytes[0]);
         }
 
-        TEST_METHOD(FnLockOnF8IsPlainAndEjectF8IsMedia)
-        {
+        TEST_METHOD(FnLockOnF8IsPlainAndEjectF8IsMedia) {
             KeyProcessor kp;
             Load(kp, 1, kUserRules);
 
@@ -530,27 +512,24 @@ namespace My4MagicKeysPlusDriverTests
     };
 
     // The control device's reload calls LoadConfig again on a processor that is already in use.
-    TEST_CLASS(ReloadTests)
-    {
+    TEST_CLASS(ReloadTests) {
     public:
-        TEST_METHOD(LoadConfigReturnsHowManyRulesWereKept)
-        {
+        TEST_METHOD(LoadConfigReturnsHowManyRulesWereKept) {
             KeyProcessor kp;
             const KEY_RULE rules[] = {
-                { HidKeyB, HidKeyT, false },
-                { HidKeyB, VIRTUAL_FN, false },  // key -> Fn is not a supported shape
-                { HidKeyP, HidKeyT, false },
+                {HidKeyB, HidKeyT, false},
+                {HidKeyB, VIRTUAL_FN, false},  // key -> Fn is not a supported shape
+                {HidKeyP, HidKeyT, false},
             };
 
             Assert::AreEqual(2, (int)kp.LoadConfig(0, rules, 3));
             Assert::AreEqual(0, (int)kp.LoadConfig(0, nullptr, 0));
         }
 
-        TEST_METHOD(LoadingAgainReplacesTheWholeConfiguration)
-        {
+        TEST_METHOD(LoadingAgainReplacesTheWholeConfiguration) {
             KeyProcessor kp;
-            const KEY_RULE first[] = { { HidKeyB, HidKeyT, false } };
-            const KEY_RULE second[] = { { HidKeyP, HidKeyT, false } };
+            const KEY_RULE first[] = {{HidKeyB, HidKeyT, false}};
+            const KEY_RULE second[] = {{HidKeyP, HidKeyT, false}};
             Load(kp, 0, first);
             Load(kp, 0, second);
 
@@ -562,8 +541,7 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)HidKeyT, (int)report.bytes[3]);
         }
 
-        TEST_METHOD(RemovingAllRulesRestoresPlainKeys)
-        {
+        TEST_METHOD(RemovingAllRulesRestoresPlainKeys) {
             KeyProcessor kp;
             Load(kp, 0, kUserRules);
             LoadNone(kp);
@@ -577,8 +555,7 @@ namespace My4MagicKeysPlusDriverTests
             Assert::AreEqual((int)HidLeftAltMask, (int)report.bytes[0]);
         }
 
-        TEST_METHOD(FnLockChangeAppliesFromTheNextReport)
-        {
+        TEST_METHOD(FnLockChangeAppliesFromTheNextReport) {
             KeyProcessor kp;
             Load(kp, 1, kUserRules);
             Load(kp, 0, kUserRules);
@@ -593,8 +570,7 @@ namespace My4MagicKeysPlusDriverTests
 
         // A media key still held when its rule is removed must be released: the dedup state
         // survives the reload, so the release report is submitted and the usage doesn't stick.
-        TEST_METHOD(MediaKeyHeldAcrossAReloadIsStillReleased)
-        {
+        TEST_METHOD(MediaKeyHeldAcrossAReloadIsStillReleased) {
             KeyProcessor kp;
             Load(kp, 0, kUserRules);
 

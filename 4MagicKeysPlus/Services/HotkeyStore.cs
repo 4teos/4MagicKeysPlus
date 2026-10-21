@@ -34,7 +34,9 @@ internal sealed record HotkeysPlan(IReadOnlyList<string> Release, IReadOnlyList<
         foreach (HotkeyEntry entry in wanted) {
             int order = result.Count;
             if (KeepsItsSubkey(entry, savedByName)) {
-                HotkeyEntry kept = entry with { Order = order };
+                HotkeyEntry kept = entry with {
+                    Order = order
+                };
                 result.Add(kept);
                 if (savedByName[entry.RegistryName!] != kept) {
                     write.Add(kept);
@@ -42,7 +44,10 @@ internal sealed record HotkeysPlan(IReadOnlyList<string> Release, IReadOnlyList<
                 continue;
             }
 
-            HotkeyEntry placed = entry with { RegistryName = FreeName(entry, taken), Order = order };
+            HotkeyEntry placed = entry with {
+                RegistryName = FreeName(entry, taken),
+                Order = order
+            };
             taken.Add(placed.RegistryName!);
             result.Add(placed);
             write.Add(placed);

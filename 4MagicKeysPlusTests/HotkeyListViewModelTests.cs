@@ -177,7 +177,9 @@ public class HotkeyListViewModelTests {
 
     [Fact]
     public async Task StartingTheAgent_WaitsForItAndRefreshes() {
-        FakeAgentLink agent = new() { Reply = null };
+        FakeAgentLink agent = new() {
+            Reply = null
+        };
         HotkeyListViewModel list = List(StoreWith(Saved("Hotkey_00_7F", "Calc", VkF16)), agent, () => {
             agent.Reply = AgentResponse.Success([new HotkeyRegistration("Hotkey_00_7F", 0)]);
             return null;

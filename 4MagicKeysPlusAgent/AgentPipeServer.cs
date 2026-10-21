@@ -59,7 +59,9 @@ internal sealed class AgentPipeServer : IDisposable {
         try {
             using (pipe) {
                 using StreamReader reader = new(pipe, Utf8, false, 1024, leaveOpen: true);
-                using StreamWriter writer = new(pipe, Utf8, 1024, leaveOpen: true) { AutoFlush = true };
+                using StreamWriter writer = new(pipe, Utf8, 1024, leaveOpen: true) {
+                    AutoFlush = true
+                };
                 while (true) {
                     using CancellationTokenSource readTimeout = CancellationTokenSource.CreateLinkedTokenSource(stopping.Token);
                     if (paused) {

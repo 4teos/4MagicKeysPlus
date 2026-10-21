@@ -6,8 +6,12 @@ using _4MagicKeysPlus.ViewModels;
 namespace _4MagicKeysPlusTests;
 
 internal sealed class FakeFnLockStore : IFnLockStore {
-    public bool Enabled { get; set; }
-    public Exception? Failure { get; set; }
+    public bool Enabled {
+        get; set;
+    }
+    public Exception? Failure {
+        get; set;
+    }
 
     public bool Read() {
         return Enabled;
@@ -38,7 +42,9 @@ public class FnLockEditorTests {
 
     [Fact]
     public void TurningItOff_IsSavedToo() {
-        FakeFnLockStore store = new() { Enabled = true };
+        FakeFnLockStore store = new() {
+            Enabled = true
+        };
         FnLockEditor editor = new(store, new FakeDriver());
 
         editor.Set(false);
@@ -61,7 +67,9 @@ public class FnLockEditorTests {
     [Fact]
     public void AFailedSave_ChangesNothingAndDoesNotTouchTheDriver() {
         FakeDriver driver = new();
-        FakeFnLockStore store = new() { Failure = new UnauthorizedAccessException("denied") };
+        FakeFnLockStore store = new() {
+            Failure = new UnauthorizedAccessException("denied")
+        };
         FnLockEditor editor = new(store, driver);
         int raised = 0;
         editor.Changed += () => raised++;

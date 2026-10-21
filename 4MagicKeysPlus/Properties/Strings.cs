@@ -3,8 +3,7 @@ using System.Resources;
 
 namespace _4MagicKeysPlus.Properties;
 
-public static class Strings
-{
+public static class Strings {
     private static readonly ResourceManager ResourceManager =
         new("_4MagicKeysPlus.Properties.Strings", typeof(Strings).Assembly);
 
