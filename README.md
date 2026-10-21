@@ -366,7 +366,7 @@ C#, C and C++ sources are formatted automatically: `.editorconfig` with `dotnet 
 git config core.hooksPath .githooks
 ```
 
-On every commit the hook formats what is staged and puts the result into the index; unstaged changes are never touched. For a partially staged file only the staged part is formatted and its working copy stays as it was, so `git diff` shows the formatting it still lacks. `bash scripts/format.sh fix` formats everything by hand, `bash scripts/format.sh check` is what the pull request check runs.
+On every commit the hook formats what is staged and puts the result into the index; unstaged changes are never touched. For a partially staged file only the staged part is formatted and its working copy stays as it was, so `git diff` shows the formatting it still lacks. `bash scripts/format.sh fix` formats everything by hand, `bash scripts/format.sh check` is what the pull request check runs: when it fails, it lists the files that need changes and tells you to run `fix` and commit the result (`FORMAT_VERBOSE=1` adds the formatters' own output).
 
 The style is K&R, and nothing shares a line: method bodies, `if` and loop bodies and statements each start on their own line, an empty body is `{` and `}` on two lines, `if`, `else` and loops always have braces, and C# auto-properties are three lines (`{`, `get; set;`, `}`; Roslyn keeps the ones with an initializer, like `Cards { get; } = [];`, on one line). Adding the braces is a C# analyzer (IDE0011), not formatting: `scripts/format.sh` fixes and checks it (about 20 seconds, it loads the projects) and Visual Studio shows it as a warning, but the pre-commit hook skips it.
 
