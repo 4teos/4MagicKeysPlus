@@ -58,6 +58,69 @@ find_clang_format() {
 
 status=0
 
+# The tools' own output is too noisy to act on, so check mode keeps it in a log and ends with a summary.
+log=
+if [ "$mode" = check ]; then
+    log=$(mktemp)
+    trap 'rm -f "$log"' EXIT
+fi
+
+run() {
+    if [ -n "$log" ]; then
+        "$@" >>"$log" 2>&1 || status=1
+    else
+        "$@" || status=1
+    fi
+}
+
+report_failure() {
+    local root p count bad=() unique=()
+    root=$(cygpath -m "$PWD" 2>/dev/null || echo "$PWD")
+    while IFS= read -r p; do
+        p=${p//\\//}
+        bad+=("${p#"$root"/}")
+    done < <(sed -nE 's/^(.*\.(cs|c|cpp|h))(:[0-9]+:[0-9]+|\([0-9]+,[0-9]+\)): (error|warning)[ :].*/\1/p' "$log")
+    if ((${#bad[@]})); then
+        while IFS= read -r p; do unique+=("$p"); done < <(printf '%s\n' "${bad[@]}" | sort -u)
+    fi
+    count=${#unique[@]}
+
+    if ((count)); then
+        echo "Formatting check failed, ${count} file(s) need changes:"
+        printf '  %s\n' "${unique[@]}"
+    else
+        echo "Formatting check failed."
+    fi
+    echo
+    echo "To fix it, run this in your clone and commit the result:"
+    echo "    bash scripts/format.sh fix"
+
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        echo "::error title=Formatting::${count} file(s) need formatting. Run 'bash scripts/format.sh fix' locally and commit the result."
+        if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+            {
+                echo "### Formatting check failed"
+                echo
+                for p in ${unique[@]+"${unique[@]}"}; do echo "- \`$p\`"; done
+                echo
+                echo 'Run `bash scripts/format.sh fix` locally and commit the result.'
+            } >>"$GITHUB_STEP_SUMMARY"
+        fi
+        if ((count)); then
+            echo "::group::Details"
+            cat "$log"
+            echo "::endgroup::"
+        else
+            cat "$log"
+        fi
+    elif ((count == 0)) || [ -n "${FORMAT_VERBOSE:-}" ]; then
+        echo
+        cat "$log"
+    else
+        echo "(FORMAT_VERBOSE=1 shows the output of the formatters themselves.)"
+    fi
+}
+
 if ((${#cpp[@]})); then
     clang_format=$(find_clang_format) || {
         echo "clang-format not found: put it on PATH or set CLANG_FORMAT" >&2
@@ -68,9 +131,9 @@ if ((${#cpp[@]})); then
         echo "warning: clang-format $actual found, $CLANG_FORMAT_VERSION expected; the result may differ from CI" >&2
     fi
     if [ "$mode" = fix ]; then
-        "$clang_format" -i --style=file "${cpp[@]}" || status=1
+        run "$clang_format" -i --style=file "${cpp[@]}"
     else
-        "$clang_format" --dry-run --Werror --style=file "${cpp[@]}" || status=1
+        run "$clang_format" --dry-run --Werror --style=file "${cpp[@]}"
     fi
 fi
 
@@ -88,7 +151,7 @@ if ((${#cs[@]})) && [ -z "${FORMAT_ROOT:-}" ]; then
         if [ "$mode" = check ]; then
             args+=(--verify-no-changes)
         fi
-        dotnet format "${args[@]}" || status=1
+        run dotnet format "${args[@]}"
     done < <(git ls-files '*.csproj')
 fi
 
@@ -97,7 +160,11 @@ if ((${#cs[@]})); then
     if [ "$mode" = check ]; then
         args+=(--verify-no-changes)
     fi
-    dotnet format "${args[@]}" || status=1
+    run dotnet format "${args[@]}"
+fi
+
+if [ "$mode" = check ] && [ "$status" -ne 0 ]; then
+    report_failure
 fi
 
 exit $status
