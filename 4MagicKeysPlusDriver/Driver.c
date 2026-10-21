@@ -415,12 +415,14 @@ void EvtIoInternalDeviceControl(IN WDFQUEUE queue, IN WDFREQUEST request, IN siz
 
     if (ioControlCode == IOCTL_INTERNAL_BTH_SUBMIT_BRB) {
         PBRB pbrb = (PBRB)irpSp->Parameters.Others.Argument1;
-        if (pbrb && pbrb->BrbHeader.Type == BRB_L2CA_ACL_TRANSFER)
+        if (pbrb && pbrb->BrbHeader.Type == BRB_L2CA_ACL_TRANSFER) {
             bWatch = TRUE;
+        }
     } else if (ioControlCode == IOCTL_INTERNAL_USB_SUBMIT_URB) {
         PURB purb = (PURB)irpSp->Parameters.Others.Argument1;
-        if (purb && purb->UrbHeader.Function == URB_FUNCTION_BULK_OR_INTERRUPT_TRANSFER)
+        if (purb && purb->UrbHeader.Function == URB_FUNCTION_BULK_OR_INTERRUPT_TRANSFER) {
             bWatch = TRUE;
+        }
     }
 
     NTSTATUS status;
@@ -498,9 +500,12 @@ void InternalIoctlRequestCompletion(IN WDFREQUEST request, IN WDFIOTARGET target
 }
 
 void KdPrintBuffer(PCHAR text, PUCHAR buffer, ULONG length) {
-    if (!buffer || length == 0) return;
+    if (!buffer || length == 0) {
+        return;
+    }
     DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL, DRIVERNAME ": %s", text ? text : "");
-    for (ULONG i = 0; i < length; ++i)
+    for (ULONG i = 0; i < length; ++i) {
         DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL, "%02X ", buffer[i]);
+    }
     DbgPrintEx(DPFLTR_IHVDRIVER_ID, DPFLTR_INFO_LEVEL, "\n");
 }

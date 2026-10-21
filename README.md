@@ -358,6 +358,19 @@ Build the `4MagicKeysPlusDriver` project for x64 (Debug or Release). The driver,
 
 The Debug build of the agent accepts two test switches that are not compiled into Release: `--demo-battery <percent> [delay seconds]` shows the battery notice once and exits, `--battery-interval <seconds>` checks the battery that often and logs every reading.
 
+#### Code Formatting
+
+C#, C and C++ sources are formatted automatically: `.editorconfig` with `dotnet format whitespace` for C#, `.clang-format` for C and C++. Enable the pre-commit hook once per clone:
+
+```
+git config core.hooksPath .githooks
+```
+
+On every commit the hook formats what is staged and puts the result into the index; unstaged changes are never touched. For a partially staged file only the staged part is formatted and its working copy stays as it was, so `git diff` shows the formatting it still lacks. `bash scripts/format.sh fix` formats everything by hand, `bash scripts/format.sh check` is what the pull request check runs.
+
+The style is K&R, and nothing shares a line: method bodies, `if` and loop bodies and statements each start on their own line, an empty body is `{` and `}` on two lines, `if`, `else` and loops always have braces, and C# auto-properties are three lines (`{`, `get; set;`, `}`; Roslyn keeps the ones with an initializer, like `Cards { get; } = [];`, on one line). Adding the braces is a C# analyzer (IDE0011), not formatting: `scripts/format.sh` fixes and checks it (about 20 seconds, it loads the projects) and Visual Studio shows it as a warning, but the pre-commit hook skips it.
+
+The hook needs `dotnet` on `PATH`. clang-format is taken from `PATH` or from the Visual Studio installation. Its version is pinned in `scripts/format.sh` (the one bundled with Visual Studio 2026), because the output differs between releases.
 #### Test Certificate
 
 The build test-signs the driver using `4MagicKeysPlusDriver\4MagicKeysPlus.pfx`, which is **not checked into git** (`.pfx` is gitignored, since it bundles the private key). If you get an MSBuild error like `Invalid argument <...4MagicKeysPlus.pfx> for property <TestCertificate>`, generate a new self-signed test certificate locally (PowerShell, run from the `4MagicKeysPlusDriver\` folder):

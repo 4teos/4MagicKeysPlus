@@ -7,8 +7,12 @@ using _4MagicKeysPlus.ViewModels;
 namespace _4MagicKeysPlusTests;
 
 internal sealed class FakeStore : IRulesStore {
-    public Exception? Failure { get; set; }
-    public int Saves { get; private set; }
+    public Exception? Failure {
+        get; set;
+    }
+    public int Saves {
+        get; private set;
+    }
 
     public IReadOnlyList<KeyRule> Save(IReadOnlyList<KeyRule> saved, IReadOnlyList<KeyRule> wanted) {
         if (Failure is not null) {
@@ -21,8 +25,12 @@ internal sealed class FakeStore : IRulesStore {
 
 internal sealed class FakeDriver : IDriverControl {
     public DriverReloadResult? Result { get; set; } = new(25, 25, 1);
-    public Exception? Failure { get; set; }
-    public int Reloads { get; private set; }
+    public Exception? Failure {
+        get; set;
+    }
+    public int Reloads {
+        get; private set;
+    }
 
     public DriverReloadResult? Reload() {
         Reloads++;
@@ -32,7 +40,9 @@ internal sealed class FakeDriver : IDriverControl {
 
 public class RulesPlanTests {
     private static KeyRule Rule(PhysicalKey source, RemapTarget target, bool fnLayer = false, string? name = null) {
-        return DriverRuleEncoder.CreateRule(source, target, fnLayer, fnLockAware: false)! with { RegistryName = name };
+        return DriverRuleEncoder.CreateRule(source, target, fnLayer, fnLockAware: false)! with {
+            RegistryName = name
+        };
     }
 
     [Fact]
@@ -155,7 +165,9 @@ public sealed class RegistryRulesStoreTests : IDisposable {
             entry.SetValue("VkKey", 0x7F, RegistryValueKind.DWord);
             entry.SetValue("Path", @"C:\Windows\System32\calc.exe");
         }
-        KeyRule rule = Rule(PhysicalKey.A, PhysicalKey.B) with { RegistryName = "Launch_00_7F" };
+        KeyRule rule = Rule(PhysicalKey.A, PhysicalKey.B) with {
+            RegistryName = "Launch_00_7F"
+        };
 
         store.Save([rule], []);
 
@@ -194,7 +206,9 @@ public class KeyRemapEditorApplyTests {
     [Fact]
     public void ASavedChange_IsHandedToTheDriver() {
         FakeStore store = new();
-        FakeDriver driver = new() { Result = new DriverReloadResult(1, 1, 2) };
+        FakeDriver driver = new() {
+            Result = new DriverReloadResult(1, 1, 2)
+        };
         KeyRemapEditor editor = Editor(store, driver);
 
         ApplyResult result = editor.SetMapping(PhysicalKey.F13, PhysicalKey.PrintScreen, fnLayer: false, fnLockAware: false);

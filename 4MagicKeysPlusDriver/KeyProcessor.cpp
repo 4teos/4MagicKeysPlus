@@ -83,7 +83,7 @@ ULONG KeyProcessor::LoadConfig(DWORD fnLock, const KEY_RULE* rules, ULONG ruleCo
             DebugPrint("Rule ignored: source 0x%08X target 0x%08X\n", rules[i].Source, rules[i].Target);
             continue;
         }
-        m_Rules[m_RuleCount++] = { rules[i].Source, rules[i].Target, kind, rules[i].FnLockAware };
+        m_Rules[m_RuleCount++] = {rules[i].Source, rules[i].Target, kind, rules[i].FnLockAware};
     }
     return m_RuleCount;
 }
@@ -238,15 +238,15 @@ USHORT KeyProcessor::ProcessKeys(BYTE* buf, BOOLEAN fnPressed) const {
 // that fires once per transition regardless of how long the value stays set.
 ConsumerUsageSubmission KeyProcessor::DecideConsumerUsageSubmission(USHORT usage) {
     if (usage == m_LastConsumerUsage) {
-        return { false, usage };
+        return {false, usage};
     }
     m_LastConsumerUsage = usage;
-    return { true, usage };
+    return {true, usage};
 }
 
 ConsumerUsageSubmission KeyProcessor::Process(BYTE* buf, ULONG size) {
     if (!buf || size < 9) {
-        return { false, CONSUMER_USAGE_NONE };
+        return {false, CONSUMER_USAGE_NONE};
     }
 
     for (int i = 2; i <= 7; i++) {

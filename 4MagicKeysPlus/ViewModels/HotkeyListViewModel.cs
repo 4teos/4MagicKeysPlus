@@ -81,7 +81,12 @@ internal sealed class HotkeyListViewModel : INotifyPropertyChanged {
         try {
             string path = card.DraftPath.Trim();
             string name = string.IsNullOrWhiteSpace(card.DraftName) ? HotkeyNames.FromPath(path) : card.DraftName.Trim();
-            HotkeyEntry entry = card.ToEntry() with { Name = name, Path = path, VirtualKey = card.DraftVirtualKey, Modifiers = card.DraftModifiers };
+            HotkeyEntry entry = card.ToEntry() with {
+                Name = name,
+                Path = path,
+                VirtualKey = card.DraftVirtualKey,
+                Modifiers = card.DraftModifiers
+            };
 
             List<HotkeyCardViewModel> saved = SavedCards();
             if (!saved.Contains(card)) {
@@ -176,7 +181,9 @@ internal sealed class HotkeyListViewModel : INotifyPropertyChanged {
         }
         deleted = null;
 
-        HotkeyCardViewModel card = HotkeyCardViewModel.FromEntry(gone.Entry with { RegistryName = null }, loadIcon);
+        HotkeyCardViewModel card = HotkeyCardViewModel.FromEntry(gone.Entry with {
+            RegistryName = null
+        }, loadIcon);
         Cards.Insert(Math.Min(gone.Index, Cards.Count), card);
         List<HotkeyCardViewModel> saved = SavedCards();
         HotkeyApplyResult result = await editor.ApplyAsync([.. saved.Select(other => other.ToEntry())]);

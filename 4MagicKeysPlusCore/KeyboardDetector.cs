@@ -38,7 +38,9 @@ public static class KeyboardDetector {
     }
 
     private static bool TryGetIds(SafeFileHandle handle, out ushort vendorId, out ushort productId) {
-        HidNativeMethods.HIDD_ATTRIBUTES attributes = new() { Size = Marshal.SizeOf<HidNativeMethods.HIDD_ATTRIBUTES>() };
+        HidNativeMethods.HIDD_ATTRIBUTES attributes = new() {
+            Size = Marshal.SizeOf<HidNativeMethods.HIDD_ATTRIBUTES>()
+        };
         if (HidNativeMethods.HidD_GetAttributes(handle, ref attributes)) {
             vendorId = attributes.VendorID;
             productId = attributes.ProductID;

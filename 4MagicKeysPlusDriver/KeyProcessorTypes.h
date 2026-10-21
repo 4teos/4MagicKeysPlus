@@ -80,12 +80,12 @@ typedef std::uint8_t BOOLEAN;
 //   bit  24     source: Fn must be held (RULE_SOURCE_FN);
 //               target: the code is a Consumer Control usage (RULE_TARGET_CONSUMER).
 //   bits 25-31  reserved, a rule with any of them set is ignored.
-#define RULE_CODE_MASK        0x0000FFFFUL
-#define RULE_MODS_SHIFT       16
-#define RULE_MODS_MASK        0x00FF0000UL
-#define RULE_SOURCE_FN        0x01000000UL
-#define RULE_TARGET_CONSUMER  0x01000000UL
-#define RULE_FLAGS_MASK       0xFF000000UL
+#define RULE_CODE_MASK       0x0000FFFFUL
+#define RULE_MODS_SHIFT      16
+#define RULE_MODS_MASK       0x00FF0000UL
+#define RULE_SOURCE_FN       0x01000000UL
+#define RULE_TARGET_CONSUMER 0x01000000UL
+#define RULE_FLAGS_MASK      0xFF000000UL
 
 typedef struct _KEY_RULE {
     DWORD Source;
@@ -99,18 +99,18 @@ typedef struct _KEY_RULE {
 // Consumer Control (usage page 0x0C) usage codes reported in the virtual
 // Consumer Control report - see g_ConsumerReportDescriptor (Driver.c), which
 // reports the currently pressed key as a single 16-bit usage value.
-#define CONSUMER_USAGE_NONE         0x0000
-#define CONSUMER_USAGE_NEXT         0x00B5
-#define CONSUMER_USAGE_PREV         0x00B6
-#define CONSUMER_USAGE_PLAYPAUSE    0x00CD
-#define CONSUMER_USAGE_BRIGHT_UP    0x006F
-#define CONSUMER_USAGE_BRIGHT_DOWN  0x0070
-#define CONSUMER_USAGE_MUTE         0x00E2
-#define CONSUMER_VOLUME_UP          0x00E9
-#define CONSUMER_VOLUME_DOWN        0x00EA
-#define CONSUMER_CALCULATOR         0x0192
+#define CONSUMER_USAGE_NONE        0x0000
+#define CONSUMER_USAGE_NEXT        0x00B5
+#define CONSUMER_USAGE_PREV        0x00B6
+#define CONSUMER_USAGE_PLAYPAUSE   0x00CD
+#define CONSUMER_USAGE_BRIGHT_UP   0x006F
+#define CONSUMER_USAGE_BRIGHT_DOWN 0x0070
+#define CONSUMER_USAGE_MUTE        0x00E2
+#define CONSUMER_VOLUME_UP         0x00E9
+#define CONSUMER_VOLUME_DOWN       0x00EA
+#define CONSUMER_CALCULATOR        0x0192
 // Upper bound of the usage range declared in g_ConsumerReportDescriptor (Driver.h).
-#define CONSUMER_USAGE_MAX          0x03FF
+#define CONSUMER_USAGE_MAX 0x03FF
 
 enum HidCodes {
     HidKeyNone = 0x0,

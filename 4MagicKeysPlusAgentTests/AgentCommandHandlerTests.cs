@@ -5,7 +5,9 @@ namespace _4MagicKeysPlusAgentTests;
 
 public class AgentCommandHandlerTests {
     private sealed class FakeRegistrar : IHotkeyRegistrar {
-        public int Registered { get; private set; }
+        public int Registered {
+            get; private set;
+        }
 
         public bool RegisterHotKey(HotkeyEntry entry, out int win32Error) {
             win32Error = 0;

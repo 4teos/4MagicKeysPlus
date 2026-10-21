@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Formats the staged C#/C/C++ content and puts the result into the index. Unstaged changes are never touched:
+# the staged version is formatted in a temporary copy, so a partially staged file keeps its working copy as is.
+# Enable once per clone: git config core.hooksPath .githooks
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+staged=()
+while IFS= read -r -d '' f; do
+    case "$f" in
+        *.cs | *.c | *.cpp | *.h) staged+=("$f") ;;
+    esac
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+
+((${#staged[@]})) || exit 0
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+tmp=$(cygpath -m "$tmp" 2>/dev/null || echo "$tmp")
+
+git checkout-index --prefix="$tmp/" -- "${staged[@]}"
+cp .editorconfig .clang-format "$tmp/"
+FORMAT_ROOT=$tmp scripts/format.sh fix "${staged[@]}"
+
+# git commit <paths> commits from a temporary index (next-index-<pid>.lock) and builds the real one from
+# the working copies beforehand, so the hook's result cannot reach it and the working copies must stay as they are.
+temp_index=false
+case "${GIT_INDEX_FILE:-}" in
+    */next-index-* | next-index-*) temp_index=true ;;
+esac
+
+formatted=()
+kept=()
+for f in "${staged[@]}"; do
+    new=$(git hash-object -w --path="$f" -- "$tmp/$f")
+    [ "$new" = "$(git rev-parse ":$f")" ] && continue
+    unstaged=$temp_index
+    git diff --quiet -- "$f" || unstaged=true
+    git update-index --cacheinfo "$(git ls-files -s -- "$f" | cut -d' ' -f1),$new,$f"
+    formatted+=("$f")
+    if $unstaged; then
+        kept+=("$f")
+    else
+        git checkout-index -f -- "$f"
+    fi
+done
+
+if ((${#formatted[@]})); then
+    echo "pre-commit: formatted ${#formatted[@]} file(s):"
+    printf '  %s\n' "${formatted[@]}"
+fi
+if ((${#kept[@]})); then
+    echo "pre-commit: the commit got the formatted version, the working copy of these was left alone"
+    echo "(unstaged changes, or git commit <paths>); run 'bash scripts/format.sh fix <file>' to format it too:"
+    printf '  %s\n' "${kept[@]}"
+fi

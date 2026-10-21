@@ -44,12 +44,16 @@ internal sealed class HotkeyCardViewModel : INotifyPropertyChanged {
 
     // A blank card, in edit mode, for the entry the user is about to add.
     public static HotkeyCardViewModel CreateNew(Func<string, ImageSource?> loadIcon) {
-        HotkeyCardViewModel card = new(loadIcon) { IsNew = true };
+        HotkeyCardViewModel card = new(loadIcon) {
+            IsNew = true
+        };
         card.BeginEdit();
         return card;
     }
 
-    public bool IsNew { get; private set; }
+    public bool IsNew {
+        get; private set;
+    }
 
     public string? RegistryName => registryName;
 

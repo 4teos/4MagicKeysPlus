@@ -39,7 +39,9 @@ internal static class UserRules {
         foreach ((uint source, uint target, bool fnLockAware) in Raw) {
             KeyRule? rule = DriverConfigParser.ParseRule(source, target, fnLockAware);
             if (rule is not null) {
-                rules.Add(rule with { RegistryName = source.ToString("X8") }); // how the registry names them
+                rules.Add(rule with {
+                    RegistryName = source.ToString("X8")
+                }); // how the registry names them
             }
         }
         return new DriverKeyRemapConfig(rules, fnLockEnabled);

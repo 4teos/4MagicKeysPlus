@@ -59,11 +59,15 @@ public sealed record DriverKeyRemapConfig(IReadOnlyList<KeyRule> Rules, bool FnL
     // Replaces the rule of the same source and layer, leaving the key's rules of the other layer alone.
     public DriverKeyRemapConfig WithRule(KeyRule rule) {
         List<KeyRule> rules = [.. Rules.Where(existing => existing.FnLayer != rule.FnLayer || !existing.Source.SetEquals(rule.Source)), rule];
-        return this with { Rules = rules };
+        return this with {
+            Rules = rules
+        };
     }
 
     public DriverKeyRemapConfig WithoutRules(PhysicalKey key) {
-        return this with { Rules = [.. Rules.Where(rule => !rule.Source.Contains(key))] };
+        return this with {
+            Rules = [.. Rules.Where(rule => !rule.Source.Contains(key))]
+        };
     }
 
     // Gets tooltip text with the rule target for the key. A Fn-layer rule is marked "Fn: "

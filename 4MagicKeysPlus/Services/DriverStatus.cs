@@ -36,7 +36,9 @@ internal static class DriverStatus {
             bool fnLockAware = ruleKey.GetValue("FnLockAware") is int aware && aware != 0;
             KeyRule? rule = DriverConfigParser.ParseRule(unchecked((uint)source), unchecked((uint)target), fnLockAware);
             if (rule is not null) {
-                rules.Add(rule with { RegistryName = name });
+                rules.Add(rule with {
+                    RegistryName = name
+                });
             }
         }
         return rules;

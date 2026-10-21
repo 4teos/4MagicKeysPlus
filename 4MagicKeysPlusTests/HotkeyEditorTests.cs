@@ -7,8 +7,12 @@ namespace _4MagicKeysPlusTests;
 
 internal sealed class FakeHotkeyStore : IHotkeyStore {
     public List<HotkeyEntry> Stored { get; } = [];
-    public Exception? Failure { get; set; }
-    public int Saves { get; private set; }
+    public Exception? Failure {
+        get; set;
+    }
+    public int Saves {
+        get; private set;
+    }
 
     public IReadOnlyList<HotkeyEntry> Load() {
         return Stored;
@@ -25,7 +29,9 @@ internal sealed class FakeHotkeyStore : IHotkeyStore {
 
 internal sealed class FakeAgentLink : IAgentLink {
     public AgentResponse? Reply { get; set; } = AgentResponse.Success([]);
-    public int Reloads { get; private set; }
+    public int Reloads {
+        get; private set;
+    }
 
     public Task<bool> IsRunningAsync() {
         return Task.FromResult(Reply is not null);
@@ -49,7 +55,9 @@ public class HotkeyEditorTests {
     [Fact]
     public async Task ASavedChange_IsHandedToTheAgent() {
         FakeHotkeyStore store = new();
-        FakeAgentLink agent = new() { Reply = AgentResponse.Success([new HotkeyRegistration("Hotkey_00_7F", 0)]) };
+        FakeAgentLink agent = new() {
+            Reply = AgentResponse.Success([new HotkeyRegistration("Hotkey_00_7F", 0)])
+        };
         HotkeyEditor editor = new(store, agent);
 
         HotkeyApplyResult result = await editor.ApplyAsync([Entry()]);

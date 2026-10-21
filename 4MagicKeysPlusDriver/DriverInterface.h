@@ -11,13 +11,13 @@
 // create the device fail, so reloading stops working. CreateFile fails with error 2 when there is
 // no keyboard or the driver is too old for this interface, and with error 5 when not elevated.
 
-#define MKP_CONTROL_DEVICE_NAME    L"\\Device\\4MagicKeysPlus"
-#define MKP_CONTROL_SYMLINK_NAME   L"\\DosDevices\\4MagicKeysPlus"
+#define MKP_CONTROL_DEVICE_NAME  L"\\Device\\4MagicKeysPlus"
+#define MKP_CONTROL_SYMLINK_NAME L"\\DosDevices\\4MagicKeysPlus"
 
 // Re-reads FnLock and Parameters\Rules from the registry and applies them to every keyboard at
 // once. Input: none. Output (optional): MKP_RELOAD_RESULT.
 // The value is 0x0022A000: the same constant is used by the C# client.
-#define IOCTL_MKP_RELOAD_CONFIG    CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_WRITE_ACCESS)
+#define IOCTL_MKP_RELOAD_CONFIG CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_WRITE_ACCESS)
 
 typedef struct _MKP_RELOAD_RESULT {
     ULONG RulesRead;      // rule subkeys found under Parameters\Rules (at most MAX_RULES)
