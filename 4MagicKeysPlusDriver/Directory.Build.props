@@ -1,0 +1,13 @@
+<Project>
+  <!-- Build against the WDK/SDK NuGet packages when they were restored into .\packages (CI does that, the hosted runner only has SDK 26100).
+       Without the folder nothing is imported and the installed WDK is used. The version must match packages.config. -->
+  <PropertyGroup>
+    <WdkNuGetVersion>10.0.28000.2526</WdkNuGetVersion>
+    <WdkNuGetRoot>$(MSBuildThisFileDirectory)packages\</WdkNuGetRoot>
+  </PropertyGroup>
+  <ImportGroup Condition="Exists('$(WdkNuGetRoot)Microsoft.Windows.WDK.x64.$(WdkNuGetVersion)')">
+    <Import Project="$(WdkNuGetRoot)Microsoft.Windows.WDK.x64.$(WdkNuGetVersion)\build\native\Microsoft.Windows.WDK.x64.props" />
+    <Import Project="$(WdkNuGetRoot)Microsoft.Windows.SDK.CPP.x64.$(WdkNuGetVersion)\build\native\Microsoft.Windows.SDK.cpp.x64.props" />
+    <Import Project="$(WdkNuGetRoot)Microsoft.Windows.SDK.CPP.$(WdkNuGetVersion)\build\native\Microsoft.Windows.SDK.cpp.props" />
+  </ImportGroup>
+</Project>

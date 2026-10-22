@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, ci-build-test]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  driver:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Probe runner image
+        continue-on-error: true
+        run: |
+          function Note($m) { Write-Host "::notice::$m" }
+          $vsw = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          foreach ($i in (& $vsw -all -products * -format json | ConvertFrom-Json)) {
+            $p = $i.installationPath
+            Note "VS $($i.displayName) $($i.installationVersion) at $p"
+            Note "MSVC toolsets: $((Get-ChildItem "$p\VC\Tools\MSVC" -Name -ErrorAction SilentlyContinue) -join ', ')"
+            Note "Platform toolsets x64: $((Get-ChildItem "$p\MSBuild\Microsoft\VC\*\Platforms\x64\PlatformToolsets" -Name -ErrorAction SilentlyContinue) -join ', ')"
+            Note "amd64 MSBuild: $(Test-Path "$p\MSBuild\Current\Bin\amd64\MSBuild.exe")"
+            Note "vstest: $((& $vsw -path $p -find '**\vstest.console.exe') -join '; ')"
+            Note "CppUnitTest.h: $(Test-Path "$p\VC\Auxiliary\VS\UnitTest\include\CppUnitTest.h")"
+          }
+          $kits = "${env:ProgramFiles(x86)}\Windows Kits\10"
+          Note "Kits Include: $((Get-ChildItem "$kits\Include" -Name) -join ', ')"
+          Note "Kits bin: $((Get-ChildItem "$kits\bin" -Name | Where-Object { $_ -like '10.*' }) -join ', ')"
+          Note "signtool: $((Get-ChildItem "$kits\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue | ForEach-Object FullName) -join '; ')"
+          Note "kmdf libs: $((Get-ChildItem "$kits\Lib\wdf\kmdf\x64" -Name -ErrorAction SilentlyContinue) -join ', ')"
+          Note "nuget: $((Get-Command nuget -ErrorAction SilentlyContinue).Source)"
+      - name: Locate MSBuild and vstest
+        run: |
+          $vsw = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vsw -latest -products * -property installationPath
+          "MSBUILD=$vs\MSBuild\Current\Bin\amd64\MSBuild.exe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "VSTEST=$vs\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Create test certificate
+        shell: powershell
+        run: .\scripts\new-test-certificate.ps1
+      - name: Restore WDK packages
+        run: nuget restore 4MagicKeysPlusDriver\packages.config -PackagesDirectory 4MagicKeysPlusDriver\packages
+      - name: Build driver
+        run: ./scripts/ci-run.ps1 { & $env:MSBUILD 4MagicKeysPlusDriver\4MagicKeysPlusDriver.vcxproj -nologo -v:m -p:Configuration=Release -p:Platform=x64 }
+      - name: Build driver tests
+        run: ./scripts/ci-run.ps1 { & $env:MSBUILD 4MagicKeysPlusDriverTests\4MagicKeysPlusDriverTests.vcxproj -nologo -v:m -p:Configuration=Debug -p:Platform=x64 }
+      - name: Run driver tests
+        run: ./scripts/ci-run.ps1 { & $env:VSTEST 4MagicKeysPlusDriverTests\x64\Debug\4MagicKeysPlusDriverTests.dll }
+
+  dotnet:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Create test certificate
+        shell: powershell
+        run: .\scripts\new-test-certificate.ps1
+      - name: Build agent
+        run: ./scripts/ci-run.ps1 { dotnet build 4MagicKeysPlusAgent -c Release --nologo }
+      - name: Build configuration app
+        run: ./scripts/ci-run.ps1 { dotnet build 4MagicKeysPlus -c Release --nologo }
+      - name: Test agent
+        run: ./scripts/ci-run.ps1 { dotnet test 4MagicKeysPlusAgentTests --nologo }
+      - name: Test configuration app
+        run: ./scripts/ci-run.ps1 { dotnet test 4MagicKeysPlusTests --nologo }
