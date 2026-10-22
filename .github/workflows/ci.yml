@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, ci-build-test]
+    branches: [main]
 
 permissions:
   contents: read
@@ -55,11 +55,3 @@ jobs:
         run: ./scripts/ci-run.ps1 { dotnet test 4MagicKeysPlusAgentTests --nologo }
       - name: Test configuration app
         run: ./scripts/ci-run.ps1 { dotnet test 4MagicKeysPlusTests --nologo }
-
-  redcheck:
-    runs-on: windows-2025-vs2026
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - name: Failing build
-        run: ./scripts/ci-run.ps1 { dotnet build 4MagicKeysPlusAgent\Missing.csproj --nologo }
