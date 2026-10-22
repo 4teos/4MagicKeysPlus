@@ -18,26 +18,6 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
-      - name: Probe runner image
-        continue-on-error: true
-        run: |
-          function Note($m) { Write-Host "::notice::$m" }
-          $vsw = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          foreach ($i in (& $vsw -all -products * -format json | ConvertFrom-Json)) {
-            $p = $i.installationPath
-            Note "VS $($i.displayName) $($i.installationVersion) at $p"
-            Note "MSVC toolsets: $((Get-ChildItem "$p\VC\Tools\MSVC" -Name -ErrorAction SilentlyContinue) -join ', ')"
-            Note "Platform toolsets x64: $((Get-ChildItem "$p\MSBuild\Microsoft\VC\*\Platforms\x64\PlatformToolsets" -Name -ErrorAction SilentlyContinue) -join ', ')"
-            Note "amd64 MSBuild: $(Test-Path "$p\MSBuild\Current\Bin\amd64\MSBuild.exe")"
-            Note "vstest: $((& $vsw -path $p -find '**\vstest.console.exe') -join '; ')"
-            Note "CppUnitTest.h: $(Test-Path "$p\VC\Auxiliary\VS\UnitTest\include\CppUnitTest.h")"
-          }
-          $kits = "${env:ProgramFiles(x86)}\Windows Kits\10"
-          Note "Kits Include: $((Get-ChildItem "$kits\Include" -Name) -join ', ')"
-          Note "Kits bin: $((Get-ChildItem "$kits\bin" -Name | Where-Object { $_ -like '10.*' }) -join ', ')"
-          Note "signtool: $((Get-ChildItem "$kits\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue | ForEach-Object FullName) -join '; ')"
-          Note "kmdf libs: $((Get-ChildItem "$kits\Lib\wdf\kmdf\x64" -Name -ErrorAction SilentlyContinue) -join ', ')"
-          Note "nuget: $((Get-Command nuget -ErrorAction SilentlyContinue).Source)"
       - name: Locate MSBuild and vstest
         run: |
           $vsw = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -75,3 +55,11 @@ jobs:
         run: ./scripts/ci-run.ps1 { dotnet test 4MagicKeysPlusAgentTests --nologo }
       - name: Test configuration app
         run: ./scripts/ci-run.ps1 { dotnet test 4MagicKeysPlusTests --nologo }
+
+  redcheck:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Failing build
+        run: ./scripts/ci-run.ps1 { dotnet build 4MagicKeysPlusAgent\Missing.csproj --nologo }
