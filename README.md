@@ -371,6 +371,18 @@ On every commit the hook formats what is staged and puts the result into the ind
 The style is K&R, and nothing shares a line: method bodies, `if` and loop bodies and statements each start on their own line, an empty body is `{` and `}` on two lines, `if`, `else` and loops always have braces, and C# auto-properties are three lines (`{`, `get; set;`, `}`; Roslyn keeps the ones with an initializer, like `Cards { get; } = [];`, on one line). Adding the braces is a C# analyzer (IDE0011), not formatting: `scripts/format.sh` fixes and checks it (about 20 seconds, it loads the projects) and Visual Studio shows it as a warning, but the pre-commit hook skips it.
 
 The hook needs `dotnet` on `PATH`. clang-format is taken from `PATH` or from the Visual Studio installation. Its version is pinned in `scripts/format.sh` (the one bundled with Visual Studio 2026), because the output differs between releases.
+
+#### Continuous Integration
+
+Pull requests and `main` run two GitHub Actions workflows: `Format` (above) and `CI` (`.github/workflows/ci.yml`), which has two jobs on `windows-2025-vs2026`:
+
+- `driver` builds the driver (Release, x64) and `4MagicKeysPlusDriverTests` (Debug, x64) with MSBuild and runs the tests with `vstest.console.exe`.
+- `dotnet` builds the agent and the configuration app in Release (including the uiAccess signing of the agent) and runs `4MagicKeysPlusAgentTests` and `4MagicKeysPlusTests`.
+
+Both jobs create a throwaway test certificate with `scripts\new-test-certificate.ps1`, which refuses to overwrite an existing `.pfx`. The hosted runner has the WDK only for SDK `10.0.26100`, so the `driver` job restores the WDK and the SDK from NuGet (`4MagicKeysPlusDriver\packages.config`) and `4MagicKeysPlusDriver\Directory.Build.props` uses them whenever the folder `4MagicKeysPlusDriver\packages` exists. Without that folder a local build uses the installed WDK. To build against the packages locally, run `nuget restore 4MagicKeysPlusDriver\packages.config -PackagesDirectory 4MagicKeysPlusDriver\packages` and build with the 64-bit MSBuild (`MSBuild\Current\Bin\amd64`): the package has no x86 `stampinf.exe`, so the 32-bit one fails with `TRK0005`. When the WDK is updated, change the version in `packages.config`, in `Directory.Build.props` and the pinned `WindowsTargetPlatformVersion` in the driver project.
+
+The steps run through `scripts\ci-run.ps1`, which repeats the first errors and the test totals as annotations on the run page, because the job logs need a sign-in even in a public repository.
+
 #### Test Certificate
 
 The build test-signs the driver using `4MagicKeysPlusDriver\4MagicKeysPlus.pfx`, which is **not checked into git** (`.pfx` is gitignored, since it bundles the private key). If you get an MSBuild error like `Invalid argument <...4MagicKeysPlus.pfx> for property <TestCertificate>`, generate a new self-signed test certificate locally (PowerShell, run from the `4MagicKeysPlusDriver\` folder):
