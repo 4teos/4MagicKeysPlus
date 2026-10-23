@@ -21,4 +21,7 @@
   <data name="NoticeDismissHint" xml:space="preserve">
     <value>Нажмите, чтобы закрыть</value>
   </data>
+  <data name="HotkeyAlreadyRegistered" xml:space="preserve">
+    <value>Это сочетание уже занято другой программой.</value>
+  </data>
 </root>

@@ -123,8 +123,8 @@
   <data name="NavQuickLaunch" xml:space="preserve">
     <value>Быстрый запуск</value>
   </data>
-  <data name="NavAdvanced" xml:space="preserve">
-    <value>Дополнительно</value>
+  <data name="NavSettings" xml:space="preserve">
+    <value>Настройки</value>
   </data>
   <data name="DeviceNotDetected" xml:space="preserve">
     <value>Устройство не найдено</value>
@@ -263,5 +263,86 @@
   </data>
   <data name="FnLockToggleHint" xml:space="preserve">
     <value>Fn Lock заставляет клавиши, которые его учитывают, работать так, будто клавиша Fn зажата.</value>
+  </data>
+  <data name="OptionsAppearance" xml:space="preserve">
+    <value>Оформление</value>
+  </data>
+  <data name="OptionsTheme" xml:space="preserve">
+    <value>Тема</value>
+  </data>
+  <data name="OptionsThemeSystem" xml:space="preserve">
+    <value>Системная</value>
+  </data>
+  <data name="OptionsThemeDark" xml:space="preserve">
+    <value>Тёмная</value>
+  </data>
+  <data name="OptionsThemeLight" xml:space="preserve">
+    <value>Светлая</value>
+  </data>
+  <data name="OptionsLanguage" xml:space="preserve">
+    <value>Язык</value>
+  </data>
+  <data name="OptionsLanguageSystem" xml:space="preserve">
+    <value>Как в Windows</value>
+  </data>
+  <data name="OptionsLanguageRestart" xml:space="preserve">
+    <value>Чтобы сменить язык, перезапустите приложение.</value>
+  </data>
+  <data name="OptionsRestart" xml:space="preserve">
+    <value>Перезапустить</value>
+  </data>
+  <data name="OptionsRestartFailed" xml:space="preserve">
+    <value>Не удалось перезапустить приложение: {0}</value>
+  </data>
+  <data name="OptionsSaveFailed" xml:space="preserve">
+    <value>Не удалось сохранить настройку: {0}</value>
+  </data>
+  <data name="OptionsAgent" xml:space="preserve">
+    <value>Агент</value>
+  </data>
+  <data name="OptionsAgentStatus" xml:space="preserve">
+    <value>Состояние</value>
+  </data>
+  <data name="OptionsAgentHint" xml:space="preserve">
+    <value>Агент запускает программы по горячим клавишам и показывает уведомление о низком заряде.</value>
+  </data>
+  <data name="OptionsAgentRunning" xml:space="preserve">
+    <value>Работает</value>
+  </data>
+  <data name="OptionsAgentStopped" xml:space="preserve">
+    <value>Не запущен</value>
+  </data>
+  <data name="OptionsAgentStarting" xml:space="preserve">
+    <value>Запускается…</value>
+  </data>
+  <data name="OptionsAgentNoAnswer" xml:space="preserve">
+    <value>Агент запущен, но не отвечает.</value>
+  </data>
+  <data name="OptionsAutostart" xml:space="preserve">
+    <value>Запускать вместе с Windows</value>
+  </data>
+  <data name="OptionsAutostartHint" xml:space="preserve">
+    <value>Запускает агента при входе в систему.</value>
+  </data>
+  <data name="OptionsAutostartFailed" xml:space="preserve">
+    <value>Не удалось изменить автозапуск: {0}</value>
+  </data>
+  <data name="OptionsSystem" xml:space="preserve">
+    <value>Драйвер и клавиатура</value>
+  </data>
+  <data name="OptionsDriver" xml:space="preserve">
+    <value>Драйвер</value>
+  </data>
+  <data name="OptionsDriverActive" xml:space="preserve">
+    <value>Установлен и работает</value>
+  </data>
+  <data name="OptionsDriverIdle" xml:space="preserve">
+    <value>Установлен, ждёт клавиатуру</value>
+  </data>
+  <data name="OptionsDriverMissing" xml:space="preserve">
+    <value>Не установлен</value>
+  </data>
+  <data name="OptionsKeyboard" xml:space="preserve">
+    <value>Клавиатура</value>
   </data>
 </root>

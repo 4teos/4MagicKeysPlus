@@ -21,4 +21,7 @@
   <data name="NoticeDismissHint" xml:space="preserve">
     <value>Click to close</value>
   </data>
+  <data name="HotkeyAlreadyRegistered" xml:space="preserve">
+    <value>The combination is already used by another program.</value>
+  </data>
 </root>

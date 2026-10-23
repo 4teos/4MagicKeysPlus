@@ -111,9 +111,9 @@
                 <RadioButton x:Name="NavApps" Content="{x:Static properties:Strings.NavQuickLaunch}" Tag="{x:Static views:Glyphs.Flash}"
                              GroupName="Nav" Margin="4,0,0,0"
                              Style="{StaticResource NavToggleButtonStyle}" Checked="NavApps_Checked"/>
-                <RadioButton x:Name="NavOptions" Content="{x:Static properties:Strings.NavAdvanced}" Tag="{x:Static views:Glyphs.Settings}"
-                             GroupName="Nav" Margin="4,0,0,0" IsEnabled="False"
-                             Style="{StaticResource NavIconOnlyButtonStyle}"/>
+                <RadioButton x:Name="NavOptions" Content="{x:Static properties:Strings.NavSettings}" Tag="{x:Static views:Glyphs.Settings}"
+                             GroupName="Nav" Margin="4,0,0,0"
+                             Style="{StaticResource NavIconOnlyButtonStyle}" Checked="NavOptions_Checked"/>
             </StackPanel>
         </StackPanel>
 

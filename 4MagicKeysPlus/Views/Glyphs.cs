@@ -9,7 +9,7 @@ public static class Glyphs {
     public const string BatteryCharging = ""; // single "battery with power plug" pictogram
     public const string KeyboardClassic = ""; // keyboard pictogram, used for the Keys nav tab
     public const string Flash = ""; // lightning bolt, used for the Quick Launch nav tab
-    public const string Settings = ""; // gear, used for the Advanced nav tab
+    public const string Settings = ""; // gear, used for the Settings nav tab
 
     // Battery0 (empty) .. Battery10 (full), contiguous codepoint range.
     private static readonly string[] BatteryLevels = ["", "", "", "", "", "", "", "", "", "", ""];

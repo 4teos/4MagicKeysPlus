@@ -10,9 +10,6 @@ namespace _4MagicKeysPlus.ViewModels;
 
 // The Quick launch screen: the cards, what the agent made of them, and the undo of a delete.
 internal sealed class HotkeyListViewModel : INotifyPropertyChanged {
-    private const int AgentStartPolls = 10;
-    private static readonly TimeSpan AgentStartPollInterval = TimeSpan.FromMilliseconds(500);
-
     private readonly HotkeyEditor editor;
     private readonly Func<string, ImageSource?> loadIcon;
     private readonly Func<string?> startAgent;
@@ -208,12 +205,8 @@ internal sealed class HotkeyListViewModel : INotifyPropertyChanged {
             return;
         }
 
-        for (int poll = 0; poll < AgentStartPolls; poll++) {
-            if (await editor.IsAgentRunningAsync()) {
-                await RefreshAsync();
-                return;
-            }
-            await Task.Delay(AgentStartPollInterval);
+        if (await AgentLauncher.WaitUntilRunningAsync(editor.IsAgentRunningAsync)) {
+            await RefreshAsync();
         }
     }
 

@@ -11,6 +11,8 @@ internal interface IHotkeyRegistrar {
 // Owns the registered hotkeys. The registrar's window belongs to the UI thread, so everything
 // here has to be called from it.
 internal sealed class HotkeyManager {
+    private const int ErrorHotkeyAlreadyRegistered = 1409;
+
     private readonly IHotkeyRegistrar registrar;
     private readonly Func<List<HotkeyEntry>> load;
     private List<HotkeyEntry> entries = [];
@@ -48,7 +50,7 @@ internal sealed class HotkeyManager {
         List<string> lines = [];
         foreach (HotkeyRegistration registration in registrations.Where(r => !r.Succeeded)) {
             HotkeyEntry? entry = entries.FirstOrDefault(e => e.RegistryName == registration.RegistryName);
-            string reason = new Win32Exception(registration.Win32Error).Message;
+            string reason = registration.Win32Error == ErrorHotkeyAlreadyRegistered ? Strings.HotkeyAlreadyRegistered : new Win32Exception(registration.Win32Error).Message;
             lines.Add(entry is null
                 ? $"{registration.RegistryName}: {reason}"
                 : $"{entry.Name} ({HotkeyText.Format(entry.VirtualKey, entry.Modifiers)}): {reason}");
