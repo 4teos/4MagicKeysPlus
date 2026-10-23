@@ -1,0 +1,34 @@
+#include <windows.h>
+
+// MKP_VERSION (a.b.c.d) and MKP_VERSION_NUM (a,b,c,d) come from MkpDriverVersion in the project file, which reads the DriverVer line of the .inf.
+#define MKP_STR2(x) #x
+#define MKP_STR(x) MKP_STR2(x)
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION MKP_VERSION_NUM
+PRODUCTVERSION MKP_VERSION_NUM
+FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+FILEFLAGS 0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_DRV
+FILESUBTYPE VFT2_DRV_SYSTEM
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "4teos"
+            VALUE "FileDescription", "4MagicKeys+ keyboard filter driver"
+            VALUE "FileVersion", MKP_STR(MKP_VERSION)
+            VALUE "InternalName", "4MagicKeysPlus.sys"
+            VALUE "LegalCopyright", "\251 2026 4teos https://github.com/4teos"
+            VALUE "OriginalFilename", "4MagicKeysPlus.sys"
+            VALUE "ProductName", "4MagicKeys+"
+            VALUE "ProductVersion", MKP_STR(MKP_VERSION)
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 0x04B0
+    END
+END

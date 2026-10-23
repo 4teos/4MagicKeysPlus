@@ -123,8 +123,8 @@
   <data name="NavQuickLaunch" xml:space="preserve">
     <value>Quick Launch</value>
   </data>
-  <data name="NavAdvanced" xml:space="preserve">
-    <value>Advanced</value>
+  <data name="NavSettings" xml:space="preserve">
+    <value>Settings</value>
   </data>
   <data name="DeviceNotDetected" xml:space="preserve">
     <value>No device detected</value>
@@ -263,5 +263,86 @@
   </data>
   <data name="FnLockToggleHint" xml:space="preserve">
     <value>Fn Lock makes the keys that follow it work as if the Fn key was held down.</value>
+  </data>
+  <data name="OptionsAppearance" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="OptionsTheme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="OptionsThemeSystem" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="OptionsThemeDark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="OptionsThemeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="OptionsLanguage" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="OptionsLanguageSystem" xml:space="preserve">
+    <value>System default</value>
+  </data>
+  <data name="OptionsLanguageRestart" xml:space="preserve">
+    <value>Restart the app to switch the language.</value>
+  </data>
+  <data name="OptionsRestart" xml:space="preserve">
+    <value>Restart</value>
+  </data>
+  <data name="OptionsRestartFailed" xml:space="preserve">
+    <value>Could not restart the app: {0}</value>
+  </data>
+  <data name="OptionsSaveFailed" xml:space="preserve">
+    <value>Could not save the setting: {0}</value>
+  </data>
+  <data name="OptionsAgent" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="OptionsAgentStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="OptionsAgentHint" xml:space="preserve">
+    <value>The agent runs the quick launch hotkeys and shows the low battery notice.</value>
+  </data>
+  <data name="OptionsAgentRunning" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="OptionsAgentStopped" xml:space="preserve">
+    <value>Not running</value>
+  </data>
+  <data name="OptionsAgentStarting" xml:space="preserve">
+    <value>Starting…</value>
+  </data>
+  <data name="OptionsAgentNoAnswer" xml:space="preserve">
+    <value>The agent was started but does not answer.</value>
+  </data>
+  <data name="OptionsAutostart" xml:space="preserve">
+    <value>Start with Windows</value>
+  </data>
+  <data name="OptionsAutostartHint" xml:space="preserve">
+    <value>Starts the agent when you sign in.</value>
+  </data>
+  <data name="OptionsAutostartFailed" xml:space="preserve">
+    <value>Could not change the autostart: {0}</value>
+  </data>
+  <data name="OptionsSystem" xml:space="preserve">
+    <value>Driver and keyboard</value>
+  </data>
+  <data name="OptionsDriver" xml:space="preserve">
+    <value>Driver</value>
+  </data>
+  <data name="OptionsDriverActive" xml:space="preserve">
+    <value>Installed and working</value>
+  </data>
+  <data name="OptionsDriverIdle" xml:space="preserve">
+    <value>Installed, waiting for a keyboard</value>
+  </data>
+  <data name="OptionsDriverMissing" xml:space="preserve">
+    <value>Not installed</value>
+  </data>
+  <data name="OptionsKeyboard" xml:space="preserve">
+    <value>Keyboard</value>
   </data>
 </root>

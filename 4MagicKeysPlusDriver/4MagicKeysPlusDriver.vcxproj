@@ -21,6 +21,10 @@
     <TargetName>4MagicKeysPlus</TargetName>
     <WindowsTargetPlatformVersion>10.0.28000.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
+  <PropertyGroup Label="Version">
+    <!-- The version of the driver is the one in the DriverVer line of the .inf; the version resource of the .sys (Driver.rc) takes it from there. -->
+    <MkpDriverVersion>$([System.Text.RegularExpressions.Regex]::Replace($([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)4MagicKeysPlus.inf')), '(?s)^.*?\nDriverVer\s*=\s*[^,\r\n]+,\s*([0-9.]+).*$', '$1'))</MkpDriverVersion>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <TargetVersion>
@@ -128,6 +132,11 @@
       </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup>
+    <ResourceCompile>
+      <PreprocessorDefinitions>MKP_VERSION=$(MkpDriverVersion);MKP_VERSION_NUM=$(MkpDriverVersion.Replace('.', ','));%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <Inf Include="4MagicKeysPlus.inf" />
   </ItemGroup>
@@ -143,11 +152,17 @@
     <ClCompile Include="KeyProcessorInterop.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ResourceCompile Include="Driver.rc" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="Driver.h" />
     <ClInclude Include="DriverInterface.h" />
     <ClInclude Include="KeyProcessor.h" />
     <ClInclude Include="KeyProcessorTypes.h" />
   </ItemGroup>
+  <Target Name="CheckDriverVersion" BeforeTargets="ResourceCompile">
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(MkpDriverVersion)', '^[0-9]+(\.[0-9]+){3}$'))" Text="No version of the form a.b.c.d was found in the DriverVer line of 4MagicKeysPlus.inf (got '$(MkpDriverVersion)')." />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

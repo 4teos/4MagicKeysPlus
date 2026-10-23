@@ -32,6 +32,13 @@ internal sealed class DriverControl : IDriverControl {
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool DeviceIoControl(SafeFileHandle device, uint code, IntPtr input, uint inputSize, uint[] output, uint outputSize, out uint returned, IntPtr overlapped);
 
+    // The control device exists while at least one keyboard is filtered. Opening it without any
+    // access asks nothing of the driver; a device that cannot be opened is still there.
+    internal static bool DeviceExists() {
+        using SafeFileHandle device = CreateFile(DevicePath, 0, ShareReadWrite, IntPtr.Zero, OpenExisting, 0, IntPtr.Zero);
+        return !device.IsInvalid || Marshal.GetLastWin32Error() is not (ErrorFileNotFound or ErrorPathNotFound);
+    }
+
     public DriverReloadResult? Reload() {
         using SafeFileHandle device = CreateFile(DevicePath, GenericWrite, ShareReadWrite, IntPtr.Zero, OpenExisting, 0, IntPtr.Zero);
         if (device.IsInvalid) {

@@ -18,13 +18,13 @@ Originally forked from the [samartzidis/winAppleKey](https://github.com/samartzi
 - `FnLock`-aware rules, so the F-row media keys can behave as media keys by default or as regular function keys, with Fn flipping them
 - A small agent (`4MagicKeysPlusAgent`) that launches an application on a hotkey, and warns when the keyboard battery runs low
 - A configuration app (`4MagicKeysPlus`) that shows the connected keyboard, its battery/connection/Fn Lock state, highlights the remapped keys and lets you edit the rules on a picture of the keyboard. Changes are saved to the registry and applied by the driver at once, no restart needed
+- A Settings screen in the configuration app: theme (system, dark or light), language, whether the agent runs (with a button to start it) and whether it starts with Windows, and whether the driver and the keyboard are there
 
 ### Planned
 
 - A screen for the launch entries (the hotkey and the application, now only set in the registry)
 - Separate settings for each keyboard, so that several keyboards can be used at the same time
 - A toggle for Fn Lock in the app
-- Application settings (theme, language)
 - An installer, and a way to store and apply the default settings
 
 ### Technical Details
@@ -68,7 +68,7 @@ bcdedit.exe -set TESTSIGNING OFF
 
 ### Agent and Configuration App
 
-Both are framework-dependent .NET 10 apps, so they need the **.NET Desktop Runtime 10** installed. There is no installer yet: copy the build output to a folder of your choice (for the agent: the `.exe`, `.dll`, `.runtimeconfig.json`, `.deps.json`, `4MagicKeysPlus.Core.dll` and the `ru` satellite folder; the configuration app needs the same kind of files plus its own). To start the agent at logon, add a string value with its full path to `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`.
+Both are framework-dependent .NET 10 apps, so they need the **.NET Desktop Runtime 10** installed. There is no installer yet: copy the build output to a folder of your choice (for the agent: the `.exe`, `.dll`, `.runtimeconfig.json`, `.deps.json`, `4MagicKeysPlus.Core.dll` and the `ru` satellite folder; the configuration app needs the same kind of files plus its own). To start the agent at logon, turn on **Start with Windows** on the Settings screen of the configuration app (see below), or add a string value named `4MagicKeysPlusAgent` with its full path to `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` by hand.
 
 #### Editing rules in the configuration app
 
@@ -83,7 +83,16 @@ The configuration app asks for administrator rights when it starts: it writes th
 
 The configuration app only edits key rules. The launch entries and `FnLock` still have to be set in the registry.
 
-All colors of the app are in `4MagicKeysPlus\Themes\Dark.xaml`; the rest of the XAML and the code only refer to those keys. A new theme has to define the same keys, which the tests check.
+#### Settings screen
+
+The gear in the header opens it. The settings of the app itself are per user, in `HKEY_CURRENT_USER\Software\4MagicKeysPlus` (the agent reads the language from it): `Theme` (`System`, `Dark` or `Light`) and `Language` (a language code such as `ru` or `de`; no value means the language of Windows).
+
+- **Theme** applies at once. *System* follows the app mode of Windows (`AppsUseLightTheme`), also while the app is open.
+- **Language** is read once at start-up, so a change waits for a restart: a notice with a **Restart** button appears. The list is English (the neutral resources) plus every folder next to the app that is named after a language (`ru`, `de`, `es`, ...) and holds a `4MagicKeysPlus.resources.dll`, so a new `Strings.<language>.resx` shows up there without any code. There are no regional variants: the languages are only the languages themselves (a folder such as `ru-RU` is not offered, and a `Language` value of `ru-RU` is read as `ru`), and a Windows in a regional variant of a language (`ru-UA`) gets that language too. The agent follows the same language in its notices: it reads the value each time it shows one, so it does not have to be restarted. The reason of a failed hotkey registration is Windows' own text in the language of Windows, except "already registered", which the agent translates.
+- **Agent** shows whether it answers on its pipe, with a **Start** button (started through Explorer, so that it keeps the normal rights of the user; the agent is the one next to the app or, when there is none, the one the autostart value points at). **Start with Windows** adds the `4MagicKeysPlusAgent` value to `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` for the agent next to the app, unless the value is already there: an existing one keeps its path. Turning it off does not delete the value but sets the "off" flag that Task Manager keeps in `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run`, so it can be turned back on without knowing where the agent is, and Task Manager shows it as disabled. The switch counts that flag: an entry switched off in Task Manager shows as off, and turning it on clears the flag.
+- **Driver and keyboard** show whether the driver is installed (its service key exists), whether it is working (its control device `\\.\4MagicKeysPlus` exists, which it does while a keyboard is filtered) and which keyboard is connected.
+
+All colors of the app are in `4MagicKeysPlus\Themes\` (`Dark.xaml` and `Light.xaml`); the rest of the XAML and the code only refer to those keys. A theme has to define the same keys, which the tests check.
 
 ### Key Rules
 
@@ -350,11 +359,24 @@ This project currently targets KMDF 1.35, which ships with the latest WDK (`10.0
 
 Build the `4MagicKeysPlusDriver` project for x64 (Debug or Release). The driver, INF and catalog will be in the output directory. The .NET projects build with `dotnet build`, or from the solution in Visual Studio.
 
+#### Versions
+
+There are two versions, each declared in one place:
+
+| Version | Covers | Where it is |
+| --- | --- | --- |
+| Application | `4MagicKeysPlus.exe`, `4MagicKeysPlusAgent.exe`, `4MagicKeysPlus.Core.dll` (and the test assemblies) | `MkpAppVersion` in `Directory.Build.props` in the root of the repository |
+| Driver | `4MagicKeysPlus.sys`, `.inf` | the version after the date in the `DriverVer` line of `4MagicKeysPlusDriver\4MagicKeysPlus.inf` |
+
+The application version is one number `a.b.c.d`; the SDK takes `AssemblyVersion`, `FileVersion` and the product version from it, so a new .NET project of the repository gets the version, the company, the product name and the copyright from `Directory.Build.props` without declaring anything (a project only gives its `AssemblyTitle`, the "file description"). The driver file gets its version resource from `4MagicKeysPlusDriver\Driver.rc`, which takes the number from the `DriverVer` line of the `.inf` (through `MkpDriverVersion` in the project file), so the `.sys` and the INF cannot differ; the date in that line is still set by hand. The `.inf` and `.cat` are not executables and have no file version of their own, `DriverVer` is the version of the driver package. The tests check all of this.
+
+The "Product version" in the file properties of a .NET file is followed by `+` and the commit it was built from; that is added by the SDK and is meant to be there. Since the libraries share the version of the application, copy the app, the agent and `4MagicKeysPlus.Core.dll` together: an assembly does not load a library with a lower version than the one it was built against.
+
 #### Tests
 
 - Driver logic (`KeyProcessor`, compiled into the test project as plain user-mode C++): `4MagicKeysPlusDriverTests`, run from Visual Studio's Test Explorer or `vstest.console.exe` on the built DLL.
 - Agent (launch entry loading, battery notice policy): `dotnet test 4MagicKeysPlusAgentTests`.
-- Configuration app (rule decoding and encoding, editing, saving rules, tooltips, key names, theme keys): `dotnet test 4MagicKeysPlusTests`. The tests of saving use a scratch key under `HKEY_CURRENT_USER\Software\4MagicKeysPlusTests`, which they delete afterwards; they never touch the driver's rules.
+- Configuration app (rule decoding and encoding, editing, saving rules, tooltips, key names, theme keys, settings, languages, autostart): `dotnet test 4MagicKeysPlusTests`. The tests of saving use a scratch key under `HKEY_CURRENT_USER\Software\4MagicKeysPlusTests`, which they delete afterwards; they never touch the driver's rules.
 
 The Debug build of the agent accepts two test switches that are not compiled into Release: `--demo-battery <percent> [delay seconds]` shows the battery notice once and exits, `--battery-interval <seconds>` checks the battery that often and logs every reading.
 

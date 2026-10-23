@@ -23,6 +23,7 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
     private readonly DispatcherTimer timer;
     private DetectedKeyboard? detectedKeyboard;
     private string deviceName = Strings.DeviceNotDetected;
+    private string connectionText = Strings.DeviceNotDetected;
     private string connectionGlyph = "";
     private string batteryGlyph = Glyphs.BatteryLevel(0);
     private BatteryState batteryState = BatteryState.Unknown;
@@ -42,6 +43,13 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
     public string DeviceName {
         get => deviceName;
         private set => SetField(ref deviceName, value);
+    }
+
+    public bool IsKeyboardDetected => detectedKeyboard != null;
+
+    public string ConnectionText {
+        get => connectionText;
+        private set => SetField(ref connectionText, value);
     }
 
     public string ConnectionGlyph {
@@ -108,6 +116,7 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
             KeyboardConnection.Bluetooth => Strings.ConnectionBluetooth,
             _ => Strings.DeviceNotDetected,
         };
+        ConnectionText = connectionValue;
         string fnLockValue = fnLock ? Strings.FnLockEnabled : Strings.FnLockDisabled;
 
         StatusTooltip =

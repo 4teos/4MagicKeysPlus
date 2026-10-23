@@ -6,6 +6,7 @@
     <AssemblyName>4MagicKeysPlus.Core</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyTitle>4MagicKeys+ core library</AssemblyTitle>
   </PropertyGroup>
 
 </Project>

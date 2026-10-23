@@ -19,9 +19,9 @@ public static class Strings {
         }
     }
 
-    public static string NavAdvanced {
+    public static string NavSettings {
         get {
-            return Get(nameof(NavAdvanced));
+            return Get(nameof(NavSettings));
         }
     }
 
@@ -299,6 +299,168 @@ public static class Strings {
     public static string FnLockToggleHint {
         get {
             return Get(nameof(FnLockToggleHint));
+        }
+    }
+
+    public static string OptionsAppearance {
+        get {
+            return Get(nameof(OptionsAppearance));
+        }
+    }
+
+    public static string OptionsTheme {
+        get {
+            return Get(nameof(OptionsTheme));
+        }
+    }
+
+    public static string OptionsThemeSystem {
+        get {
+            return Get(nameof(OptionsThemeSystem));
+        }
+    }
+
+    public static string OptionsThemeDark {
+        get {
+            return Get(nameof(OptionsThemeDark));
+        }
+    }
+
+    public static string OptionsThemeLight {
+        get {
+            return Get(nameof(OptionsThemeLight));
+        }
+    }
+
+    public static string OptionsLanguage {
+        get {
+            return Get(nameof(OptionsLanguage));
+        }
+    }
+
+    public static string OptionsLanguageSystem {
+        get {
+            return Get(nameof(OptionsLanguageSystem));
+        }
+    }
+
+    public static string OptionsLanguageRestart {
+        get {
+            return Get(nameof(OptionsLanguageRestart));
+        }
+    }
+
+    public static string OptionsRestart {
+        get {
+            return Get(nameof(OptionsRestart));
+        }
+    }
+
+    public static string OptionsRestartFailed {
+        get {
+            return Get(nameof(OptionsRestartFailed));
+        }
+    }
+
+    public static string OptionsSaveFailed {
+        get {
+            return Get(nameof(OptionsSaveFailed));
+        }
+    }
+
+    public static string OptionsAgent {
+        get {
+            return Get(nameof(OptionsAgent));
+        }
+    }
+
+    public static string OptionsAgentStatus {
+        get {
+            return Get(nameof(OptionsAgentStatus));
+        }
+    }
+
+    public static string OptionsAgentHint {
+        get {
+            return Get(nameof(OptionsAgentHint));
+        }
+    }
+
+    public static string OptionsAgentRunning {
+        get {
+            return Get(nameof(OptionsAgentRunning));
+        }
+    }
+
+    public static string OptionsAgentStopped {
+        get {
+            return Get(nameof(OptionsAgentStopped));
+        }
+    }
+
+    public static string OptionsAgentStarting {
+        get {
+            return Get(nameof(OptionsAgentStarting));
+        }
+    }
+
+    public static string OptionsAgentNoAnswer {
+        get {
+            return Get(nameof(OptionsAgentNoAnswer));
+        }
+    }
+
+    public static string OptionsAutostart {
+        get {
+            return Get(nameof(OptionsAutostart));
+        }
+    }
+
+    public static string OptionsAutostartHint {
+        get {
+            return Get(nameof(OptionsAutostartHint));
+        }
+    }
+
+    public static string OptionsAutostartFailed {
+        get {
+            return Get(nameof(OptionsAutostartFailed));
+        }
+    }
+
+    public static string OptionsSystem {
+        get {
+            return Get(nameof(OptionsSystem));
+        }
+    }
+
+    public static string OptionsDriver {
+        get {
+            return Get(nameof(OptionsDriver));
+        }
+    }
+
+    public static string OptionsDriverActive {
+        get {
+            return Get(nameof(OptionsDriverActive));
+        }
+    }
+
+    public static string OptionsDriverIdle {
+        get {
+            return Get(nameof(OptionsDriverIdle));
+        }
+    }
+
+    public static string OptionsDriverMissing {
+        get {
+            return Get(nameof(OptionsDriverMissing));
+        }
+    }
+
+    public static string OptionsKeyboard {
+        get {
+            return Get(nameof(OptionsKeyboard));
         }
     }
 

@@ -10,14 +10,8 @@
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyTitle>4MagicKeys+ configuration app</AssemblyTitle>
   </PropertyGroup>
-
-	<PropertyGroup>
-		<Version>1.0.1</Version>
-		<AssemblyVersion>1.0.1.2</AssemblyVersion>
-		<FileVersion>1.0.1.2</FileVersion>
-		<Copyright>© 2026 4teos https://github.com/4teos</Copyright>
-	</PropertyGroup>
 
 	<ItemGroup>
     <InternalsVisibleTo Include="4MagicKeysPlusTests" />

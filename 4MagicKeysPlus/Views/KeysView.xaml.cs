@@ -148,7 +148,13 @@ public partial class KeysView : UserControl {
         if (result.Outcome == ApplyOutcome.Failed) {
             FnLockToggle.IsChecked = !wanted;
         }
-        ShowResult(FnLockResult, result);
+        if (result.Outcome == ApplyOutcome.Applied) {
+            // Next to a switch the glyph is for trouble only; a success would leave it there for good.
+            FnLockResult.Visibility = Visibility.Hidden;
+            FnLockResult.ToolTip = null;
+        } else {
+            ShowResult(FnLockResult, result);
+        }
     }
 
     private void ShowResult(ApplyResult result) {

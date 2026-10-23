@@ -3,6 +3,7 @@ using _4MagicKeysPlusAgent;
 
 namespace _4MagicKeysPlusAgentTests;
 
+[Collection(StringsCollection.Name)]
 public class HotkeyManagerTests {
     private const uint VkF16 = 0x7F;
     private const uint VkF17 = 0x80;
@@ -115,6 +116,20 @@ public class HotkeyManagerTests {
         string line = Assert.Single(lines);
         Assert.StartsWith("Calc (Ctrl+Alt+F16): ", line);
         Assert.True(line.Length > "Calc (Ctrl+Alt+F16): ".Length);
+    }
+
+    [Theory]
+    [InlineData("ru", "Calc (Ctrl+Alt+F16): Это сочетание уже занято другой программой.")]
+    [InlineData("en", "Calc (Ctrl+Alt+F16): The combination is already used by another program.")]
+    public void DescribeFailures_SaysInTheChosenLanguage_ThatTheCombinationIsTaken(string language, string expected) {
+        using LanguageScope scope = new(language);
+        FakeRegistrar registrar = new();
+        registrar.Failing["Calc"] = 1409;
+        HotkeyManager manager = new(registrar, () => [Entry(1, "Calc", VkF16, modifiers: 0x0002 | 0x0001)]);
+
+        IReadOnlyList<string> lines = manager.DescribeFailures(manager.Reload());
+
+        Assert.Equal(expected, Assert.Single(lines));
     }
 
     [Fact]

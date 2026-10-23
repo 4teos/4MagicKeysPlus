@@ -8,19 +8,13 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <AssemblyTitle>4MagicKeys+ agent</AssemblyTitle>
   </PropertyGroup>
 
   <!-- The uiAccess manifest only starts from Program Files, so Debug runs from the build folder keep the default one. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <SigningCertificate Condition="'$(SigningCertificate)' == ''">$(MSBuildThisFileDirectory)..\4MagicKeysPlusDriver\4MagicKeysPlus.pfx</SigningCertificate>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <Version>2.3.0</Version>
-    <AssemblyVersion>2.3.0.14</AssemblyVersion>
-    <FileVersion>2.3.0.14</FileVersion>
-	<Copyright>© 2026 4teos https://github.com/4teos</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
