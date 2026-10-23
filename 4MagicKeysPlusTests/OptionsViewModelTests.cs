@@ -67,9 +67,14 @@ internal sealed class FakeAutostart : IAgentAutostart {
 
 internal sealed class FakeDriverProbe : IDriverProbe {
     public DriverState State { get; set; } = DriverState.Active;
+    public string? Version { get; set; } = "2.2.0.34";
 
     public DriverState Probe() {
         return State;
+    }
+
+    public string? InstalledVersion() {
+        return Version;
     }
 }
 
@@ -428,6 +433,34 @@ public class SystemStatusViewModelTests {
     }
 
     [Fact]
+    public void TheVersionOfTheInstalledDriver_IsShown() {
+        driver.Version = "2.2.0.34";
+
+        Assert.Equal("2.2.0.34", Status().DriverVersion);
+    }
+
+    [Fact]
+    public void WithoutAVersion_ADashIsShown() {
+        driver.Version = null;
+
+        Assert.Equal("—", Status().DriverVersion);
+    }
+
+    [Fact]
+    public void ADriverInstalledWhileTheScreenIsOpen_ShowsItsVersionAtTheNextRefresh() {
+        driver.Version = null;
+        SystemStatusViewModel status = Status();
+        List<string?> notified = [];
+        status.PropertyChanged += (_, e) => notified.Add(e.PropertyName);
+
+        driver.Version = "2.3.0.1";
+        status.Refresh();
+
+        Assert.Equal("2.3.0.1", status.DriverVersion);
+        Assert.Contains(nameof(SystemStatusViewModel.DriverVersion), notified);
+    }
+
+    [Fact]
     public void Refreshing_FollowsTheDriverAndTheKeyboard() {
         driver.State = DriverState.Idle;
         SystemStatusViewModel status = Status();
@@ -446,6 +479,17 @@ public class SystemStatusViewModelTests {
 
 public class OptionsViewModelTests {
     [Fact]
+    public void TheApplicationVersion_IsWhatItWasGiven() {
+        OptionsViewModel options = new(
+            new AppearanceViewModel(new FakeAppSettingsStore(), new FakeThemes(), [], new AppSettings(), () => null),
+            new AgentOptionsViewModel(new FakeAgentLink(), new FakeAutostart(), () => null),
+            new SystemStatusViewModel(new FakeDriverProbe(), () => null),
+            "2.3.0.14");
+
+        Assert.Equal("2.3.0.14", options.AppVersion);
+    }
+
+    [Fact]
     public async Task Refreshing_AsksTheDriverAndTheAgentAgain() {
         FakeDriverProbe driver = new() {
             State = DriverState.Idle
@@ -456,7 +500,8 @@ public class OptionsViewModelTests {
         OptionsViewModel options = new(
             new AppearanceViewModel(new FakeAppSettingsStore(), new FakeThemes(), [], new AppSettings(), () => null),
             new AgentOptionsViewModel(link, new FakeAutostart(), () => null),
-            new SystemStatusViewModel(driver, () => null));
+            new SystemStatusViewModel(driver, () => null),
+            "2.3.0.14");
         await options.RefreshAsync();
         Assert.Equal(StatusLevel.Neutral, options.Status.DriverLevel);
         Assert.True(options.Agent.CanStart);

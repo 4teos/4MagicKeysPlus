@@ -21,7 +21,8 @@ public partial class MainWindow : Window {
         options = new OptionsViewModel(
             new AppearanceViewModel(settings, themes, Languages.Available(AppContext.BaseDirectory), launched, AppRestart.TryRestart),
             new AgentOptionsViewModel(new AgentLink(), new RegistryAgentAutostart(), AgentLauncher.TryStart),
-            new SystemStatusViewModel(new DriverProbe(), () => deviceStatus.IsKeyboardDetected ? $"{deviceStatus.DeviceName}, {deviceStatus.ConnectionText}" : null));
+            new SystemStatusViewModel(new DriverProbe(), () => deviceStatus.IsKeyboardDetected ? $"{deviceStatus.DeviceName}, {deviceStatus.ConnectionText}" : null),
+            typeof(MainWindow).Assembly.GetName().Version?.ToString() ?? "—");
         MainContent.Content = new KeysView(keyRemapEditor, fnLockEditor);
     }
 

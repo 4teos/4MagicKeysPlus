@@ -2,10 +2,11 @@ namespace _4MagicKeysPlus.ViewModels;
 
 // The Settings screen. Lives for the whole app session (owned by MainWindow), like the editors.
 public sealed class OptionsViewModel {
-    internal OptionsViewModel(AppearanceViewModel appearance, AgentOptionsViewModel agent, SystemStatusViewModel status) {
+    internal OptionsViewModel(AppearanceViewModel appearance, AgentOptionsViewModel agent, SystemStatusViewModel status, string appVersion) {
         Appearance = appearance;
         Agent = agent;
         Status = status;
+        AppVersion = appVersion;
     }
 
     public AppearanceViewModel Appearance {
@@ -17,6 +18,10 @@ public sealed class OptionsViewModel {
     }
 
     public SystemStatusViewModel Status {
+        get;
+    }
+
+    public string AppVersion {
         get;
     }
 
