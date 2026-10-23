@@ -168,129 +168,143 @@
         </Style>
     </UserControl.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
-        <StackPanel MaxWidth="720" HorizontalAlignment="Center">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-            <Border Style="{StaticResource SectionStyle}">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource SectionTitleStyle}" Text="{x:Static properties:Strings.OptionsAppearance}"/>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+            <StackPanel MaxWidth="720" HorizontalAlignment="Center">
 
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsTheme}"/>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <RadioButton Style="{StaticResource SegmentStyle}" Content="{x:Static properties:Strings.OptionsThemeSystem}"
-                                         IsChecked="{Binding Appearance.ThemeIsSystem}"/>
-                            <RadioButton Style="{StaticResource SegmentStyle}" Content="{x:Static properties:Strings.OptionsThemeDark}"
-                                         Margin="4,0,0,0" IsChecked="{Binding Appearance.ThemeIsDark}"/>
-                            <RadioButton Style="{StaticResource SegmentStyle}" Content="{x:Static properties:Strings.OptionsThemeLight}"
-                                         Margin="4,0,0,0" IsChecked="{Binding Appearance.ThemeIsLight}"/>
-                        </StackPanel>
-                    </Grid>
+                <Border Style="{StaticResource SectionStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SectionTitleStyle}" Text="{x:Static properties:Strings.OptionsAppearance}"/>
 
-                    <Grid Margin="0,16,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsLanguage}"/>
-                        <ComboBox Grid.Column="1" Style="{StaticResource OptionComboBoxStyle}" DisplayMemberPath="DisplayName"
-                                  ItemsSource="{Binding Appearance.Languages}" SelectedItem="{Binding Appearance.SelectedLanguage}"/>
-                    </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsTheme}"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource SegmentStyle}" Content="{x:Static properties:Strings.OptionsThemeSystem}"
+                                             IsChecked="{Binding Appearance.ThemeIsSystem}"/>
+                                <RadioButton Style="{StaticResource SegmentStyle}" Content="{x:Static properties:Strings.OptionsThemeDark}"
+                                             Margin="4,0,0,0" IsChecked="{Binding Appearance.ThemeIsDark}"/>
+                                <RadioButton Style="{StaticResource SegmentStyle}" Content="{x:Static properties:Strings.OptionsThemeLight}"
+                                             Margin="4,0,0,0" IsChecked="{Binding Appearance.ThemeIsLight}"/>
+                            </StackPanel>
+                        </Grid>
 
-                    <Grid Margin="0,12,0,0" Visibility="{Binding Appearance.LanguageRestartRequired, Converter={StaticResource BoolToVis}}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="{x:Static views:Glyphs.ResultWarning}" FontFamily="Segoe MDL2 Assets" FontSize="16"
-                                   VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource ResultWarning}"/>
-                        <TextBlock Grid.Column="1" Style="{StaticResource HintStyle}" Margin="0" VerticalAlignment="Center"
-                                   Text="{x:Static properties:Strings.OptionsLanguageRestart}"/>
-                        <Button Grid.Column="2" Style="{StaticResource PanelButtonStyle}" Margin="12,0,0,0" FontSize="13"
-                                Content="{x:Static properties:Strings.OptionsRestart}" Click="Restart_Click"/>
-                    </Grid>
+                        <Grid Margin="0,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsLanguage}"/>
+                            <ComboBox Grid.Column="1" Style="{StaticResource OptionComboBoxStyle}" DisplayMemberPath="DisplayName"
+                                      ItemsSource="{Binding Appearance.Languages}" SelectedItem="{Binding Appearance.SelectedLanguage}"/>
+                        </Grid>
 
-                    <TextBlock Style="{StaticResource ProblemStyle}" Text="{Binding Appearance.Problem}"
-                               Visibility="{Binding Appearance.HasProblem, Converter={StaticResource BoolToVis}}"/>
-                </StackPanel>
-            </Border>
+                        <Grid Margin="0,12,0,0" Visibility="{Binding Appearance.LanguageRestartRequired, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{x:Static views:Glyphs.ResultWarning}" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource ResultWarning}"/>
+                            <TextBlock Grid.Column="1" Style="{StaticResource HintStyle}" Margin="0" VerticalAlignment="Center"
+                                       Text="{x:Static properties:Strings.OptionsLanguageRestart}"/>
+                            <Button Grid.Column="2" Style="{StaticResource PanelButtonStyle}" Margin="12,0,0,0" FontSize="13"
+                                    Content="{x:Static properties:Strings.OptionsRestart}" Click="Restart_Click"/>
+                        </Grid>
 
-            <Border Style="{StaticResource SectionStyle}">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource SectionTitleStyle}" Text="{x:Static properties:Strings.OptionsAgent}"/>
+                        <TextBlock Style="{StaticResource ProblemStyle}" Text="{Binding Appearance.Problem}"
+                                   Visibility="{Binding Appearance.HasProblem, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+                </Border>
 
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,0,16,0">
-                            <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsAgentStatus}"/>
-                            <TextBlock Style="{StaticResource HintStyle}" Text="{x:Static properties:Strings.OptionsAgentHint}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Ellipse Style="{StaticResource StatusDotStyle}" Tag="{Binding Agent.Level}"/>
-                            <TextBlock Style="{StaticResource ValueStyle}" Text="{Binding Agent.StatusText}"/>
-                            <Button Style="{StaticResource PanelButtonStyle}" Margin="14,0,0,0" FontSize="13"
-                                    Content="{x:Static properties:Strings.HotkeyStartAgent}" Click="StartAgent_Click"
-                                    Visibility="{Binding Agent.CanStart, Converter={StaticResource BoolToVis}}"/>
-                        </StackPanel>
-                    </Grid>
-                    <TextBlock Style="{StaticResource ProblemStyle}" Text="{Binding Agent.Problem}"
-                               Visibility="{Binding Agent.HasProblem, Converter={StaticResource BoolToVis}}"/>
+                <Border Style="{StaticResource SectionStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SectionTitleStyle}" Text="{x:Static properties:Strings.OptionsAgent}"/>
 
-                    <Grid Margin="0,16,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,0,16,0">
-                            <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsAutostart}"/>
-                            <TextBlock Style="{StaticResource HintStyle}" Text="{x:Static properties:Strings.OptionsAutostartHint}"/>
-                        </StackPanel>
-                        <ToggleButton x:Name="AutostartToggle" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" VerticalAlignment="Center"
-                                      IsChecked="{Binding Agent.AutostartEnabled, Mode=OneWay}" Click="Autostart_Click"/>
-                    </Grid>
-                    <TextBlock Style="{StaticResource ProblemStyle}" Text="{Binding Agent.AutostartProblem}"
-                               Visibility="{Binding Agent.HasAutostartProblem, Converter={StaticResource BoolToVis}}"/>
-                </StackPanel>
-            </Border>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsAgentStatus}"/>
+                                <TextBlock Style="{StaticResource HintStyle}" Text="{x:Static properties:Strings.OptionsAgentHint}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse Style="{StaticResource StatusDotStyle}" Tag="{Binding Agent.Level}"/>
+                                <TextBlock Style="{StaticResource ValueStyle}" Text="{Binding Agent.StatusText}"/>
+                                <Button Style="{StaticResource PanelButtonStyle}" Margin="14,0,0,0" FontSize="13"
+                                        Content="{x:Static properties:Strings.HotkeyStartAgent}" Click="StartAgent_Click"
+                                        Visibility="{Binding Agent.CanStart, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Style="{StaticResource ProblemStyle}" Text="{Binding Agent.Problem}"
+                                   Visibility="{Binding Agent.HasProblem, Converter={StaticResource BoolToVis}}"/>
 
-            <Border Style="{StaticResource SectionStyle}">
-                <StackPanel>
-                    <TextBlock Style="{StaticResource SectionTitleStyle}" Text="{x:Static properties:Strings.OptionsSystem}"/>
+                        <Grid Margin="0,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsAutostart}"/>
+                                <TextBlock Style="{StaticResource HintStyle}" Text="{x:Static properties:Strings.OptionsAutostartHint}"/>
+                            </StackPanel>
+                            <ToggleButton x:Name="AutostartToggle" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" VerticalAlignment="Center"
+                                          IsChecked="{Binding Agent.AutostartEnabled, Mode=OneWay}" Click="Autostart_Click"/>
+                        </Grid>
+                        <TextBlock Style="{StaticResource ProblemStyle}" Text="{Binding Agent.AutostartProblem}"
+                                   Visibility="{Binding Agent.HasAutostartProblem, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+                </Border>
 
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsDriver}"/>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Ellipse Style="{StaticResource StatusDotStyle}" Tag="{Binding Status.DriverLevel}"/>
-                            <TextBlock Style="{StaticResource ValueStyle}" Text="{Binding Status.DriverText}"/>
-                        </StackPanel>
-                    </Grid>
+                <Border Style="{StaticResource SectionStyle}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SectionTitleStyle}" Text="{x:Static properties:Strings.OptionsSystem}"/>
 
-                    <Grid Margin="0,12,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsKeyboard}"/>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Ellipse Style="{StaticResource StatusDotStyle}" Tag="{Binding Status.KeyboardLevel}"/>
-                            <TextBlock Style="{StaticResource ValueStyle}" Text="{Binding Status.KeyboardText}"/>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </Border>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsDriver}"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Ellipse Style="{StaticResource StatusDotStyle}" Tag="{Binding Status.DriverLevel}"/>
+                                <TextBlock Style="{StaticResource ValueStyle}" Text="{Binding Status.DriverText}"/>
+                            </StackPanel>
+                        </Grid>
 
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsKeyboard}"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Ellipse Style="{StaticResource StatusDotStyle}" Tag="{Binding Status.KeyboardLevel}"/>
+                                <TextBlock Style="{StaticResource ValueStyle}" Text="{Binding Status.KeyboardText}"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1" HorizontalAlignment="Left" Margin="0,8,0,0">
+            <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondary}"
+                       Text="{Binding AppVersion, StringFormat={x:Static properties:Strings.OptionsAppVersion}}"/>
+            <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,2,0,0"
+                       Text="{Binding Status.DriverVersion, StringFormat={x:Static properties:Strings.OptionsDriverVersion}}"/>
         </StackPanel>
-    </ScrollViewer>
+    </Grid>
 </UserControl>

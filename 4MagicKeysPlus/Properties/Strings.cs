@@ -464,6 +464,18 @@ public static class Strings {
         }
     }
 
+    public static string OptionsAppVersion {
+        get {
+            return Get(nameof(OptionsAppVersion));
+        }
+    }
+
+    public static string OptionsDriverVersion {
+        get {
+            return Get(nameof(OptionsDriverVersion));
+        }
+    }
+
     private static string Get(string key) {
         return ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
     }

@@ -345,4 +345,10 @@
   <data name="OptionsKeyboard" xml:space="preserve">
     <value>Keyboard</value>
   </data>
+  <data name="OptionsAppVersion" xml:space="preserve">
+    <value>Application version: {0}</value>
+  </data>
+  <data name="OptionsDriverVersion" xml:space="preserve">
+    <value>Driver version: {0}</value>
+  </data>
 </root>

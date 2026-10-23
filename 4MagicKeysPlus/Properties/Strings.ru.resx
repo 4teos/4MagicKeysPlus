@@ -345,4 +345,10 @@
   <data name="OptionsKeyboard" xml:space="preserve">
     <value>Клавиатура</value>
   </data>
+  <data name="OptionsAppVersion" xml:space="preserve">
+    <value>Версия приложения: {0}</value>
+  </data>
+  <data name="OptionsDriverVersion" xml:space="preserve">
+    <value>Версия драйвера: {0}</value>
+  </data>
 </root>

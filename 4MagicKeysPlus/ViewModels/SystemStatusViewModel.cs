@@ -5,10 +5,13 @@ namespace _4MagicKeysPlus.ViewModels;
 
 // What the app sees of the driver and the keyboard.
 public sealed class SystemStatusViewModel : ObservableObject {
+    private const string Unknown = "—";
+
     private readonly IDriverProbe driver;
     private readonly Func<string?> keyboard;
     private string driverText = "";
     private StatusLevel driverLevel;
+    private string driverVersion = Unknown;
     private string keyboardText = "";
     private StatusLevel keyboardLevel;
 
@@ -29,6 +32,11 @@ public sealed class SystemStatusViewModel : ObservableObject {
         private set => SetField(ref driverLevel, value);
     }
 
+    public string DriverVersion {
+        get => driverVersion;
+        private set => SetField(ref driverVersion, value);
+    }
+
     public string KeyboardText {
         get => keyboardText;
         private set => SetField(ref keyboardText, value);
@@ -45,6 +53,8 @@ public sealed class SystemStatusViewModel : ObservableObject {
             DriverState.Idle => (Strings.OptionsDriverIdle, StatusLevel.Neutral),
             _ => (Strings.OptionsDriverMissing, StatusLevel.Bad),
         };
+
+        DriverVersion = driver.InstalledVersion() ?? Unknown;
 
         string? connected = keyboard();
         KeyboardText = connected ?? Strings.DeviceNotDetected;
