@@ -20,13 +20,6 @@ Originally forked from the [samartzidis/winAppleKey](https://github.com/samartzi
 - A configuration app (`4MagicKeysPlus`) that shows the connected keyboard, its battery/connection/Fn Lock state, highlights the remapped keys and lets you edit the rules on a picture of the keyboard. Changes are saved to the registry and applied by the driver at once, no restart needed
 - A Settings screen in the configuration app: theme (system, dark or light), language, whether the agent runs (with a button to start it) and whether it starts with Windows, and whether the driver and the keyboard are there
 
-### Planned
-
-- A screen for the launch entries (the hotkey and the application, now only set in the registry)
-- Separate settings for each keyboard, so that several keyboards can be used at the same time
-- A toggle for Fn Lock in the app
-- An installer, and a way to store and apply the default settings
-
 ### Technical Details
 
 4MagicKeys+ consists of four parts:
