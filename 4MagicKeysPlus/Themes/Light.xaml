@@ -4,24 +4,24 @@
          is the same in both themes: they stand for physical things. -->
 
     <!-- Window and text -->
-    <SolidColorBrush x:Key="WindowBackground" Color="#F3F4F6"/>
+    <SolidColorBrush x:Key="WindowBackground" Color="#E3E8F0"/>
     <SolidColorBrush x:Key="TextPrimary" Color="#111827"/>
     <SolidColorBrush x:Key="TextSecondary" Color="#4B5563"/>
     <SolidColorBrush x:Key="TextDisabled" Color="#9CA3AF"/>
 
     <!-- Buttons and navigation tabs -->
-    <SolidColorBrush x:Key="ControlHoverBackground" Color="#E5E7EB"/>
-    <SolidColorBrush x:Key="ControlCheckedBackground" Color="#D1D5DB"/>
-    <SolidColorBrush x:Key="ControlBorder" Color="#9CA3AF"/>
+    <SolidColorBrush x:Key="ControlHoverBackground" Color="#D9DFE9"/>
+    <SolidColorBrush x:Key="ControlCheckedBackground" Color="#CAD2DF"/>
+    <SolidColorBrush x:Key="ControlBorder" Color="#8D9AB0"/>
     <SolidColorBrush x:Key="ControlActiveBorder" Color="#4B5563"/>
 
     <!-- Status badge in the header -->
     <SolidColorBrush x:Key="BadgeBackground" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="BadgeBorder" Color="#9CA3AF"/>
+    <SolidColorBrush x:Key="BadgeBorder" Color="#8D9AB0"/>
     <SolidColorBrush x:Key="FnBadgeOnBackground" Color="#374151"/>
     <SolidColorBrush x:Key="FnBadgeOnForeground" Color="White"/>
     <SolidColorBrush x:Key="FnBadgeOffBackground" Color="Transparent"/>
-    <SolidColorBrush x:Key="FnBadgeOffForeground" Color="#D1D5DB"/>
+    <SolidColorBrush x:Key="FnBadgeOffForeground" Color="#CAD2DF"/>
     <SolidColorBrush x:Key="BatteryLow" Color="#DC2626"/>
     <SolidColorBrush x:Key="BatteryMedium" Color="#D97706"/>
     <SolidColorBrush x:Key="BatteryGood" Color="#059669"/>
@@ -37,7 +37,7 @@
     <SolidColorBrush x:Key="TooltipBorder" Color="#374151"/>
     <SolidColorBrush x:Key="TooltipForeground" Color="#FBFBFB"/>
     <SolidColorBrush x:Key="PanelBackground" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="PanelBorder" Color="#D1D5DB"/>
+    <SolidColorBrush x:Key="PanelBorder" Color="#C9D1DE"/>
 
     <!-- Check boxes -->
     <SolidColorBrush x:Key="CheckBoxBackground" Color="#FFFFFF"/>
@@ -46,8 +46,8 @@
     <SolidColorBrush x:Key="CheckBoxMark" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="CheckBoxCheckedBackground" Color="#059669"/>
     <SolidColorBrush x:Key="CheckBoxCheckedBorder" Color="#059669"/>
-    <SolidColorBrush x:Key="CheckBoxDisabledBackground" Color="#E5E7EB"/>
-    <SolidColorBrush x:Key="CheckBoxDisabledBorder" Color="#D1D5DB"/>
+    <SolidColorBrush x:Key="CheckBoxDisabledBackground" Color="#D9DFE9"/>
+    <SolidColorBrush x:Key="CheckBoxDisabledBorder" Color="#C9D1DE"/>
     <SolidColorBrush x:Key="CheckBoxDisabledMark" Color="#9CA3AF"/>
 
     <!-- Keyboard picture -->
