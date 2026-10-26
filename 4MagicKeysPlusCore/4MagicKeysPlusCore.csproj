@@ -9,4 +9,8 @@
     <AssemblyTitle>4MagicKeys+ core library</AssemblyTitle>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="4MagicKeysPlusTests" />
+  </ItemGroup>
+
 </Project>
