@@ -13,7 +13,7 @@ Originally forked from the [samartzidis/winAppleKey](https://github.com/samartzi
 
 ### Features
 
-- One list of key rules in the registry (`Parameters\Rules`) replaces all the old remap tables: remap any key to another key, swap modifiers, map Fn/Eject to a modifier or a key (and back), turn a key into a modifier combination, or into a media/brightness/volume action
+- One list of key rules in the registry (per keyboard, see [Keyboard Profiles](#keyboard-profiles)) replaces all the old remap tables: remap any key to another key, swap modifiers, map Fn/Eject to a modifier or a key (and back), turn a key into a modifier combination, or into a media/brightness/volume action
 - Fn layer: any key can have a separate "with Fn" rule (Home/End/Page Up/Down, Insert, Print Screen, etc. are ordinary rules now, nothing is hardcoded)
 - `FnLock`-aware rules, so the F-row media keys can behave as media keys by default or as regular function keys, with Fn flipping them
 - A small agent (`4MagicKeysPlusAgent`) that launches an application on a hotkey, and warns when the keyboard battery runs low
@@ -24,10 +24,10 @@ Originally forked from the [samartzidis/winAppleKey](https://github.com/samartzi
 
 4MagicKeys+ consists of four parts:
 
-- **Driver** (`4MagicKeysPlusDriver`) - a HIDCLASS LowerFilter WDM kernel mode driver. It intercepts HID input at the Bluetooth (L2CAP) or USB (URB) level and transforms the 9-byte keyboard report buffer before it reaches the HID class driver. For media/brightness/volume actions it also exposes a virtual Consumer Control HID device (via VHF) that reports the corresponding usage code. All behavior comes from the rules in the registry; the driver has no built-in key tables. While a keyboard is connected the driver also has a control device that makes it re-read the rules without a restart (see [Applying Changes](#applying-changes)).
+- **Driver** (`4MagicKeysPlusDriver`) - a HIDCLASS LowerFilter WDM kernel mode driver. It intercepts HID input at the Bluetooth (L2CAP) or USB (URB) level and transforms the 9-byte keyboard report buffer before it reaches the HID class driver. For media/brightness/volume actions it also exposes a virtual Consumer Control HID device (via VHF) that reports the corresponding usage code. All behavior comes from the rules in the registry, in the profile of the keyboard; the driver has no built-in key tables. While a keyboard is connected the driver also has a control device that makes it re-read the rules without a restart (see [Applying Changes](#applying-changes)).
 - **Agent** (`4MagicKeysPlusAgent`) - a small WinForms background process (no tray icon): registers global hotkeys for the launch entries in the registry, and polls the keyboard battery.
 - **Configuration app** (`4MagicKeysPlus`) - WPF app. Needs the .NET 10 Desktop Runtime and runs as administrator (see [Agent and Configuration App](#agent-and-configuration-app)).
-- **Core** (`4MagicKeysPlusCore`) - class library shared by the app and the agent: finds the connected keyboard over HID and reads its battery.
+- **Core** (`4MagicKeysPlusCore`) - class library shared by the app and the agent: finds the keyboards (over PnP and HID), works out their identities (see [Keyboard Profiles](#keyboard-profiles)) and reads the battery.
 
 ### Installation
 
@@ -88,12 +88,48 @@ The gear in the header opens it. The settings of the app itself are per user, in
 
 All colors of the app are in `4MagicKeysPlus\Themes\` (`Dark.xaml` and `Light.xaml`); the rest of the XAML and the code only refer to those keys. A theme has to define the same keys, which the tests check.
 
-### Key Rules
+### Keyboard Profiles
 
-The driver has no built-in key mappings. Everything - Fn combinations, media keys, modifier swaps - is a rule under:
+The settings belong to a keyboard, not to the driver: every physical keyboard has a profile, a subkey of
 
 ```
-HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\<subkey>
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\<profile>
+```
+
+The name of the subkey does not matter to the driver (the configuration app names it by a GUID in braces, and lists only the profiles that are named so and have a `Model`). Values:
+
+| Value | Type | |
+|-------|------|-|
+| `Identities` | MULTI_SZ | how the driver recognizes the keyboard, see below |
+| `FnLock` | DWORD | optional, default `0`, see [FnLock](#fnlock-dword) |
+| `Rules` | subkey | the key rules of the keyboard, see [Key Rules](#key-rules) |
+| `Name` | SZ | optional, for the configuration app, ignored by the driver |
+| `Model` | DWORD | the USB product ID of the model (`0x0267` A1644, `0x026C` A1843), for the configuration app, ignored by the driver |
+
+An identity is a text in upper case: `bt:` and the 12 hex digits of the Bluetooth address of the keyboard (`bt:C4141104498E`), or `usb:` and its serial number (`usb:F0T125100BWJKPGAS`). One keyboard has both: Windows sees its cable and its Bluetooth pairing as unrelated devices, so a profile lists both, and then the keyboard has the same settings whichever way it is connected.
+
+When a keyboard connects the driver works out its identity (the address from the instance ID of the paired Bluetooth device, the serial number from the instance ID of the USB device the interface belongs to; the Debug build prints it) and takes the first profile that lists it, ignoring case. A keyboard that has no profile, or no identity (a USB device without a serial number), gets no rules and Fn Lock off. List an identity in one profile only. The older `Parameters\Rules` and `Parameters\FnLock` are not read any more.
+
+The identities of your keyboards are in the instance IDs of the devices:
+
+```powershell
+Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -match '^(USB\\VID_05AC&PID_026[7C]\\|BTHENUM\\\{00001124-.*_VID&0001004C_PID&026[7C]\\)' } | Select-Object InstanceId
+```
+
+`BTHENUM\{00001124-...}\D&15B70467&0&C4141104498E_C00000000` is `bt:C4141104498E` (the 12 digits before `_C0000000`), `USB\VID_05AC&PID_026C\F0T125100BWJKPGAS` is `usb:F0T125100BWJKPGAS`. A profile for a keyboard, from an administrative command prompt (the settings of the keyboard are under it; the rules are described below):
+
+```
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}" /v Identities /t REG_MULTI_SZ /d "bt:C4141104498E\0usb:F0T125100BWJKPGAS" /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}" /v Model /t REG_DWORD /d 0x026C /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}" /v FnLock /t REG_DWORD /d 1 /f
+```
+
+### Key Rules
+
+The driver has no built-in key mappings. Everything - Fn combinations, media keys, modifier swaps - is a rule under the profile of the keyboard:
+
+```
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\<profile>\Rules\<subkey>
 ```
 
 The subkey name does not matter to the driver; the convention is the 8-digit hex of `Source` (`01000041`), which also keeps two rules from sharing a source. Values:
@@ -175,9 +211,9 @@ Consumer usages used above: `6F` Brightness Up, `70` Brightness Down, `B5` Scan 
 Adding one rule from an administrative command prompt (Fn+F8 -> Play/Pause):
 
 ```
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\01000041" /v Source /t REG_DWORD /d 0x01000041 /f
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\01000041" /v Target /t REG_DWORD /d 0x010000CD /f
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\01000041" /v FnLockAware /t REG_DWORD /d 1 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}\Rules\01000041" /v Source /t REG_DWORD /d 0x01000041 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}\Rules\01000041" /v Target /t REG_DWORD /d 0x010000CD /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}\Rules\01000041" /v FnLockAware /t REG_DWORD /d 1 /f
 ```
 
 Other examples: swap Left Alt and Left Cmd needs two rules (`0x00040000 -> 0x00080000` and `0x00080000 -> 0x00040000`); Eject as Fn is `0xF0 -> 0xF1`; Fn typing Insert is `0xF1 -> 0x49`.
@@ -216,13 +252,13 @@ All settings are in the registry at:
 HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters
 ```
 
-Settings and rules are read when a keyboard connects and when the driver is told to reload them (see below).
+The profiles of the keyboards are under `Keyboards` (see [Keyboard Profiles](#keyboard-profiles)); nothing else is read. A profile is read when its keyboard connects and when the driver is told to reload (see below).
 
 #### Applying Changes
 
 The configuration app does this for you. After changing the registry by hand, apply the changes in one of these ways:
 
-- Tell the driver to reload (below). It re-reads `FnLock` and all the rules and applies them to every connected keyboard at once.
+- Tell the driver to reload (below). It looks up the profile of every connected keyboard again and applies it, to all of them at once.
 - Or restart the device (Administrative command prompt):
 
   ```
@@ -231,7 +267,7 @@ The configuration app does this for you. After changing the registry by hand, ap
 
   Replace the device instance ID with the appropriate one for your keyboard model. You can also disconnect/reconnect the keyboard or reboot.
 
-**Control device.** While at least one keyboard is connected, the driver has a device `\\.\4MagicKeysPlus`, open to administrators and SYSTEM only. The request `IOCTL_MKP_RELOAD_CONFIG` (`0x0022A000`, `CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_WRITE_ACCESS)`) makes the driver reload. It takes no input; the optional output is three DWORDs: the rules read, the rules the driver could interpret and the number of keyboards. The definitions are in `4MagicKeysPlusDriver\DriverInterface.h`.
+**Control device.** While at least one keyboard is connected, the driver has a device `\\.\4MagicKeysPlus`, open to administrators and SYSTEM only. The request `IOCTL_MKP_RELOAD_CONFIG` (`0x0022A000`, `CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_WRITE_ACCESS)`) makes the driver reload. It takes no input; the optional output is three DWORDs: the rules read, the rules the driver could interpret (both summed over the keyboards) and the number of keyboards. The definitions are in `4MagicKeysPlusDriver\DriverInterface.h`.
 
 Open the device, send the request and close the handle at once; never keep it open. An open handle keeps the device alive after the last keyboard is gone, which blocks unloading the driver (an update then needs a reboot) and makes reloading fail the next time a keyboard connects. `CreateFile` fails with error 2 when no keyboard is connected or the driver is older than this feature, and with error 5 when not elevated.
 
@@ -267,11 +303,13 @@ $r = [MagicKeysDriver]::Reload()
 "Rules read: $($r[0]), accepted: $($r[1]), keyboards: $($r[2])"
 ```
 
+The rules read are those of the profiles the connected keyboards have found, counted per keyboard: `0` with a profile that has rules means that no connected keyboard found it (check its [identity](#keyboard-profiles)).
+
 #### FnLock (DWORD)
 
-Used by rules with `FnLockAware=1` (see [How the rules are applied](#how-the-rules-are-applied)); any non-zero value means on. Does not affect rules that are not `FnLockAware`. Default: `0`.
+A value of the profile of the keyboard, so every keyboard has its own. Used by rules with `FnLockAware=1` (see [How the rules are applied](#how-the-rules-are-applied)); any non-zero value means on. Does not affect rules that are not `FnLockAware`. Default: `0`.
 
-The older `KeyMap`, `ModMap` and `SpecialModMap` binary values are no longer read and the driver INF no longer creates them; they can be deleted.
+The older `KeyMap`, `ModMap` and `SpecialModMap` binary values are no longer read and the driver INF no longer creates them; they can be deleted. So can `Rules` and `FnLock` directly under `Parameters`: the driver reads the profiles only.
 
 ### HID Key Code Reference
 

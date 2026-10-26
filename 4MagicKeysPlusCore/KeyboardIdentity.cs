@@ -5,16 +5,20 @@ namespace _4MagicKeysPlus.Core;
 // string). The text form, bt:AABBCCDDEEFF or usb:AABBCCDDEEFFGGHHJ, is what the registry holds; the driver builds the
 // same strings. The USB cable and the Bluetooth pairing of one keyboard have nothing in common, so they are two identities.
 public sealed record KeyboardIdentity(KeyboardConnection Connection, string Id) {
+    // MKP_IDENTITY_MAX_CHARS of the driver (64) less "usb:" and the terminator.
+    private const int MaxUsbSerialLength = 59;
+
     public static KeyboardIdentity? FromBluetoothAddress(string? address) {
         string id = (address ?? "").Replace(":", "").Replace("-", "").ToUpperInvariant();
         return id.Length == 12 && id.All(char.IsAsciiHexDigit) ? new KeyboardIdentity(KeyboardConnection.Bluetooth, id) : null;
     }
 
     // Windows makes up the ID of a USB device without a serial number from its port (it has '&' in it), so
-    // that one would change with the port and is no identity.
+    // that one would change with the port and is no identity. A serial the driver's identity buffer cannot
+    // hold would never match there, so it is no identity either.
     public static KeyboardIdentity? FromUsbSerial(string? serial) {
         string id = (serial ?? "").Trim().ToUpperInvariant();
-        return id.Length == 0 || id.Contains('&') || id.Contains('\\') ? null : new KeyboardIdentity(KeyboardConnection.Usb, id);
+        return id.Length is 0 or > MaxUsbSerialLength || id.Contains('&') || id.Contains('\\') ? null : new KeyboardIdentity(KeyboardConnection.Usb, id);
     }
 
     public static KeyboardIdentity? Parse(string? text) {

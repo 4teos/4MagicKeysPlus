@@ -27,6 +27,9 @@
     <ClCompile Include="Driver.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="KeyboardIdentity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="KeyProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -44,6 +47,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DriverInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyboardIdentity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="KeyProcessor.h">

@@ -169,11 +169,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="4MagicKeysPlusDriverTests.cpp" />
+    <ClCompile Include="KeyboardIdentityTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\4MagicKeysPlusDriver\KeyboardIdentity.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\4MagicKeysPlusDriver\KeyProcessor.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -181,6 +185,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="..\4MagicKeysPlusDriver\KeyboardIdentity.h" />
     <ClInclude Include="..\4MagicKeysPlusDriver\KeyProcessor.h" />
     <ClInclude Include="..\4MagicKeysPlusDriver\KeyProcessorTypes.h" />
   </ItemGroup>

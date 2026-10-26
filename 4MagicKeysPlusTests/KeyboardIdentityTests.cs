@@ -43,6 +43,12 @@ public class KeyboardIdentityTests {
         Assert.Null(KeyboardIdentity.FromUsbSerial(serial));
     }
 
+    [Fact]
+    public void AUsbSerialLongerThanTheDriverHolds_IsNoIdentity() {
+        Assert.NotNull(KeyboardIdentity.FromUsbSerial(new string('A', 59)));
+        Assert.Null(KeyboardIdentity.FromUsbSerial(new string('A', 60)));
+    }
+
     [Theory]
     [InlineData("bt:C4141104498E")]
     [InlineData("usb:F0T125100BWJKPGAS")]

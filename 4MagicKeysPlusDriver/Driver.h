@@ -27,6 +27,7 @@ extern "C" {
 // shared as-is with the portable KeyProcessor class and its user-mode unit tests.
 #include "KeyProcessorTypes.h"
 #include "DriverInterface.h"
+#include "KeyboardIdentity.h"
 
 #if defined(DBG)
 #define DebugPrintBuffer(text, buffer, length) KdPrintBuffer(text, buffer, length)
@@ -35,22 +36,18 @@ extern "C" {
 #endif
 
     ///////////////////////////////////////////////////////////////////////////////
-    // Globals
-
-    extern DWORD g_dwFnLock;
-    extern KEY_RULE g_Rules[MAX_RULES];
-    extern ULONG g_RuleCount;
-
-    ///////////////////////////////////////////////////////////////////////////////
     // Per-device context - holds the handle to our virtual Consumer Control HID
     // device and to this device's own KeyProcessor instance (opaque handle -
     // KeyProcessor is a C++ class defined in KeyProcessor.h/.cpp; kept as PVOID
-    // here so this header and Driver.c can stay plain C).
+    // here so this header and Driver.c can stay plain C), and the identity of
+    // the keyboard (bt:... / usb:..., empty when it has none) that its settings
+    // are looked up by.
     //
     typedef struct _DEVICE_CONTEXT {
         VHFHANDLE VhfHandle;
         PVOID KeyProcessorHandle;
         BOOLEAN InDeviceCollection;
+        WCHAR Identity[MKP_IDENTITY_MAX_CHARS];
     } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
     WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, GetDeviceContext)
