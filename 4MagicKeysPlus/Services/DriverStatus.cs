@@ -7,8 +7,10 @@ internal static class DriverStatus {
     internal const string ServiceKeyPath = @"SYSTEM\CurrentControlSet\Services\4MagicKeysPlus";
     internal const string ParametersKeyPath = $@"{ServiceKeyPath}\Parameters";
     private const string RulesKeyName = "Rules";
+    private const string HotkeysKeyName = "Hotkeys";
 
     public const string RulesKeyPath = $@"{ParametersKeyPath}\{RulesKeyName}";
+    public const string HotkeysKeyPath = $@"{ParametersKeyPath}\{HotkeysKeyName}";
 
     public static bool ReadFnLockEnabled() {
         using RegistryKey? key = Registry.LocalMachine.OpenSubKey(ParametersKeyPath);
@@ -19,7 +21,7 @@ internal static class DriverStatus {
         return new DriverKeyRemapConfig(ReadRules(), ReadFnLockEnabled());
     }
 
-    // Subkeys without both Source and Target as DWORDs (e.g. hotkey-only entries) are not driver rules.
+    // Subkeys without both Source and Target as DWORDs are not driver rules.
     private static List<KeyRule> ReadRules() {
         List<KeyRule> rules = [];
 

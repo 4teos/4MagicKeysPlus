@@ -49,7 +49,7 @@ Originally forked from the [samartzidis/winAppleKey](https://github.com/samartzi
 3. Install the driver via Device Manager:
    - Find your Apple keyboard under **Human Interface Devices**
    - Right-click → **Update driver** → **Browse my computer** → **Let me pick from a list** → **Have Disk...**
-   - Point to the directory with `4MagicKeysPlus.inf` and `4MagicKeysPlus.sys`
+   - Point to the directory with `4MagicKeysPlus.inf` and `4MagicKeysPlus.sys` (`bin\Release\driver` after a Release build)
 
 4. Disconnect and reconnect the keyboard (or reboot).
 
@@ -61,7 +61,7 @@ bcdedit.exe -set TESTSIGNING OFF
 
 ### Agent and Configuration App
 
-Both are framework-dependent .NET 10 apps, so they need the **.NET Desktop Runtime 10** installed. There is no installer yet: copy the build output to a folder of your choice (for the agent: the `.exe`, `.dll`, `.runtimeconfig.json`, `.deps.json`, `4MagicKeysPlus.Core.dll` and the `ru` satellite folder; the configuration app needs the same kind of files plus its own). To start the agent at logon, turn on **Start with Windows** on the Settings screen of the configuration app (see below), or add a string value named `4MagicKeysPlusAgent` with its full path to `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` by hand.
+Both are framework-dependent .NET 10 apps, so they need the **.NET Desktop Runtime 10** installed. There is no installer yet: copy the build output (`bin\Release\` in the root of the repository, without its `driver` subfolder) to a folder of your choice. The agent and the configuration app need the same kind of files (the `.exe`, `.dll`, `.runtimeconfig.json`, `.deps.json`, `4MagicKeysPlus.Core.dll` and the `ru` satellite folder), so they can run from one folder. To start the agent at logon, turn on **Start with Windows** on the Settings screen of the configuration app (see below), or add a string value named `4MagicKeysPlusAgent` with its full path to `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` by hand.
 
 #### Editing rules in the configuration app
 
@@ -105,7 +105,7 @@ The subkey name does not matter to the driver; the convention is the 8-digit hex
 | `FnLockAware` | DWORD | optional, default `0` (see below) |
 | `Comment` | SZ | optional, ignored by the driver |
 
-A subkey without both `Source` and `Target` is not a key rule (it may be a launch entry, see [Launch Entries](#launch-entries)). Rules the driver cannot interpret are ignored, as are rules beyond the first 128.
+A subkey without both `Source` and `Target` is not a key rule and is ignored. Rules the driver cannot interpret are ignored too, as are rules beyond the first 128.
 
 #### Source and Target encoding
 
@@ -186,7 +186,7 @@ The configuration app is not able to edit rules yet. Hand editing is meant for d
 
 ### Launch Entries
 
-The agent starts an application on a hotkey. An entry is a subkey of the same `Rules` key with:
+The agent starts an application on a hotkey. An entry is a subkey of `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Hotkeys` with:
 
 | Value | Type | |
 |-------|------|-|
@@ -195,11 +195,11 @@ The agent starts an application on a hotkey. An entry is a subkey of the same `R
 | `Path` | SZ | what to start: an executable, shortcut, ... |
 | `Comment` | SZ | optional label used in the agent log |
 
-Both `VkKey` and `Path` are needed; the driver ignores these subkeys when they have no `Source`/`Target`. A subkey with exactly one of the two gets a warning in the agent log. Example, a calculator on F16 (virtual-key `0x7F`):
+Both `VkKey` and `Path` are needed; a subkey with exactly one of the two gets a warning in the agent log. Example, a calculator on F16 (virtual-key `0x7F`):
 
 ```
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\Launch_00_7F" /v VkKey /t REG_DWORD /d 0x7F /f
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\Launch_00_7F" /v Path /t REG_SZ /d "C:\Windows\System32\calc.exe" /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Hotkeys\Launch_00_7F" /v VkKey /t REG_DWORD /d 0x7F /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Hotkeys\Launch_00_7F" /v Path /t REG_SZ /d "C:\Windows\System32\calc.exe" /f
 ```
 
 The agent reads the entries at start and registers the hotkeys; restart it after changes. The agent sees ordinary Windows keystrokes, so Fn cannot be a part of a hotkey directly (map Fn+key to a free key such as F20 with a rule and launch on that). Hotkey registration errors and other problems go to `%LOCALAPPDATA%\4MagicKeysPlus\agent.log`.
@@ -351,7 +351,9 @@ Requirements:
 
 This project currently targets KMDF 1.35, which ships with the latest WDK (`10.0.28000.x`, for Visual Studio 2026) - it won't build against an older WDK/SDK pair (e.g. the `10.0.26100.x` kit that ships for Visual Studio 2022) without changes. If you want to build on Visual Studio 2022 instead, either install the latest WDK/SDK alongside it, or lower `KMDF_VERSION_MAJOR`/`KMDF_VERSION_MINOR` in `4MagicKeysPlusDriver\4MagicKeysPlusDriver.vcxproj` to a version your installed WDK actually provides (check `C:\Program Files (x86)\Windows Kits\10\Lib\wdf\kmdf\x64\` for the KMDF versions installed on your machine).
 
-Build the `4MagicKeysPlusDriver` project for x64 (Debug or Release). The driver, INF and catalog will be in the output directory. The .NET projects build with `dotnet build`, or from the solution in Visual Studio.
+Build the `4MagicKeysPlusDriver` project for x64 (Debug or Release). The .NET projects build with `dotnet build`, or from the solution in Visual Studio.
+
+The build output goes to `bin\<Configuration>` (`bin\Debug`, `bin\Release`) next to the solution file: the executables and libraries of the application directly into it, the driver (`.sys`, `.inf`, `.cer` and the package folder with the catalog) into its `driver` subfolder. The tests keep their own output folders.
 
 #### Versions
 
