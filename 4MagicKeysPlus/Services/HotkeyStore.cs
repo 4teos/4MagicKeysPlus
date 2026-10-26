@@ -11,7 +11,7 @@ internal interface IHotkeyStore {
     IReadOnlyList<HotkeyEntry> Save(IReadOnlyList<HotkeyEntry> saved, IReadOnlyList<HotkeyEntry> wanted);
 }
 
-// What saving changes under Parameters\Rules, worked out without touching the registry. An entry
+// What saving changes under Parameters\Hotkeys, worked out without touching the registry. An entry
 // keeps its subkey (whatever it is called) as long as its key combination stays the same, so a
 // new name or path is written in place. A new entry, or one whose combination changed, goes
 // under Hotkey_<modifiers>_<key>, and the subkey it left is released. The position in the
@@ -82,27 +82,27 @@ internal sealed class RegistryHotkeyStore : IHotkeyStore {
     private const uint AllowedModifiers = 0x000F;
 
     private readonly RegistryKey root;
-    private readonly string rulesPath;
+    private readonly string hotkeysPath;
 
-    public RegistryHotkeyStore() : this(Registry.LocalMachine, DriverStatus.RulesKeyPath) {
+    public RegistryHotkeyStore() : this(Registry.LocalMachine, DriverStatus.HotkeysKeyPath) {
     }
 
     // The root and path are parameters so that tests can use a scratch key of their own.
-    public RegistryHotkeyStore(RegistryKey root, string rulesPath) {
+    public RegistryHotkeyStore(RegistryKey root, string hotkeysPath) {
         this.root = root;
-        this.rulesPath = rulesPath;
+        this.hotkeysPath = hotkeysPath;
     }
 
     // A subkey is a hotkey if it has a VkKey DWORD and a non-empty Path, like the agent reads it.
     public IReadOnlyList<HotkeyEntry> Load() {
         List<HotkeyEntry> entries = [];
-        using RegistryKey? rulesKey = root.OpenSubKey(rulesPath);
-        if (rulesKey is null) {
+        using RegistryKey? hotkeysKey = root.OpenSubKey(hotkeysPath);
+        if (hotkeysKey is null) {
             return entries;
         }
 
-        foreach (string name in rulesKey.GetSubKeyNames()) {
-            using RegistryKey? key = rulesKey.OpenSubKey(name);
+        foreach (string name in hotkeysKey.GetSubKeyNames()) {
+            using RegistryKey? key = hotkeysKey.OpenSubKey(name);
             if (key?.GetValue("VkKey") is not int virtualKey || key.GetValue("Path") is not string path || string.IsNullOrWhiteSpace(path)) {
                 continue;
             }
@@ -123,12 +123,12 @@ internal sealed class RegistryHotkeyStore : IHotkeyStore {
             return plan.Result;
         }
 
-        using RegistryKey rulesKey = root.CreateSubKey(rulesPath, writable: true);
+        using RegistryKey hotkeysKey = root.CreateSubKey(hotkeysPath, writable: true);
         foreach (string name in plan.Release) {
-            Release(rulesKey, name);
+            hotkeysKey.DeleteSubKey(name, throwOnMissingSubKey: false);
         }
         foreach (HotkeyEntry entry in plan.Write) {
-            using RegistryKey key = rulesKey.CreateSubKey(entry.RegistryName!, writable: true);
+            using RegistryKey key = hotkeysKey.CreateSubKey(entry.RegistryName!, writable: true);
             key.SetValue("VkKey", unchecked((int)entry.VirtualKey), RegistryValueKind.DWord);
             if (entry.Modifiers != 0) {
                 key.SetValue("VkModifier", unchecked((int)entry.Modifiers), RegistryValueKind.DWord);
@@ -140,22 +140,5 @@ internal sealed class RegistryHotkeyStore : IHotkeyStore {
             key.SetValue("Comment", entry.Name, RegistryValueKind.String);
         }
         return plan.Result;
-    }
-
-    // A subkey that is also a driver rule (Source/Target) keeps those values: only its part as
-    // a hotkey is removed.
-    private static void Release(RegistryKey rulesKey, string name) {
-        using (RegistryKey? key = rulesKey.OpenSubKey(name, writable: true)) {
-            if (key is null) {
-                return;
-            }
-            if (key.GetValue("Source") is not null || key.GetValue("Target") is not null) {
-                foreach (string value in new[] { "VkKey", "VkModifier", "Path" }) {
-                    key.DeleteValue(value, throwOnMissingValue: false);
-                }
-                return;
-            }
-        }
-        rulesKey.DeleteSubKey(name, throwOnMissingSubKey: false);
     }
 }

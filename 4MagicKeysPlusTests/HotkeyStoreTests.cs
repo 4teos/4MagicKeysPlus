@@ -122,15 +122,15 @@ public class HotkeysPlanTests {
 [Collection(TestCollections.Registry)]
 public sealed class RegistryHotkeyStoreTests : IDisposable {
     private const string ScratchRoot = @"Software\4MagicKeysPlusTests";
-    private readonly string rulesPath = $@"{ScratchRoot}\{Guid.NewGuid():N}\Rules";
+    private readonly string hotkeysPath = $@"{ScratchRoot}\{Guid.NewGuid():N}\Hotkeys";
     private readonly RegistryHotkeyStore store;
 
     public RegistryHotkeyStoreTests() {
-        store = new RegistryHotkeyStore(Registry.CurrentUser, rulesPath);
+        store = new RegistryHotkeyStore(Registry.CurrentUser, hotkeysPath);
     }
 
     public void Dispose() {
-        Registry.CurrentUser.DeleteSubKeyTree(rulesPath[..rulesPath.LastIndexOf('\\')], throwOnMissingSubKey: false);
+        Registry.CurrentUser.DeleteSubKeyTree(hotkeysPath[..hotkeysPath.LastIndexOf('\\')], throwOnMissingSubKey: false);
         using (RegistryKey? root = Registry.CurrentUser.OpenSubKey(ScratchRoot)) {
             if (root?.SubKeyCount == 0) {
                 Registry.CurrentUser.DeleteSubKey(ScratchRoot, throwOnMissingSubKey: false);
@@ -143,12 +143,12 @@ public sealed class RegistryHotkeyStoreTests : IDisposable {
     }
 
     private RegistryKey Open(string name) {
-        return Registry.CurrentUser.OpenSubKey($@"{rulesPath}\{name}", writable: true) ?? throw new InvalidOperationException($"No subkey {name}");
+        return Registry.CurrentUser.OpenSubKey($@"{hotkeysPath}\{name}", writable: true) ?? throw new InvalidOperationException($"No subkey {name}");
     }
 
     private string[] SubKeyNames() {
-        using RegistryKey rulesKey = Registry.CurrentUser.OpenSubKey(rulesPath)!;
-        return rulesKey.GetSubKeyNames();
+        using RegistryKey hotkeysKey = Registry.CurrentUser.OpenSubKey(hotkeysPath)!;
+        return hotkeysKey.GetSubKeyNames();
     }
 
     [Fact]
@@ -205,25 +205,6 @@ public sealed class RegistryHotkeyStoreTests : IDisposable {
     }
 
     [Fact]
-    public void Save_RemovingAnEntryThatIsAlsoADriverRule_KeepsTheRule() {
-        using (RegistryKey key = Registry.CurrentUser.CreateSubKey($@"{rulesPath}\Launch_00_7F")) {
-            key.SetValue("Source", 0x7F, RegistryValueKind.DWord);
-            key.SetValue("Target", 0x7F, RegistryValueKind.DWord);
-            key.SetValue("VkKey", 0x7F, RegistryValueKind.DWord);
-            key.SetValue("Path", @"C:\calc.exe");
-            key.SetValue("Comment", "Calc");
-        }
-
-        store.Save(store.Load(), []);
-
-        using RegistryKey kept = Open("Launch_00_7F");
-        Assert.Equal(0x7F, kept.GetValue("Source"));
-        Assert.Equal(0x7F, kept.GetValue("Target"));
-        Assert.Null(kept.GetValue("VkKey"));
-        Assert.Null(kept.GetValue("Path"));
-    }
-
-    [Fact]
     public void Load_ReadsBackWhatWasSaved() {
         List<HotkeyEntry> wanted = [
             Entry(null, virtualKey: 0x7F, label: "Calc", path: @"C:\calc.exe"),
@@ -248,7 +229,7 @@ public sealed class RegistryHotkeyStoreTests : IDisposable {
     public void Load_PutsEntriesWithoutAnOrderAfterTheOthersInSubkeyOrder() {
         store.Save([], [Entry(null, virtualKey: 0x80)]);
         foreach (string name in new[] { "B_legacy", "A_legacy" }) {
-            using RegistryKey key = Registry.CurrentUser.CreateSubKey($@"{rulesPath}\{name}");
+            using RegistryKey key = Registry.CurrentUser.CreateSubKey($@"{hotkeysPath}\{name}");
             key.SetValue("VkKey", 0x7F, RegistryValueKind.DWord);
             key.SetValue("Path", @"C:\calc.exe");
         }
@@ -258,12 +239,11 @@ public sealed class RegistryHotkeyStoreTests : IDisposable {
 
     [Fact]
     public void Load_SkipsSubkeysThatAreNotHotkeys() {
-        using (RegistryKey rule = Registry.CurrentUser.CreateSubKey($@"{rulesPath}\01000041")) {
-            rule.SetValue("Source", 0x01000041, RegistryValueKind.DWord);
-            rule.SetValue("Target", 0x0000006F, RegistryValueKind.DWord);
+        using (RegistryKey noPath = Registry.CurrentUser.CreateSubKey($@"{hotkeysPath}\NoPath")) {
+            noPath.SetValue("VkKey", 0x7F, RegistryValueKind.DWord);
         }
-        using (RegistryKey half = Registry.CurrentUser.CreateSubKey($@"{rulesPath}\NoKey")) {
-            half.SetValue("Path", @"C:\calc.exe");
+        using (RegistryKey noKey = Registry.CurrentUser.CreateSubKey($@"{hotkeysPath}\NoKey")) {
+            noKey.SetValue("Path", @"C:\calc.exe");
         }
 
         Assert.Empty(store.Load());
@@ -271,7 +251,7 @@ public sealed class RegistryHotkeyStoreTests : IDisposable {
 
     [Fact]
     public void Load_WithoutAComment_NamesTheEntryAfterItsFile() {
-        using (RegistryKey key = Registry.CurrentUser.CreateSubKey($@"{rulesPath}\Launch_00_7F")) {
+        using (RegistryKey key = Registry.CurrentUser.CreateSubKey($@"{hotkeysPath}\Launch_00_7F")) {
             key.SetValue("VkKey", 0x7F, RegistryValueKind.DWord);
             key.SetValue("Path", @"C:\NoSuchFolder\Old Tool.lnk");
         }

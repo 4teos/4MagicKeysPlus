@@ -55,7 +55,11 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <!-- The output of the whole solution is in bin\<Configuration>\ at its root, the driver in its driver\ subfolder. The WDK props set OutDir
+       to $(SolutionDir) whatever was set before them (Directory.Build.props included), so it is set here, after the import of Microsoft.Cpp.props. -->
+  <PropertyGroup>
+    <OutDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '..', 'bin', '$(Configuration)', 'driver'))</OutDir>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
     <TimeStampServer>http://timestamp.verisign.com/scripts/timstamp.dll</TimeStampServer>

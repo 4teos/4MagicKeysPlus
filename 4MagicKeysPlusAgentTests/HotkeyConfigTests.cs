@@ -50,13 +50,10 @@ public class HotkeyConfigTests {
     }
 
     [Fact]
-    public void Load_SilentlySkipsDriverOnlyRules() {
+    public void Load_SilentlySkipsSubKeysWithoutKeyAndPath() {
         Mock<IRegistryKeyReader> root = new Mock<IRegistryKeyReader>();
-        root.Setup(r => r.GetSubKeyNames()).Returns(["01000041", "Launch_00_7F"]);
-        Mock<IRegistryKeyReader> driverRule = CreateAppKeyMock(path: null, key: null);
-        driverRule.Setup(k => k.GetValue("Source")).Returns(0x01000041);
-        driverRule.Setup(k => k.GetValue("Target")).Returns(0x01000000 | 0xCD);
-        root.Setup(r => r.OpenSubKey("01000041")).Returns(driverRule.Object);
+        root.Setup(r => r.GetSubKeyNames()).Returns(["Empty", "Launch_00_7F"]);
+        root.Setup(r => r.OpenSubKey("Empty")).Returns(CreateAppKeyMock(path: null, key: null).Object);
         root.Setup(r => r.OpenSubKey("Launch_00_7F")).Returns(CreateAppKeyMock(@"C:\calc.exe", (int)VkF16).Object);
 
         List<HotkeyEntry> entries = HotkeyConfig.Load(root.Object);

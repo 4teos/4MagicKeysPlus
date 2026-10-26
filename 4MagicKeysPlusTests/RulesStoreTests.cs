@@ -158,27 +158,6 @@ public sealed class RegistryRulesStoreTests : IDisposable {
     }
 
     [Fact]
-    public void Save_RemovingARuleOfALaunchEntry_KeepsTheLaunchValues() {
-        using (RegistryKey entry = Registry.CurrentUser.CreateSubKey($@"{rulesPath}\Launch_00_7F")) {
-            entry.SetValue("Source", 0x7F, RegistryValueKind.DWord);
-            entry.SetValue("Target", 0x7F, RegistryValueKind.DWord);
-            entry.SetValue("VkKey", 0x7F, RegistryValueKind.DWord);
-            entry.SetValue("Path", @"C:\Windows\System32\calc.exe");
-        }
-        KeyRule rule = Rule(PhysicalKey.A, PhysicalKey.B) with {
-            RegistryName = "Launch_00_7F"
-        };
-
-        store.Save([rule], []);
-
-        using RegistryKey key = Open("Launch_00_7F");
-        Assert.Null(key.GetValue("Source"));
-        Assert.Null(key.GetValue("Target"));
-        Assert.Equal(0x7F, key.GetValue("VkKey"));
-        Assert.Equal(@"C:\Windows\System32\calc.exe", key.GetValue("Path"));
-    }
-
-    [Fact]
     public void WhatIsSaved_ReadsBackAsTheSameRules() {
         List<KeyRule> wanted = [
             Rule(PhysicalKey.LeftOption, PhysicalKey.LeftCommand),

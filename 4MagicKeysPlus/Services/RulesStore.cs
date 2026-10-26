@@ -64,7 +64,7 @@ internal sealed class RegistryRulesStore : IRulesStore {
 
         using RegistryKey rulesKey = root.CreateSubKey(rulesPath, writable: true);
         foreach (string name in plan.Delete) {
-            Delete(rulesKey, name);
+            rulesKey.DeleteSubKey(name, throwOnMissingSubKey: false);
         }
         foreach (RuleWrite rule in plan.Write) {
             using RegistryKey ruleKey = rulesKey.CreateSubKey(rule.Name, writable: true);
@@ -77,22 +77,5 @@ internal sealed class RegistryRulesStore : IRulesStore {
             }
         }
         return plan.Result;
-    }
-
-    // A subkey that is also a hotkey entry (the agent's VkKey/Path) keeps those values: only
-    // its part as a driver rule is removed.
-    private static void Delete(RegistryKey rulesKey, string name) {
-        using (RegistryKey? ruleKey = rulesKey.OpenSubKey(name, writable: true)) {
-            if (ruleKey is null) {
-                return;
-            }
-            if (ruleKey.GetValue("VkKey") is not null || ruleKey.GetValue("Path") is not null) {
-                foreach (string value in new[] { "Source", "Target", "FnLockAware" }) {
-                    ruleKey.DeleteValue(value, throwOnMissingValue: false);
-                }
-                return;
-            }
-        }
-        rulesKey.DeleteSubKey(name, throwOnMissingSubKey: false);
     }
 }

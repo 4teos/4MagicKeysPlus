@@ -3,10 +3,21 @@
        Version makes the SDK take AssemblyVersion, FileVersion and the product version from it.
        The driver has a version of its own, the one in the DriverVer line of its .inf. -->
   <PropertyGroup>
-    <MkpAppVersion>2.4.3.18</MkpAppVersion>
+    <MkpAppVersion>2.4.3.19</MkpAppVersion>
     <Version>$(MkpAppVersion)</Version>
     <Company>4teos</Company>
     <Product>4MagicKeys+</Product>
     <Copyright>© 2026 4teos https://github.com/4teos</Copyright>
+  </PropertyGroup>
+
+  <!-- One build folder for the whole solution, bin\<Configuration>\ next to the .sln: the executables and libraries of the application
+       land directly in it, the driver in its driver\ subfolder (see 4MagicKeysPlusDriver.vcxproj). The test projects keep their own
+       output folders. A build started without a configuration (dotnet build without -c) has none defined yet at this point,
+       hence the Debug default. -->
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj' And !$(MSBuildProjectName.EndsWith('Tests'))">
+    <MkpBinConfiguration>$(Configuration)</MkpBinConfiguration>
+    <MkpBinConfiguration Condition="'$(MkpBinConfiguration)' == ''">Debug</MkpBinConfiguration>
+    <OutputPath>$(MSBuildThisFileDirectory)bin\$(MkpBinConfiguration)\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 </Project>
