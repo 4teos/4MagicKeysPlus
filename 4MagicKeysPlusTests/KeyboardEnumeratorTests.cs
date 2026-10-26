@@ -49,6 +49,36 @@ public class KeyboardPnpIdsTests {
     }
 }
 
+public class KnownKeyboardsTests {
+    [Fact]
+    public void TheProductIdOfEachModel_MapsBackToIt() {
+        foreach (KeyboardProduct product in Enum.GetValues<KeyboardProduct>()) {
+            Assert.True(KnownKeyboards.TryGetProduct(KnownKeyboards.GetProductId(product), out KeyboardProduct mapped));
+            Assert.Equal(product, mapped);
+        }
+    }
+
+    [Fact]
+    public void TheProductIdsAreTheOnesOfTheInf() {
+        Assert.Equal(0x0267, KnownKeyboards.GetProductId(KeyboardProduct.A1644));
+        Assert.Equal(0x026C, KnownKeyboards.GetProductId(KeyboardProduct.A1843));
+    }
+
+    [Fact]
+    public void AnUnknownProductId_IsRejected() {
+        Assert.False(KnownKeyboards.TryGetProduct(0x0250, out _));
+    }
+
+    [Fact]
+    public void TheVendorIdsGiveTheTransport() {
+        Assert.True(KnownKeyboards.TryGetConnection(0x05AC, out KeyboardConnection usb));
+        Assert.True(KnownKeyboards.TryGetConnection(0x004C, out KeyboardConnection bluetooth));
+        Assert.Equal(KeyboardConnection.Usb, usb);
+        Assert.Equal(KeyboardConnection.Bluetooth, bluetooth);
+        Assert.False(KnownKeyboards.TryGetConnection(0x046D, out _));
+    }
+}
+
 public class KeyboardEnumeratorTests {
     private const string BluetoothHid = @"BTHENUM\{00001124-0000-1000-8000-00805F9B34FB}_VID&0001004C_PID&026C\D&15B70467&0&C4141104498E_C00000000";
     private const string BluetoothService = @"BTHENUM\{00001200-0000-1000-8000-00805F9B34FB}_VID&0001004C_PID&026C\D&15B70467&0&C4141104498E_C00000000";

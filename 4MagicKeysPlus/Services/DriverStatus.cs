@@ -8,9 +8,16 @@ internal static class DriverStatus {
     internal const string ParametersKeyPath = $@"{ServiceKeyPath}\Parameters";
     private const string RulesKeyName = "Rules";
     private const string HotkeysKeyName = "Hotkeys";
+    private const string KeyboardsKeyName = "Keyboards";
 
     public const string RulesKeyPath = $@"{ParametersKeyPath}\{RulesKeyName}";
     public const string HotkeysKeyPath = $@"{ParametersKeyPath}\{HotkeysKeyName}";
+    public const string KeyboardsKeyPath = $@"{ParametersKeyPath}\{KeyboardsKeyName}";
+
+    // The subkey of a keyboard profile under Keyboards: its GUID in braces, upper case.
+    public static string ProfileKeyName(Guid profileId) {
+        return profileId.ToString("B").ToUpperInvariant();
+    }
 
     public static bool ReadFnLockEnabled() {
         using RegistryKey? key = Registry.LocalMachine.OpenSubKey(ParametersKeyPath);

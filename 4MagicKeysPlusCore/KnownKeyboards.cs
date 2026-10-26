@@ -2,7 +2,7 @@ namespace _4MagicKeysPlus.Core;
 
 // The IDs 4MagicKeysPlusDriver\4MagicKeysPlus.inf matches on: Apple's USB-IF vendor ID for the cable, its Bluetooth
 // SIG company ID for the Bluetooth pairing, and the product ID of each model.
-internal static class KnownKeyboards {
+public static class KnownKeyboards {
     public static bool TryGetConnection(ushort vendorId, out KeyboardConnection connection) {
         switch (vendorId) {
             case 0x05AC:
@@ -29,5 +29,13 @@ internal static class KnownKeyboards {
                 product = default;
                 return false;
         }
+    }
+
+    public static ushort GetProductId(KeyboardProduct product) {
+        return product switch {
+            KeyboardProduct.A1644 => 0x0267,
+            KeyboardProduct.A1843 => 0x026C,
+            _ => throw new ArgumentOutOfRangeException(nameof(product), product, null),
+        };
     }
 }
