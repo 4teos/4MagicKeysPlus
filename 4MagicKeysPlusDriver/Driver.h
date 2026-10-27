@@ -41,13 +41,15 @@ extern "C" {
     // KeyProcessor is a C++ class defined in KeyProcessor.h/.cpp; kept as PVOID
     // here so this header and Driver.c can stay plain C), and the identity of
     // the keyboard (bt:... / usb:..., empty when it has none) that its settings
-    // are looked up by.
+    // are looked up by, and the USB product ID of its model (0 when unknown),
+    // which finds the factory defaults for a keyboard that has no profile.
     //
     typedef struct _DEVICE_CONTEXT {
         VHFHANDLE VhfHandle;
         PVOID KeyProcessorHandle;
         BOOLEAN InDeviceCollection;
         WCHAR Identity[MKP_IDENTITY_MAX_CHARS];
+        ULONG ProductId;
     } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
     WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, GetDeviceContext)

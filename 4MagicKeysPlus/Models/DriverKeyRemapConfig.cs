@@ -41,6 +41,12 @@ public sealed record KeyRule(
         }
         return string.Join(" + ", parts);
     }
+
+    // The whole rule as one line, the text saved as the Comment of its subkey: "Fn+F1 -> Brightness Down".
+    public string Describe() {
+        string source = string.Join(" + ", Source.Select(PhysicalKeyNames.GetDisplayName));
+        return $"{(FnLayer ? "Fn+" : "")}{source} -> {DescribeTarget()}";
+    }
 }
 
 public sealed record DriverKeyRemapConfig(IReadOnlyList<KeyRule> Rules, bool FnLockEnabled) {

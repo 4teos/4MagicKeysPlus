@@ -53,9 +53,53 @@ namespace {
         }
         return other[length] == L'\0';
     }
+
+    // The four hex digits that end the first segment of the ID (what is before the first backslash after the
+    // prefix), when the marker comes right before them: _PID& in BTHENUM\{...}_VID&0001004C_PID&026C\..., &PID_ in
+    // USB\VID_05AC&PID_026C\.... 0 when it is not so.
+    unsigned int ProductIdOfFirstSegment(const wchar_t* deviceId, const wchar_t* prefix, const wchar_t* marker) {
+        if (!deviceId) {
+            return 0;
+        }
+
+        const wchar_t* segment = SkipPrefix(deviceId, prefix);
+        if (!segment) {
+            return 0;
+        }
+        const wchar_t* end = segment;
+        while (*end && *end != L'\\') {
+            end++;
+        }
+        unsigned int markerLength = Length(marker);
+        if (*end != L'\\' || (unsigned int)(end - segment) < markerLength + 4) {
+            return 0;
+        }
+
+        const wchar_t* digits = end - 4;
+        if (!EqualsIgnoringCase(digits - markerLength, markerLength, marker)) {
+            return 0;
+        }
+        unsigned int productId = 0;
+        for (int i = 0; i < 4; i++) {
+            if (!IsHex(digits[i])) {
+                return 0;
+            }
+            wchar_t digit = Upper(digits[i]);
+            productId = productId * 16 + (unsigned int)(digit <= L'9' ? digit - L'0' : digit - L'A' + 10);
+        }
+        return productId;
+    }
 }
 
 extern "C" {
+
+    unsigned int MkpProductIdFromBluetoothDeviceId(const wchar_t* deviceId) {
+        return ProductIdOfFirstSegment(deviceId, L"BTHENUM\\", L"_PID&");
+    }
+
+    unsigned int MkpProductIdFromUsbDeviceId(const wchar_t* deviceId) {
+        return ProductIdOfFirstSegment(deviceId, L"USB\\", L"&PID_");
+    }
 
     int MkpIdentityFromBluetoothDeviceId(const wchar_t* deviceId, wchar_t* identity) {
         identity[0] = L'\0';

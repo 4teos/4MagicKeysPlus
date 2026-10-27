@@ -24,7 +24,7 @@ public partial class MainWindow : Window {
     }
 
     private MainWindow(IAppSettingsStore settings, AppSettings launched, IThemeApplier themes, IDriverControl driver)
-        : this(settings, launched, themes, driver, new KeyboardSession(new RegistryKeyboardProfileStore(), KeyboardEnumerator.Enumerate, driver)) {
+        : this(settings, launched, themes, driver, new KeyboardSession(new RegistryKeyboardProfileStore(), KeyboardEnumerator.Enumerate, driver, new RegistryFactoryDefaults())) {
     }
 
     // The driver and the keyboards are parameters so that tests can use fakes.

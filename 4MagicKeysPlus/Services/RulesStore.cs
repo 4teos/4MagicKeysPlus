@@ -9,12 +9,14 @@ internal interface IRulesStore {
     IReadOnlyList<KeyRule> Save(IReadOnlyList<KeyRule> saved, IReadOnlyList<KeyRule> wanted);
 }
 
-internal sealed record RuleWrite(string Name, uint Source, uint Target, bool FnLockAware);
+internal sealed record RuleWrite(string Name, uint Source, uint Target, bool FnLockAware, string Comment);
 
 // What saving changes under Parameters\Rules, worked out without touching the registry. A rule
 // that has no subkey yet (RegistryName is null) is written under the hex of its Source, the
-// convention the driver's registry layout follows. Rules are never edited in place: a changed
-// rule is a new one, so the subkey of the old one goes unless the new one takes its name.
+// convention the driver's registry layout follows, with its text as the Comment. Rules are never
+// edited in place: a changed rule is a new one, so the subkey of the old one goes unless the new
+// one takes its name, and then its Comment is replaced as well. The rules that are kept as they
+// are keep whatever they have, a Comment written by hand too.
 internal sealed record RulesPlan(IReadOnlyList<string> Delete, IReadOnlyList<RuleWrite> Write, IReadOnlyList<KeyRule> Result) {
     public static RulesPlan Create(IReadOnlyList<KeyRule> saved, IReadOnlyList<KeyRule> wanted) {
         List<KeyRule> result = [];
@@ -26,7 +28,7 @@ internal sealed record RulesPlan(IReadOnlyList<string> Delete, IReadOnlyList<Rul
             }
 
             string name = rule.RawSource.ToString("X8");
-            write.Add(new RuleWrite(name, rule.RawSource, rule.RawTarget, rule.FnLockAware));
+            write.Add(new RuleWrite(name, rule.RawSource, rule.RawTarget, rule.FnLockAware, rule.Describe()));
             result.Add(rule with {
                 RegistryName = name
             });
@@ -72,6 +74,7 @@ internal sealed class RegistryRulesStore : IRulesStore {
             } else {
                 ruleKey.DeleteValue("FnLockAware", throwOnMissingValue: false);
             }
+            ruleKey.SetValue("Comment", rule.Comment, RegistryValueKind.String);
         }
         return plan.Result;
     }
