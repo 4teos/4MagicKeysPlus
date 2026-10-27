@@ -96,76 +96,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
-        <Style x:Key="OptionItemStyle" TargetType="ComboBoxItem">
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBoxItem">
-                        <Border x:Name="Bg" Background="Transparent" CornerRadius="4" Padding="10,6">
-                            <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource ControlHoverBackground}"/>
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource ControlCheckedBackground}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="OptionComboBoxStyle" TargetType="ComboBox">
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Width" Value="220"/>
-            <Setter Property="ItemContainerStyle" Value="{StaticResource OptionItemStyle}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBox">
-                        <Grid x:Name="Root">
-                            <ToggleButton x:Name="Toggle" Focusable="False" ClickMode="Press"
-                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
-                                <ToggleButton.Template>
-                                    <ControlTemplate TargetType="ToggleButton">
-                                        <Border x:Name="Frame" Background="{DynamicResource InputBackground}" BorderBrush="{DynamicResource ControlBorder}"
-                                                BorderThickness="1" CornerRadius="6">
-                                            <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="10"
-                                                       HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0"
-                                                       Foreground="{DynamicResource TextSecondary}"/>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource ControlActiveBorder}"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </ToggleButton.Template>
-                            </ToggleButton>
-                            <ContentPresenter Margin="12,7,32,7" VerticalAlignment="Center" IsHitTestVisible="False"
-                                              Content="{TemplateBinding SelectionBoxItem}"
-                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
-                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
-                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
-                            <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
-                                   AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
-                                <Border MinWidth="{Binding ActualWidth, ElementName=Root}" MaxHeight="{TemplateBinding MaxDropDownHeight}"
-                                        Margin="0,4,0,0" Padding="4" CornerRadius="6" BorderThickness="1"
-                                        Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}">
-                                    <ScrollViewer>
-                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
-                                    </ScrollViewer>
-                                </Border>
-                            </Popup>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </UserControl.Resources>
 
     <Grid>
@@ -264,6 +194,21 @@
                         </Grid>
                         <TextBlock Style="{StaticResource ProblemStyle}" Text="{Binding Agent.AutostartProblem}"
                                    Visibility="{Binding Agent.HasAutostartProblem, Converter={StaticResource BoolToVis}}"/>
+
+                        <Grid Margin="0,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource LabelStyle}" Text="{x:Static properties:Strings.OptionsOpenForNewKeyboard}"/>
+                                <TextBlock Style="{StaticResource HintStyle}" Text="{x:Static properties:Strings.OptionsOpenForNewKeyboardHint}"/>
+                            </StackPanel>
+                            <ToggleButton x:Name="OpenForNewKeyboardToggle" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" VerticalAlignment="Center"
+                                          IsChecked="{Binding Agent.OpenAppForNewKeyboard, Mode=OneWay}" Click="OpenForNewKeyboard_Click"/>
+                        </Grid>
+                        <TextBlock Style="{StaticResource ProblemStyle}" Text="{Binding Agent.OpenAppProblem}"
+                                   Visibility="{Binding Agent.HasOpenAppProblem, Converter={StaticResource BoolToVis}}"/>
                     </StackPanel>
                 </Border>
 

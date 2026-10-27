@@ -66,6 +66,15 @@ internal static class Program {
         using BatteryMonitor batteryMonitor = CreateBatteryMonitor(args);
         batteryMonitor.Start();
 
+        using NewKeyboardWatcher newKeyboards = new NewKeyboardWatcher(
+            KeyboardEnumerator.Enumerate,
+            () => new RegistryKeyboardProfileStore().Load(),
+            AppSettingsRegistry.ReadOpenAppForNewKeyboard,
+            AppLauncher.IsRunning,
+            AppLauncher.Open,
+            NewKeyboardWatcher.DefaultInterval);
+        newKeyboards.Start();
+
         AgentCommandHandler commands = new AgentCommandHandler(hotkeys, work => (AgentResponse)uiThread.Invoke(work));
         using AgentPipeServer pipeServer = new AgentPipeServer(commands, PauseTimeout);
         pipeServer.Start();

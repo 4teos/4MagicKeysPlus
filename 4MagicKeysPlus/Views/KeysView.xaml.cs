@@ -1,6 +1,7 @@
 using _4MagicKeysPlus.Core;
 using _4MagicKeysPlus.Models;
 using _4MagicKeysPlus.Properties;
+using _4MagicKeysPlus.Services;
 using _4MagicKeysPlus.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
@@ -25,10 +26,11 @@ public partial class KeysView : UserControl {
     private bool followFnLock;
     private Window? hostWindow;
 
-    public KeysView(KeyRemapEditor editor, FnLockEditor fnLock) {
+    // The model starts as that of the keyboard; the selector at the bottom is temporary.
+    internal KeysView(ProfileEditors editors, KeyboardProduct product) {
         InitializeComponent();
-        this.editor = editor;
-        this.fnLock = fnLock;
+        editor = editors.Rules;
+        fnLock = editors.FnLock;
         FnLockToggle.IsChecked = fnLock.IsEnabled;
 
         Loaded += (_, _) => {
@@ -45,8 +47,7 @@ public partial class KeysView : UserControl {
         ModelSelector.Items.Add(KeyboardModel.A1644);
         ModelSelector.Items.Add(KeyboardModel.A1843);
 
-        DetectedKeyboard? detectedKeyboard = KeyboardDetector.DetectConnectedKeyboard();
-        ModelSelector.SelectedValue = detectedKeyboard == null ? null : KeyboardModel.From(detectedKeyboard.Product);
+        ModelSelector.SelectedValue = KeyboardModel.From(product);
     }
 
     private void ModelSelector_SelectionChanged(object sender, SelectionChangedEventArgs e) {

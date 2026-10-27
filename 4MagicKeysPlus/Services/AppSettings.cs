@@ -9,8 +9,9 @@ public enum ThemeChoice {
     Light,
 }
 
-// Language is the language name ("en", "de"), or null to follow Windows.
-internal sealed record AppSettings(ThemeChoice Theme = ThemeChoice.System, string? Language = null);
+// Language is the language name ("en", "de"), or null to follow Windows. OpenAppForNewKeyboard is what the agent reads:
+// whether it opens the app for a keyboard that has no profile.
+internal sealed record AppSettings(ThemeChoice Theme = ThemeChoice.System, string? Language = null, bool OpenAppForNewKeyboard = true);
 
 internal interface IAppSettingsStore {
     AppSettings Read();
@@ -42,12 +43,13 @@ internal sealed class RegistryAppSettingsStore : IAppSettingsStore {
             ? parsed
             : ThemeChoice.System;
         string? language = AppSettingsRegistry.ParseLanguage(key?.GetValue(LanguageValue) as string)?.Name;
-        return new AppSettings(theme, language);
+        return new AppSettings(theme, language, AppSettingsRegistry.ReadOpenAppForNewKeyboard(root, keyPath));
     }
 
     public void Write(AppSettings settings) {
         using RegistryKey key = root.CreateSubKey(keyPath, writable: true);
         key.SetValue(ThemeValue, settings.Theme.ToString(), RegistryValueKind.String);
+        key.SetValue(AppSettingsRegistry.OpenAppForNewKeyboardValue, settings.OpenAppForNewKeyboard ? 1 : 0, RegistryValueKind.DWord);
         if (settings.Language is null) {
             key.DeleteValue(LanguageValue, throwOnMissingValue: false);
         } else {

@@ -17,27 +17,27 @@ public enum ApplyOutcome {
 
 public sealed record ApplyResult(ApplyOutcome Outcome, string Message);
 
-// The rule list being edited on the Keys screen. Lives for the whole app session (owned by
-// MainWindow), so the screens share it. Every change is saved to the registry and handed to the
+// The rule list of one keyboard, being edited on the Keys screen. Lives for the whole app session (see
+// ProfileEditors), so the screens share it. Every change is saved to the registry and handed to the
 // driver at once.
 public sealed class KeyRemapEditor {
     private readonly IRulesStore store;
     private readonly IDriverControl driver;
+    private readonly IFnLockStore fnLock;
     private IReadOnlyList<KeyRule> rules;
 
-    public KeyRemapEditor() : this(DriverStatus.ReadKeyRemapConfig().Rules, new RegistryRulesStore(), new DriverControl()) {
-    }
-
-    internal KeyRemapEditor(IReadOnlyList<KeyRule> initialRules, IRulesStore store, IDriverControl driver) {
+    // fnLock is the Fn Lock of the same keyboard, which is only read here.
+    internal KeyRemapEditor(IReadOnlyList<KeyRule> initialRules, IRulesStore store, IDriverControl driver, IFnLockStore fnLock) {
         rules = initialRules;
         this.store = store;
         this.driver = driver;
+        this.fnLock = fnLock;
     }
 
     internal IReadOnlyList<KeyRule> Rules => rules;
 
     // FnLock is not edited here and can change at any time, so it is read afresh.
-    public DriverKeyRemapConfig Config => new(rules, DriverStatus.ReadFnLockEnabled());
+    public DriverKeyRemapConfig Config => new(rules, fnLock.Read());
 
     public ApplyResult SetMapping(PhysicalKey source, RemapTarget target, bool fnLayer, bool fnLockAware) {
         KeyRule rule = DriverRuleEncoder.CreateRule(source, target, fnLayer, fnLockAware)

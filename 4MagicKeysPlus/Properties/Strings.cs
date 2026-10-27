@@ -476,6 +476,54 @@ public static class Strings {
         }
     }
 
+    public static string KeyboardNotConnected {
+        get {
+            return Get(nameof(KeyboardNotConnected));
+        }
+    }
+
+    public static string LinkPromptOne {
+        get {
+            return Get(nameof(LinkPromptOne));
+        }
+    }
+
+    public static string LinkPromptSeveral {
+        get {
+            return Get(nameof(LinkPromptSeveral));
+        }
+    }
+
+    public static string LinkPromptYes {
+        get {
+            return Get(nameof(LinkPromptYes));
+        }
+    }
+
+    public static string LinkPromptNo {
+        get {
+            return Get(nameof(LinkPromptNo));
+        }
+    }
+
+    public static string KeysNoKeyboard {
+        get {
+            return Get(nameof(KeysNoKeyboard));
+        }
+    }
+
+    public static string OptionsOpenForNewKeyboard {
+        get {
+            return Get(nameof(OptionsOpenForNewKeyboard));
+        }
+    }
+
+    public static string OptionsOpenForNewKeyboardHint {
+        get {
+            return Get(nameof(OptionsOpenForNewKeyboardHint));
+        }
+    }
+
     private static string Get(string key) {
         return ResourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
     }

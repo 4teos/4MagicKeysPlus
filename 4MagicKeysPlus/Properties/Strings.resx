@@ -351,4 +351,28 @@
   <data name="OptionsDriverVersion" xml:space="preserve">
     <value>Driver version: {0}</value>
   </data>
+  <data name="KeyboardNotConnected" xml:space="preserve">
+    <value>Not connected</value>
+  </data>
+  <data name="LinkPromptOne" xml:space="preserve">
+    <value>{0} is connected over {1}. Is it the same keyboard as "{2}"?</value>
+  </data>
+  <data name="LinkPromptSeveral" xml:space="preserve">
+    <value>{0} is connected over {1}. Is it one of the keyboards you already use?</value>
+  </data>
+  <data name="LinkPromptYes" xml:space="preserve">
+    <value>Yes, it is</value>
+  </data>
+  <data name="LinkPromptNo" xml:space="preserve">
+    <value>No, another one</value>
+  </data>
+  <data name="KeysNoKeyboard" xml:space="preserve">
+    <value>No keyboard is connected. Connect one to set it up.</value>
+  </data>
+  <data name="OptionsOpenForNewKeyboard" xml:space="preserve">
+    <value>Open the app for a new keyboard</value>
+  </data>
+  <data name="OptionsOpenForNewKeyboardHint" xml:space="preserve">
+    <value>When a keyboard that has no settings yet is connected, the agent opens this app to set it up or to link it to a keyboard you already use. Windows asks for permission first.</value>
+  </data>
 </root>

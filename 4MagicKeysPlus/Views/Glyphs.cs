@@ -1,22 +1,25 @@
 namespace _4MagicKeysPlus.Views;
 
 // Segoe MDL2 Assets codepoints - ships with Windows, no extra font/asset needed.
-// Several plausible-looking guesses (e.g. a dedicated "charging level" series) turned out to
+// Some plausible-looking guesses (a codepoint where a series seems to go on) turned out to
 // render as unrelated or duplicate shapes, so don't add codepoints here without rendering first.
 public static class Glyphs {
     public const string Bluetooth = "";
     public const string Usb = "";
-    public const string BatteryCharging = ""; // single "battery with power plug" pictogram
     public const string KeyboardClassic = ""; // keyboard pictogram, used for the Keys nav tab
     public const string Flash = ""; // lightning bolt, used for the Quick Launch nav tab
     public const string Settings = ""; // gear, used for the Settings nav tab
 
-    // Battery0 (empty) .. Battery10 (full), contiguous codepoint range.
-    private static readonly string[] BatteryLevels = ["", "", "", "", "", "", "", "", "", "", ""];
+    // A glyph for every 10% of the charge, of the battery and of the battery with a plug (charging). Battery0 (E850, empty) ..
+    // Battery9 (E859) are contiguous, and so are BatteryCharging0 (E85A) .. BatteryCharging8 (E862); the 90% charging glyph (E83E)
+    // and both 100% ones (E83F, EA93) lie elsewhere. Checked by rendering both series.
+    private static readonly string[] BatteryLevels = ["\uE850", "\uE851", "\uE852", "\uE853", "\uE854", "\uE855", "\uE856", "\uE857", "\uE858", "\uE859", "\uE83F"];
+    private static readonly string[] BatteryChargingLevels = ["\uE85A", "\uE85B", "\uE85C", "\uE85D", "\uE85E", "\uE85F", "\uE860", "\uE861", "\uE862", "\uE83E", "\uEA93"];
 
-    public static string BatteryLevel(int percent) {
-        int index = Math.Clamp(percent / 10, 0, BatteryLevels.Length - 1);
-        return BatteryLevels[index];
+    // The level is rounded down to a step of 10.
+    public static string BatteryLevel(int percent, bool charging = false) {
+        string[] levels = charging ? BatteryChargingLevels : BatteryLevels;
+        return levels[Math.Clamp(percent / 10, 0, levels.Length - 1)];
     }
 
     // Quick launch cards: edit (pencil), done (check), delete (cross), add (plus), and the stand-in

@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
 using _4MagicKeysPlus.Core;
-using _4MagicKeysPlus.Models;
 using _4MagicKeysPlus.Properties;
 using _4MagicKeysPlus.Services;
 using _4MagicKeysPlus.Views;
@@ -19,9 +18,15 @@ public enum BatteryState {
 
 // Lives for the whole app session (owned by MainWindow), not per-navigation-visit like the old
 // per-screen view models - the header needs to show live status regardless of which page is open.
+// It shows the keyboard that is selected, and follows the selection.
 public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
-    private readonly DispatcherTimer timer;
-    private DetectedKeyboard? detectedKeyboard;
+    private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(5);
+
+    private readonly KeyboardSession session;
+    private readonly Func<Guid, bool> readFnLock;
+    private readonly Func<DetectedKeyboard?, KeyboardBatteryStatus?> readBattery;
+    private DispatcherTimer? timer;
+    private bool isKeyboardDetected;
     private string deviceName = Strings.DeviceNotDetected;
     private string connectionText = Strings.DeviceNotDetected;
     private string connectionGlyph = "";
@@ -32,12 +37,13 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public DeviceStatusViewModel() {
+    // readFnLock tells the Fn Lock of a profile, readBattery the battery of the keyboard on the way it is connected.
+    internal DeviceStatusViewModel(KeyboardSession session, Func<Guid, bool> readFnLock, Func<DetectedKeyboard?, KeyboardBatteryStatus?> readBattery) {
+        this.session = session;
+        this.readFnLock = readFnLock;
+        this.readBattery = readBattery;
+        session.Changed += Refresh;
         Refresh();
-
-        timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        timer.Tick += (_, _) => Refresh();
-        timer.Start();
     }
 
     public string DeviceName {
@@ -45,7 +51,7 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
         private set => SetField(ref deviceName, value);
     }
 
-    public bool IsKeyboardDetected => detectedKeyboard != null;
+    public bool IsKeyboardDetected => isKeyboardDetected;
 
     public string ConnectionText {
         get => connectionText;
@@ -77,28 +83,38 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
         private set => SetField(ref statusTooltip, value);
     }
 
+    // Looks at the keyboards every few seconds: the session tells of what it found, and the battery goes with it.
+    public void Start() {
+        timer = new DispatcherTimer { Interval = RefreshInterval };
+        timer.Tick += async (_, _) => {
+            try {
+                await session.RefreshAsync();
+            } catch (Exception) {
+                // Looking at the keyboards is no reason to bring the app down: the next tick looks again.
+            }
+        };
+        timer.Start();
+    }
+
     public void Refresh() {
-        detectedKeyboard ??= KeyboardDetector.DetectConnectedKeyboard();
+        KeyboardEntry? selected = session.Selected;
+        KeyboardEndpoint? live = selected?.Live;
+        DetectedKeyboard? detectedKeyboard = live is { DevicePath: { } devicePath }
+            ? new DetectedKeyboard(live.Product, live.Identity.Connection, devicePath)
+            : null;
+        KeyboardBatteryStatus? status = readBattery(detectedKeyboard);
+        bool fnLock = selected is not null && readFnLock(selected.Profile.Id);
 
-        KeyboardBatteryStatus? status = KeyboardBattery.ReadStatus(detectedKeyboard);
-        if (status == null && detectedKeyboard != null) {
-            detectedKeyboard = KeyboardDetector.DetectConnectedKeyboard();
-            status = KeyboardBattery.ReadStatus(detectedKeyboard);
-        }
+        SetField(ref isKeyboardDetected, selected is not null, nameof(IsKeyboardDetected));
+        DeviceName = selected?.DisplayName ?? Strings.DeviceNotDetected;
 
-        bool fnLock = DriverStatus.ReadFnLockEnabled();
-
-        DeviceName = detectedKeyboard == null ? Strings.DeviceNotDetected : KeyboardModel.From(detectedKeyboard.Product).DeviceDescription;
-
-        ConnectionGlyph = detectedKeyboard?.Connection switch {
+        ConnectionGlyph = live?.Identity.Connection switch {
             KeyboardConnection.Usb => Glyphs.Usb,
             KeyboardConnection.Bluetooth => Glyphs.Bluetooth,
             _ => "",
         };
 
-        BatteryGlyph = status == null
-            ? Glyphs.BatteryLevel(0)
-            : status.IsCharging ? Glyphs.BatteryCharging : Glyphs.BatteryLevel(status.Percent);
+        BatteryGlyph = Glyphs.BatteryLevel(status?.Percent ?? 0, status?.IsCharging ?? false);
         BatteryState = status switch {
             null => BatteryState.Unknown,
             { Percent: <= 20 } => BatteryState.Low,
@@ -111,7 +127,7 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
         string batteryValue = status == null
             ? "—"
             : status.IsCharging ? $"{status.Percent}% ({Strings.BatteryCharging})" : $"{status.Percent}%";
-        string connectionValue = detectedKeyboard?.Connection switch {
+        string connectionValue = live?.Identity.Connection switch {
             KeyboardConnection.Usb => Strings.ConnectionUsb,
             KeyboardConnection.Bluetooth => Strings.ConnectionBluetooth,
             _ => Strings.DeviceNotDetected,

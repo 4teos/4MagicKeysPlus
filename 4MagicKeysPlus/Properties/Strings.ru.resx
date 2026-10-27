@@ -351,4 +351,28 @@
   <data name="OptionsDriverVersion" xml:space="preserve">
     <value>Версия драйвера: {0}</value>
   </data>
+  <data name="KeyboardNotConnected" xml:space="preserve">
+    <value>Не подключена</value>
+  </data>
+  <data name="LinkPromptOne" xml:space="preserve">
+    <value>Клавиатура {0} подключена по {1}. Это та же клавиатура, что «{2}»?</value>
+  </data>
+  <data name="LinkPromptSeveral" xml:space="preserve">
+    <value>Клавиатура {0} подключена по {1}. Это одна из клавиатур, которые вы уже используете?</value>
+  </data>
+  <data name="LinkPromptYes" xml:space="preserve">
+    <value>Да, это она</value>
+  </data>
+  <data name="LinkPromptNo" xml:space="preserve">
+    <value>Нет, другая</value>
+  </data>
+  <data name="KeysNoKeyboard" xml:space="preserve">
+    <value>Клавиатура не подключена. Подключите её, чтобы настроить.</value>
+  </data>
+  <data name="OptionsOpenForNewKeyboard" xml:space="preserve">
+    <value>Открывать приложение для новой клавиатуры</value>
+  </data>
+  <data name="OptionsOpenForNewKeyboardHint" xml:space="preserve">
+    <value>Когда подключена клавиатура без настроек, агент открывает это приложение, чтобы настроить её или связать с уже знакомой клавиатурой. Сначала Windows запросит разрешение.</value>
+  </data>
 </root>

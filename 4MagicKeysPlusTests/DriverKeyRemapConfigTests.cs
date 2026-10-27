@@ -96,7 +96,7 @@ public class DriverKeyRemapConfigTests {
     [Fact]
     public void Editor_KeepsEditsAndLeavesTheOtherLayerAlone() {
         FakeStore store = new();
-        KeyRemapEditor editor = new(UserRules.Config(fnLockEnabled: true).Rules, store, new FakeDriver());
+        KeyRemapEditor editor = new(UserRules.Config(fnLockEnabled: true).Rules, store, new FakeDriver(), new FakeFnLockStore());
 
         editor.SetMapping(PhysicalKey.Left, PhysicalKey.F20, fnLayer: false, fnLockAware: false);
 
@@ -111,7 +111,7 @@ public class DriverKeyRemapConfigTests {
 
     [Fact]
     public void Editor_RefusesAMappingTheDriverWouldDrop() {
-        KeyRemapEditor editor = new([], new FakeStore(), new FakeDriver());
+        KeyRemapEditor editor = new([], new FakeStore(), new FakeDriver(), new FakeFnLockStore());
 
         Assert.Throws<InvalidOperationException>(() => editor.SetMapping(PhysicalKey.A, PhysicalKey.Fn, fnLayer: false, fnLockAware: false));
     }

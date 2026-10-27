@@ -21,6 +21,41 @@ public sealed class AppSettingsRegistryTests : IDisposable {
         key.SetValue(AppSettingsRegistry.LanguageValue, value);
     }
 
+    private void StoreFlag(object value) {
+        using RegistryKey key = Registry.CurrentUser.CreateSubKey(folder, writable: true);
+        key.SetValue(AppSettingsRegistry.OpenAppForNewKeyboardValue, value);
+    }
+
+    [Fact]
+    public void WithoutAKey_TheAppIsOpenedForANewKeyboard() {
+        Assert.True(AppSettingsRegistry.ReadOpenAppForNewKeyboard(Registry.CurrentUser, folder));
+    }
+
+    [Fact]
+    public void WithoutTheValue_TheAppIsOpenedForANewKeyboard() {
+        using (Registry.CurrentUser.CreateSubKey(folder)) {
+        }
+
+        Assert.True(AppSettingsRegistry.ReadOpenAppForNewKeyboard(Registry.CurrentUser, folder));
+    }
+
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(1, true)]
+    [InlineData(7, true)]
+    public void TheFlagForANewKeyboard_IsOnUnlessItIsZero(int stored, bool expected) {
+        StoreFlag(stored);
+
+        Assert.Equal(expected, AppSettingsRegistry.ReadOpenAppForNewKeyboard(Registry.CurrentUser, folder));
+    }
+
+    [Fact]
+    public void AFlagOfAnotherType_MeansOn() {
+        StoreFlag("0");
+
+        Assert.True(AppSettingsRegistry.ReadOpenAppForNewKeyboard(Registry.CurrentUser, folder));
+    }
+
     [Fact]
     public void WithoutAKey_TheLanguageIsThatOfWindows() {
         Assert.Null(AppSettingsRegistry.ReadLanguage(Registry.CurrentUser, folder));
