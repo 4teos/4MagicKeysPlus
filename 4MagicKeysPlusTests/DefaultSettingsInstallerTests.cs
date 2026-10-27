@@ -4,19 +4,19 @@ using _4MagicKeysPlus.Core;
 namespace _4MagicKeysPlusTests;
 
 [Collection(TestCollections.Registry)]
-public sealed class FactoryDefaultsInstallerTests : IDisposable {
+public sealed class DefaultSettingsInstallerTests : IDisposable {
     private const string A1843Json = """{ "model": "A1843", "fnLock": true, "rules": [ { "source": "0x68", "target": "0x46" } ] }""";
     private const string A1644Json = """{ "model": "A1644", "rules": [ { "source": "0x69", "target": "0x47" } ] }""";
 
     private readonly ScratchKey scratch = new();
     private readonly string folder = Path.Combine(Path.GetTempPath(), $"mkp-defaults-{Guid.NewGuid():N}");
-    private readonly RegistryFactoryDefaults target;
+    private readonly RegistryDefaultSettings target;
     private readonly string keyboardsPath;
 
-    public FactoryDefaultsInstallerTests() {
+    public DefaultSettingsInstallerTests() {
         Directory.CreateDirectory(folder);
         keyboardsPath = scratch.Path("Keyboards");
-        target = new RegistryFactoryDefaults(Registry.CurrentUser, scratch.Path("Defaults"), keyboardsPath);
+        target = new RegistryDefaultSettings(Registry.CurrentUser, scratch.Path("Defaults"), keyboardsPath);
     }
 
     public void Dispose() {
@@ -33,7 +33,7 @@ public sealed class FactoryDefaultsInstallerTests : IDisposable {
         WriteFile("A1843.json", A1843Json);
         WriteFile("A1644.json", A1644Json);
 
-        DefaultsInstallResult result = FactoryDefaultsInstaller.Install(folder, target);
+        DefaultsInstallResult result = DefaultSettingsInstaller.Install(folder, target);
 
         Assert.Empty(result.Problems);
         Assert.Equal([KeyboardProduct.A1644, KeyboardProduct.A1843], result.Installed);
@@ -44,13 +44,13 @@ public sealed class FactoryDefaultsInstallerTests : IDisposable {
     [Fact]
     public void InstallingAgain_ReplacesTheDefaults() {
         WriteFile("A1843.json", A1843Json);
-        FactoryDefaultsInstaller.Install(folder, target);
+        DefaultSettingsInstaller.Install(folder, target);
         WriteFile("A1843.json", """{ "model": "A1843" }""");
 
-        DefaultsInstallResult result = FactoryDefaultsInstaller.Install(folder, target);
+        DefaultsInstallResult result = DefaultSettingsInstaller.Install(folder, target);
 
         Assert.Empty(result.Problems);
-        FactoryDefaults read = target.Read(KeyboardProduct.A1843)!;
+        DefaultSettings read = target.Read(KeyboardProduct.A1843)!;
         Assert.False(read.FnLock);
         Assert.Empty(read.Rules);
     }
@@ -61,7 +61,7 @@ public sealed class FactoryDefaultsInstallerTests : IDisposable {
         WriteFile("A1644.json", A1644Json);
         WriteFile("A1843.json", A1843Json);
 
-        DefaultsInstallResult result = FactoryDefaultsInstaller.Install(folder, target);
+        DefaultsInstallResult result = DefaultSettingsInstaller.Install(folder, target);
 
         string problem = Assert.Single(result.Problems);
         Assert.StartsWith("A1643.json", problem);
@@ -75,7 +75,7 @@ public sealed class FactoryDefaultsInstallerTests : IDisposable {
         WriteFile("A1644.json", "not json");
         WriteFile("A1843.json", """{ "model": "A1843", "rules": [ { "source": "x", "target": "0x1" } ] }""");
 
-        DefaultsInstallResult result = FactoryDefaultsInstaller.Install(folder, target);
+        DefaultsInstallResult result = DefaultSettingsInstaller.Install(folder, target);
 
         Assert.Equal(2, result.Problems.Count);
     }
@@ -84,7 +84,7 @@ public sealed class FactoryDefaultsInstallerTests : IDisposable {
     public void AFileOfAnotherModelThanItsName_IsRefused() {
         WriteFile("A1843.json", A1644Json);
 
-        DefaultsInstallResult result = FactoryDefaultsInstaller.Install(folder, target);
+        DefaultsInstallResult result = DefaultSettingsInstaller.Install(folder, target);
 
         string problem = Assert.Single(result.Problems);
         Assert.Contains("A1644.json", problem);
@@ -96,7 +96,7 @@ public sealed class FactoryDefaultsInstallerTests : IDisposable {
         WriteFile("A1843.json", A1843Json);
         WriteFile("notes.txt", "not json at all");
 
-        DefaultsInstallResult result = FactoryDefaultsInstaller.Install(folder, target);
+        DefaultsInstallResult result = DefaultSettingsInstaller.Install(folder, target);
 
         Assert.Empty(result.Problems);
         Assert.Equal([KeyboardProduct.A1843], result.Installed);
@@ -104,7 +104,7 @@ public sealed class FactoryDefaultsInstallerTests : IDisposable {
 
     [Fact]
     public void AFolderWithoutFiles_IsAProblem() {
-        DefaultsInstallResult result = FactoryDefaultsInstaller.Install(folder, target);
+        DefaultsInstallResult result = DefaultSettingsInstaller.Install(folder, target);
 
         Assert.Single(result.Problems);
         Assert.Empty(result.Installed);
@@ -112,7 +112,7 @@ public sealed class FactoryDefaultsInstallerTests : IDisposable {
 
     [Fact]
     public void AFolderThatIsNotThere_IsAProblem() {
-        DefaultsInstallResult result = FactoryDefaultsInstaller.Install(Path.Combine(folder, "missing"), target);
+        DefaultsInstallResult result = DefaultSettingsInstaller.Install(Path.Combine(folder, "missing"), target);
 
         Assert.Single(result.Problems);
         Assert.Empty(result.Installed);
@@ -129,7 +129,7 @@ public sealed class FactoryDefaultsInstallerTests : IDisposable {
         }
         WriteFile("A1843.json", A1843Json);
 
-        FactoryDefaultsInstaller.Install(folder, target);
+        DefaultSettingsInstaller.Install(folder, target);
 
         using RegistryKey key = Registry.CurrentUser.OpenSubKey(profilePath)!;
         Assert.Null(key.GetValue("FnLock"));

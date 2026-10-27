@@ -4,17 +4,17 @@ using _4MagicKeysPlus.Core;
 namespace _4MagicKeysPlusTests;
 
 [Collection(TestCollections.Registry)]
-public sealed class RegistryFactoryDefaultsTests : IDisposable {
+public sealed class RegistryDefaultSettingsTests : IDisposable {
     private readonly ScratchKey scratch = new();
     private readonly string defaultsPath;
     private readonly string keyboardsPath;
-    private readonly RegistryFactoryDefaults defaults;
+    private readonly RegistryDefaultSettings defaults;
     private readonly RegistryKeyboardProfileStore profiles;
 
-    public RegistryFactoryDefaultsTests() {
+    public RegistryDefaultSettingsTests() {
         defaultsPath = scratch.Path("Defaults");
         keyboardsPath = scratch.Path("Keyboards");
-        defaults = new RegistryFactoryDefaults(Registry.CurrentUser, defaultsPath, keyboardsPath);
+        defaults = new RegistryDefaultSettings(Registry.CurrentUser, defaultsPath, keyboardsPath);
         profiles = new RegistryKeyboardProfileStore(Registry.CurrentUser, keyboardsPath);
     }
 
@@ -22,14 +22,14 @@ public sealed class RegistryFactoryDefaultsTests : IDisposable {
         scratch.Dispose();
     }
 
-    private static FactoryDefaults A1843() {
-        return new FactoryDefaults(
+    private static DefaultSettings A1843() {
+        return new DefaultSettings(
             KeyboardProduct.A1843,
             true,
             [
-                new FactoryRule(0x00000068, 0x00000046, false, "F13 -> PrintScreen"),
-                new FactoryRule(0x0100003A, 0x01000070, true, "Fn+F1 -> Brightness Down"),
-                new FactoryRule(0x000000F1, 0x00000049, false, null),
+                new DefaultRule(0x00000068, 0x00000046, false, "F13 -> PrintScreen"),
+                new DefaultRule(0x0100003A, 0x01000070, true, "Fn+F1 -> Brightness Down"),
+                new DefaultRule(0x000000F1, 0x00000049, false, null),
             ]);
     }
 
@@ -49,15 +49,15 @@ public sealed class RegistryFactoryDefaultsTests : IDisposable {
 
     [Fact]
     public void TheDefaultsOfAModel_AreKeyedByItsUsbProductId() {
-        Assert.Equal("026C", RegistryFactoryDefaults.ModelKeyName(KeyboardProduct.A1843));
-        Assert.Equal("0267", RegistryFactoryDefaults.ModelKeyName(KeyboardProduct.A1644));
+        Assert.Equal("026C", RegistryDefaultSettings.ModelKeyName(KeyboardProduct.A1843));
+        Assert.Equal("0267", RegistryDefaultSettings.ModelKeyName(KeyboardProduct.A1644));
     }
 
     [Fact]
     public void WrittenDefaults_ReadBackTheSame() {
         defaults.Write(A1843());
 
-        FactoryDefaults? read = defaults.Read(KeyboardProduct.A1843);
+        DefaultSettings? read = defaults.Read(KeyboardProduct.A1843);
 
         Assert.NotNull(read);
         Assert.Equal(KeyboardProduct.A1843, read.Model);
@@ -89,11 +89,11 @@ public sealed class RegistryFactoryDefaultsTests : IDisposable {
 
     [Fact]
     public void ARuleWithAHighBitIsStoredAsTheDwordTheDriverReads() {
-        defaults.Write(new FactoryDefaults(KeyboardProduct.A1843, false, [new FactoryRule(0xFF000001, 0x80000000, false, null)]));
+        defaults.Write(new DefaultSettings(KeyboardProduct.A1843, false, [new DefaultRule(0xFF000001, 0x80000000, false, null)]));
 
-        FactoryDefaults read = defaults.Read(KeyboardProduct.A1843)!;
+        DefaultSettings read = defaults.Read(KeyboardProduct.A1843)!;
 
-        Assert.Equal(new FactoryRule(0xFF000001, 0x80000000, false, null), Assert.Single(read.Rules));
+        Assert.Equal(new DefaultRule(0xFF000001, 0x80000000, false, null), Assert.Single(read.Rules));
     }
 
     [Fact]
@@ -104,21 +104,29 @@ public sealed class RegistryFactoryDefaultsTests : IDisposable {
             stray.SetValue("Target", 2);
         }
 
-        defaults.Write(new FactoryDefaults(KeyboardProduct.A1843, false, [new FactoryRule(0x68, 0x46, false, null)]));
+        defaults.Write(new DefaultSettings(KeyboardProduct.A1843, false, [new DefaultRule(0x68, 0x46, false, null)]));
 
-        FactoryDefaults read = defaults.Read(KeyboardProduct.A1843)!;
+        DefaultSettings read = defaults.Read(KeyboardProduct.A1843)!;
         Assert.False(read.FnLock);
-        Assert.Equal([new FactoryRule(0x68, 0x46, false, null)], read.Rules);
+        Assert.Equal([new DefaultRule(0x68, 0x46, false, null)], read.Rules);
     }
 
     [Fact]
     public void WritingOneModel_LeavesTheOthers() {
         defaults.Write(A1843());
 
-        defaults.Write(new FactoryDefaults(KeyboardProduct.A1644, false, []));
+        defaults.Write(new DefaultSettings(KeyboardProduct.A1644, false, []));
 
         Assert.Equal(3, defaults.Read(KeyboardProduct.A1843)!.Rules.Count);
         Assert.Empty(defaults.Read(KeyboardProduct.A1644)!.Rules);
+    }
+
+    [Fact]
+    public void OnlyTheModelsThatWereWritten_HaveDefaults() {
+        defaults.Write(A1843());
+
+        Assert.True(defaults.Has(KeyboardProduct.A1843));
+        Assert.False(defaults.Has(KeyboardProduct.A1644));
     }
 
     [Fact]
@@ -191,7 +199,7 @@ public sealed class RegistryFactoryDefaultsTests : IDisposable {
         KeyboardProfile profile = NewProfile();
         defaults.CopyToProfile(profile.Id, KeyboardProduct.A1843);
 
-        defaults.Write(new FactoryDefaults(KeyboardProduct.A1843, false, []));
+        defaults.Write(new DefaultSettings(KeyboardProduct.A1843, false, []));
 
         using RegistryKey key = Open(ProfilePath(profile))!;
         Assert.Equal(1, key.GetValue("FnLock"));
@@ -201,7 +209,7 @@ public sealed class RegistryFactoryDefaultsTests : IDisposable {
 
     [Fact]
     public void WithoutDefaultsOfTheModel_TheProfileIsLeftAsItIs() {
-        defaults.Write(new FactoryDefaults(KeyboardProduct.A1644, true, []));
+        defaults.Write(new DefaultSettings(KeyboardProduct.A1644, true, []));
         KeyboardProfile profile = NewProfile();
 
         bool copied = defaults.CopyToProfile(profile.Id, KeyboardProduct.A1843);

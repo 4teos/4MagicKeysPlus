@@ -75,11 +75,21 @@
             </DockPanel>
         </Border>
 
-        <StackPanel Grid.Row="5">
+        <Grid Grid.Row="5">
             <StackPanel Orientation="Horizontal" Margin="16">
                 <TextBlock Text="{x:Static properties:Strings.KeysModelLabel}" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8"/>
                 <ComboBox x:Name="ModelSelector" Width="300" SelectionChanged="ModelSelector_SelectionChanged" DisplayMemberPath="DeviceDescription" />
             </StackPanel>
-        </StackPanel>
+
+            <Grid x:Name="Footer" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock x:Name="ResetResult" FontFamily="Segoe MDL2 Assets" FontSize="18" Width="24" TextAlignment="Center"
+                               Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Hidden"/>
+                    <Button x:Name="ResetButton" Content="{x:Static properties:Strings.ResetDefaultsLabel}"
+                            Style="{StaticResource PanelButtonStyle}" Click="ResetButton_Click"
+                            ToolTipService.ShowOnDisabled="True" ToolTipService.InitialShowDelay="0"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
     </Grid>
 </UserControl>

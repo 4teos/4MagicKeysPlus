@@ -3,7 +3,7 @@
        Version makes the SDK take AssemblyVersion, FileVersion and the product version from it.
        The driver has a version of its own, the one in the DriverVer line of its .inf. -->
   <PropertyGroup>
-    <MkpAppVersion>2.6.0.23</MkpAppVersion>
+    <MkpAppVersion>2.7.0.24</MkpAppVersion>
     <Version>$(MkpAppVersion)</Version>
     <Company>4teos</Company>
     <Product>4MagicKeys+</Product>

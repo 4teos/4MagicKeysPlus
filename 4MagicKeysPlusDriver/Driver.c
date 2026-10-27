@@ -144,7 +144,7 @@ static BOOLEAN ProfileHasIdentity(HANDLE hProfile, const WCHAR* identity) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Load the settings under an open key of a profile (or of the factory defaults of a model, which are
+// Load the settings under an open key of a profile (or of the default settings of a model, which are
 // laid out the same way) into g_dwFnLock and g_Rules: its FnLock value and its Rules subkey.
 //
 static void ReadSettings(HANDLE hSettings) {
@@ -228,7 +228,7 @@ static BOOLEAN LoadProfile(const WCHAR* identity) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Load the factory defaults of a model (its USB product ID) into g_dwFnLock and g_Rules: the subkey
+// Load the default settings of a model (its USB product ID) into g_dwFnLock and g_Rules: the subkey
 // of Parameters\Defaults named by the product ID as four hex digits. Fn Lock is off and there are no
 // rules when the model has none. The caller holds g_StateLock.
 //
@@ -262,7 +262,7 @@ static BOOLEAN LoadDefaults(ULONG productId) {
 
 ///////////////////////////////////////////////////////////////////////////////
 // Load the configuration of a keyboard into g_dwFnLock and g_Rules: that of its profile, or, when no
-// profile has its identity (or it has none), the factory defaults of its model. A profile that is
+// profile has its identity (or it has none), the default settings of its model. A profile that is
 // there is never mixed with the defaults, even if it has no rules. The caller holds g_StateLock.
 //
 static CONFIGURATION_SOURCE LoadConfiguration(const WCHAR* identity, ULONG productId) {

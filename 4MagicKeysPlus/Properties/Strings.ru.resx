@@ -264,6 +264,21 @@
   <data name="FnLockToggleHint" xml:space="preserve">
     <value>Fn Lock заставляет клавиши, которые его учитывают, работать так, будто клавиша Fn зажата.</value>
   </data>
+  <data name="ResetDefaultsLabel" xml:space="preserve">
+    <value>Сброс к настройкам по умолчанию</value>
+  </data>
+  <data name="ResetDefaultsUnavailable" xml:space="preserve">
+    <value>Для этой модели нет настроек по умолчанию.</value>
+  </data>
+  <data name="ResetDefaultsPrompt" xml:space="preserve">
+    <value>Установить настройки клавиш этой клавиатуры по умолчанию?</value>
+  </data>
+  <data name="DialogYes" xml:space="preserve">
+    <value>Да</value>
+  </data>
+  <data name="DialogNo" xml:space="preserve">
+    <value>Нет</value>
+  </data>
   <data name="OptionsAppearance" xml:space="preserve">
     <value>Оформление</value>
   </data>

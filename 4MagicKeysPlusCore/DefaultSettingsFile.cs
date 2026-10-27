@@ -4,12 +4,12 @@ using System.Text.Json.Serialization;
 
 namespace _4MagicKeysPlus.Core;
 
-// The factory defaults of a model as they are shipped: a JSON file named by the model (A1843.json), the same layout as the
+// The default settings of a model as they are shipped: a JSON file named by the model (A1843.json), the same layout as the
 // registry has. Source and Target are the raw values of the driver as hex texts ("0x0100003A"); comments and trailing commas
 // are allowed in the file.
 //
 //   { "model": "A1843", "fnLock": true, "rules": [ { "source": "0x0100003A", "target": "0x01000070", "fnLockAware": true, "comment": "Fn+F1 -> Brightness Down" } ] }
-public static class FactoryDefaultsFile {
+public static class DefaultSettingsFile {
     // The driver keeps no more rules than this; the rest would be dropped without a word.
     public const int MaxRules = 128;
 
@@ -20,8 +20,8 @@ public static class FactoryDefaultsFile {
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     };
 
-    // A FormatException says what is wrong with the file, when it is not a file of factory defaults.
-    public static FactoryDefaults Load(string path) {
+    // A FormatException says what is wrong with the file, when it is not a file of default settings.
+    public static DefaultSettings Load(string path) {
         try {
             return Parse(File.ReadAllText(path));
         } catch (FormatException exception) {
@@ -29,7 +29,7 @@ public static class FactoryDefaultsFile {
         }
     }
 
-    public static FactoryDefaults Parse(string json) {
+    public static DefaultSettings Parse(string json) {
         FileModel? file;
         try {
             file = JsonSerializer.Deserialize<FileModel>(json, Options);
@@ -49,7 +49,7 @@ public static class FactoryDefaultsFile {
             throw new FormatException($"There are {fileRules.Count} rules, the driver keeps {MaxRules} at most.");
         }
 
-        List<FactoryRule> rules = [];
+        List<DefaultRule> rules = [];
         HashSet<uint> sources = [];
         foreach (FileRule? rule in fileRules) {
             if (rule is null) {
@@ -61,10 +61,10 @@ public static class FactoryDefaultsFile {
                 throw new FormatException($"The source 0x{source:X8} has more than one rule.");
             }
 
-            rules.Add(new FactoryRule(source, ParseValue(rule.Target, "target"), rule.FnLockAware, string.IsNullOrEmpty(rule.Comment) ? null : rule.Comment));
+            rules.Add(new DefaultRule(source, ParseValue(rule.Target, "target"), rule.FnLockAware, string.IsNullOrEmpty(rule.Comment) ? null : rule.Comment));
         }
 
-        return new FactoryDefaults(Enum.Parse<KeyboardProduct>(file.Model!), file.FnLock, rules);
+        return new DefaultSettings(Enum.Parse<KeyboardProduct>(file.Model!), file.FnLock, rules);
     }
 
     private static uint ParseValue(string? text, string name) {

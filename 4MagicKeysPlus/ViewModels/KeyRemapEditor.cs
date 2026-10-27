@@ -39,6 +39,11 @@ public sealed class KeyRemapEditor {
     // FnLock is not edited here and can change at any time, so it is read afresh.
     public DriverKeyRemapConfig Config => new(rules, fnLock.Read());
 
+    // The rules were changed under the editor (reset to the defaults): these are what is saved now.
+    internal void Replace(IReadOnlyList<KeyRule> saved) {
+        rules = saved;
+    }
+
     public ApplyResult SetMapping(PhysicalKey source, RemapTarget target, bool fnLayer, bool fnLockAware) {
         KeyRule rule = DriverRuleEncoder.CreateRule(source, target, fnLayer, fnLockAware)
             ?? throw new InvalidOperationException($"The driver would drop the rule {source} -> {target.DisplayName} (Fn layer: {fnLayer})");

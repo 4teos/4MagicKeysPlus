@@ -9,7 +9,7 @@ CatalogFile=4MagicKeysPlus.cat
 DriverPackageDisplayName="4MagicKeys+"
 DriverPackageType=PlugAndPlay
 ; The version after the date is also the version of the .sys file: the project takes it from here (MkpDriverVersion).
-DriverVer=10/27/2026,2.4.0.36
+DriverVer=10/27/2026,2.5.0.37
 PnpLockdown=1
 
 [ControlFlags]
