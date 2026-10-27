@@ -26,4 +26,8 @@
     <EmbeddedResource Include="Resources\HandClosed.png" LogicalName="HandClosed.png" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\defaults\*.json" Link="defaults\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

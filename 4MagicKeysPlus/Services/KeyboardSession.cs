@@ -13,13 +13,16 @@ internal sealed class KeyboardSession {
     private readonly IKeyboardProfileStore store;
     private readonly Func<IReadOnlyList<KeyboardEndpoint>> enumerate;
     private readonly IDriverControl driver;
+    private readonly IFactoryDefaults? defaults;
     private readonly object access = new();
     private int refreshing;
 
-    public KeyboardSession(IKeyboardProfileStore store, Func<IReadOnlyList<KeyboardEndpoint>> enumerate, IDriverControl driver) {
+    // A new profile begins as a copy of the factory defaults of its model, when there are any.
+    public KeyboardSession(IKeyboardProfileStore store, Func<IReadOnlyList<KeyboardEndpoint>> enumerate, IDriverControl driver, IFactoryDefaults? defaults = null) {
         this.store = store;
         this.enumerate = enumerate;
         this.driver = driver;
+        this.defaults = defaults;
     }
 
     // Raised after the keyboards or the selection changed (also by a refresh that found nothing new), on the thread that asked.
@@ -84,7 +87,7 @@ internal sealed class KeyboardSession {
         return result;
     }
 
-    // The connected keyboard is another one than those that are known: it gets a profile of its own, with no rules yet.
+    // The connected keyboard is another one than those that are known: it gets a profile of its own.
     public ApplyResult StartNew(UnownedKeyboard keyboard) {
         Guid? created;
         try {
@@ -138,6 +141,7 @@ internal sealed class KeyboardSession {
             [endpoint.Identity],
             KeyboardCatalog.NewIndex(endpoint.Product, profiles));
         store.Save(profile);
+        defaults?.CopyToProfile(profile.Id, endpoint.Product);
         return profile.Id;
     }
 

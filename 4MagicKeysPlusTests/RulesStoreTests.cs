@@ -56,6 +56,13 @@ public class RulesPlanTests {
     }
 
     [Fact]
+    public void ANewRule_IsWrittenWithItsTextAsTheComment() {
+        RulesPlan plan = RulesPlan.Create([], [Rule(PhysicalKey.Left, PhysicalKey.Home, fnLayer: true)]);
+
+        Assert.Equal("Fn+Left -> Home", Assert.Single(plan.Write).Comment);
+    }
+
+    [Fact]
     public void AnUnchangedRule_IsNotWrittenAgain() {
         KeyRule saved = Rule(PhysicalKey.F13, PhysicalKey.PrintScreen, name: "00000068");
 
@@ -145,6 +152,53 @@ public sealed class RegistryRulesStoreTests : IDisposable {
         Assert.Equal(0x01000041, key.GetValue("Source"));
         Assert.Equal(0x0000006F, key.GetValue("Target"));
         Assert.Null(key.GetValue("FnLockAware"));
+    }
+
+    [Fact]
+    public void Save_WritesTheTextOfTheRuleAsItsComment() {
+        store.Save([], [Rule(PhysicalKey.F8, RemapTarget.Media(0xCD), fnLayer: true, fnLockAware: true)]);
+
+        using RegistryKey key = Open("01000041");
+        Assert.Equal("Fn+F8 -> Play/Pause", key.GetValue("Comment"));
+        Assert.Equal(RegistryValueKind.String, key.GetValueKind("Comment"));
+    }
+
+    [Fact]
+    public void Save_ReplacingARule_ReplacesItsComment() {
+        IReadOnlyList<KeyRule> first = store.Save([], [Rule(PhysicalKey.F13, PhysicalKey.PrintScreen)]);
+
+        store.Save(first, [Rule(PhysicalKey.F13, PhysicalKey.ScrollLock)]);
+
+        using RegistryKey key = Open("00000068");
+        Assert.Equal("F13 -> Scroll Lock", key.GetValue("Comment"));
+    }
+
+    [Fact]
+    public void Save_LeavesTheCommentOfARuleThatIsKeptAsItIs() {
+        IReadOnlyList<KeyRule> first = store.Save([], [Rule(PhysicalKey.F13, PhysicalKey.PrintScreen)]);
+        using (RegistryKey key = Open("00000068")) {
+            key.SetValue("Comment", "written by hand");
+        }
+
+        store.Save(first, [.. first, Rule(PhysicalKey.F14, PhysicalKey.ScrollLock)]);
+
+        using RegistryKey kept = Open("00000068");
+        Assert.Equal("written by hand", kept.GetValue("Comment"));
+        using RegistryKey added = Open("00000069");
+        Assert.Equal("F14 -> Scroll Lock", added.GetValue("Comment"));
+    }
+
+    [Fact]
+    public void Save_WithNothingToChange_LeavesTheComments() {
+        IReadOnlyList<KeyRule> first = store.Save([], [Rule(PhysicalKey.F13, PhysicalKey.PrintScreen)]);
+        using (RegistryKey key = Open("00000068")) {
+            key.SetValue("Comment", "written by hand");
+        }
+
+        store.Save(first, first);
+
+        using RegistryKey kept = Open("00000068");
+        Assert.Equal("written by hand", kept.GetValue("Comment"));
     }
 
     [Fact]

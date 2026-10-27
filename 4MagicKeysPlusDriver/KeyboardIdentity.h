@@ -24,6 +24,12 @@ extern "C" {
 // made up from its port, with an '&' in it, that changes with the port: no identity. Same results as above.
     int MkpIdentityFromUsbDeviceId(const wchar_t* deviceId, wchar_t* identity);
 
+// The USB product ID of the model (0x0267 A1644, 0x026C A1843) from the same instance IDs as the two above, e.g. 0x026C
+// from both examples; the factory defaults of the model are looked up by it. 0 when the ID does not carry one. The
+// Bluetooth and the USB product IDs of a model are the same.
+    unsigned int MkpProductIdFromBluetoothDeviceId(const wchar_t* deviceId);
+    unsigned int MkpProductIdFromUsbDeviceId(const wchar_t* deviceId);
+
 // Whether the identity is one of the strings of a REG_MULTI_SZ list. 'chars' is the size of the data in characters:
 // the list may lack its final terminators. Letters are compared without regard to case.
     int MkpIdentityListContains(const wchar_t* list, unsigned int chars, const wchar_t* identity);

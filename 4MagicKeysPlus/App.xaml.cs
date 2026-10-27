@@ -11,6 +11,11 @@ public partial class App : Application {
     protected override void OnStartup(StartupEventArgs e) {
         base.OnStartup(e);
 
+        if (DefaultsCommand.Asks(e.Args)) {
+            Shutdown(DefaultsCommand.RunFromConsole(e.Args));
+            return;
+        }
+
         RegistryAppSettingsStore store = new();
         AppSettings settings = store.Read();
         Languages.Apply(settings.Language);

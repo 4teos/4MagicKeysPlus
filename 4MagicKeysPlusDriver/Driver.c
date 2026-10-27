@@ -19,6 +19,15 @@ static ULONG g_RuleCount = 0;
 
 static WCHAR g_KeyboardsPathBuffer[512];
 static UNICODE_STRING g_KeyboardsPath;
+static WCHAR g_DefaultsPathBuffer[512];
+static UNICODE_STRING g_DefaultsPath;
+
+// Where the configuration of a keyboard came from, for the log.
+typedef enum _CONFIGURATION_SOURCE {
+    ConfigurationNone,
+    ConfigurationProfile,
+    ConfigurationDefaults
+} CONFIGURATION_SOURCE;
 
 // g_StateLock guards the scratch configuration above, g_DeviceCollection (every filtered
 // keyboard's WDFDEVICE) and g_ControlDevice, so that a reload and a keyboard being added or
@@ -135,9 +144,29 @@ static BOOLEAN ProfileHasIdentity(HANDLE hProfile, const WCHAR* identity) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Load the settings under an open key of a profile (or of the factory defaults of a model, which are
+// laid out the same way) into g_dwFnLock and g_Rules: its FnLock value and its Rules subkey.
+//
+static void ReadSettings(HANDLE hSettings) {
+    PAGED_CODE();
+
+    ReadDwordValue(hSettings, L"FnLock", &g_dwFnLock);
+
+    UNICODE_STRING rulesName;
+    RtlInitUnicodeString(&rulesName, L"Rules");
+    OBJECT_ATTRIBUTES rulesOa;
+    InitializeObjectAttributes(&rulesOa, &rulesName, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, hSettings, NULL);
+    HANDLE hRules;
+    if (NT_SUCCESS(ZwOpenKey(&hRules, KEY_READ, &rulesOa))) {
+        ReadRules(hRules);
+        ZwClose(hRules);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Load the configuration of the keyboard with this identity into g_dwFnLock and g_Rules: that of the
-// first profile under Parameters\Keyboards whose Identities has it. A keyboard without an identity or
-// without a profile gets Fn Lock off and no rules. The caller holds g_StateLock.
+// first profile under Parameters\Keyboards whose Identities has it. Fn Lock is off and there are no
+// rules when no profile has it. The caller holds g_StateLock.
 //
 static BOOLEAN LoadProfile(const WCHAR* identity) {
     PAGED_CODE();
@@ -188,17 +217,7 @@ static BOOLEAN LoadProfile(const WCHAR* identity) {
 
         if (ProfileHasIdentity(hProfile, identity)) {
             found = TRUE;
-            ReadDwordValue(hProfile, L"FnLock", &g_dwFnLock);
-
-            UNICODE_STRING rulesName;
-            RtlInitUnicodeString(&rulesName, L"Rules");
-            OBJECT_ATTRIBUTES rulesOa;
-            InitializeObjectAttributes(&rulesOa, &rulesName, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, hProfile, NULL);
-            HANDLE hRules;
-            if (NT_SUCCESS(ZwOpenKey(&hRules, KEY_READ, &rulesOa))) {
-                ReadRules(hRules);
-                ZwClose(hRules);
-            }
+            ReadSettings(hProfile);
         }
         ZwClose(hProfile);
     }
@@ -209,8 +228,55 @@ static BOOLEAN LoadProfile(const WCHAR* identity) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Look up the profile of every filtered keyboard again and hand it to that keyboard. Returns how
-// many keyboards there are; *pRulesRead and *pRulesAccepted are the rules found for them and the
+// Load the factory defaults of a model (its USB product ID) into g_dwFnLock and g_Rules: the subkey
+// of Parameters\Defaults named by the product ID as four hex digits. Fn Lock is off and there are no
+// rules when the model has none. The caller holds g_StateLock.
+//
+static BOOLEAN LoadDefaults(ULONG productId) {
+    PAGED_CODE();
+
+    g_dwFnLock = 0;
+    g_RuleCount = 0;
+    if (productId == 0) {
+        return FALSE;
+    }
+
+    WCHAR path[512];
+    if (!NT_SUCCESS(RtlStringCbPrintfW(path, sizeof(path), L"%wZ\\%04lX", &g_DefaultsPath, productId))) {
+        return FALSE;
+    }
+
+    UNICODE_STRING pathName;
+    RtlInitUnicodeString(&pathName, path);
+    OBJECT_ATTRIBUTES oa;
+    InitializeObjectAttributes(&oa, &pathName, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
+    HANDLE hDefaults;
+    if (!NT_SUCCESS(ZwOpenKey(&hDefaults, KEY_READ, &oa))) {
+        return FALSE;
+    }
+
+    ReadSettings(hDefaults);
+    ZwClose(hDefaults);
+    return TRUE;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Load the configuration of a keyboard into g_dwFnLock and g_Rules: that of its profile, or, when no
+// profile has its identity (or it has none), the factory defaults of its model. A profile that is
+// there is never mixed with the defaults, even if it has no rules. The caller holds g_StateLock.
+//
+static CONFIGURATION_SOURCE LoadConfiguration(const WCHAR* identity, ULONG productId) {
+    PAGED_CODE();
+
+    if (LoadProfile(identity)) {
+        return ConfigurationProfile;
+    }
+    return LoadDefaults(productId) ? ConfigurationDefaults : ConfigurationNone;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Look up the configuration of every filtered keyboard again and hand it to that keyboard. Returns
+// how many keyboards there are; *pRulesRead and *pRulesAccepted are the rules found for them and the
 // ones the processors kept, summed over the keyboards. The caller holds g_StateLock.
 //
 static ULONG ReloadDevices(ULONG* pRulesRead, ULONG* pRulesAccepted) {
@@ -220,11 +286,11 @@ static ULONG ReloadDevices(ULONG* pRulesRead, ULONG* pRulesAccepted) {
 
     for (ULONG i = 0; i < count; i++) {
         PDEVICE_CONTEXT context = GetDeviceContext((WDFDEVICE)WdfCollectionGetItem(g_DeviceCollection, i));
-        BOOLEAN found = LoadProfile(context->Identity);
+        CONFIGURATION_SOURCE source = LoadConfiguration(context->Identity, context->ProductId);
         ULONG accepted = KeyProcessorLoadConfig(context->KeyProcessorHandle, g_dwFnLock, g_Rules, g_RuleCount);
-        DebugPrint("Reload: keyboard '%ws': profile found: %d, FnLock=%lu, rules read: %lu, accepted: %lu\n",
-            context->Identity, found, g_dwFnLock, g_RuleCount, accepted);
-        UNREFERENCED_PARAMETER(found);
+        DebugPrint("Reload: keyboard '%ws': configuration from: %d (0 none, 1 profile, 2 defaults), FnLock=%lu, rules read: %lu, accepted: %lu\n",
+            context->Identity, source, g_dwFnLock, g_RuleCount, accepted);
+        UNREFERENCED_PARAMETER(source);
 
         *pRulesRead += g_RuleCount;
         *pRulesAccepted += accepted;
@@ -260,11 +326,13 @@ static BOOLEAN QueryDeviceString(WDFDEVICE device, const DEVPROPKEY* key, PWCHAR
 // Bluetooth address, taken from the instance ID of the paired HID service the driver is attached to,
 // or the serial number, taken from the instance ID of the USB device that is the parent of the
 // interface it is attached to (USB\VID_05AC&PID_026C\<serial>). The same texts as the configuration app's.
+// The USB product ID of the model comes from the same instance IDs (*pProductId, 0 when they have none).
 //
-static void QueryDeviceIdentity(WDFDEVICE device, WCHAR* identity) {
+static void QueryDeviceIdentity(WDFDEVICE device, WCHAR* identity, ULONG* pProductId) {
     PAGED_CODE();
 
     identity[0] = L'\0';
+    *pProductId = 0;
 
     PWCHAR deviceId = (PWCHAR)ExAllocatePool2(POOL_FLAG_PAGED, DEVICE_ID_BYTES, 'dIyK');
     if (!deviceId) {
@@ -273,15 +341,17 @@ static void QueryDeviceIdentity(WDFDEVICE device, WCHAR* identity) {
 
     if (QueryDeviceString(device, &DEVPKEY_Device_InstanceId, deviceId, DEVICE_ID_BYTES)) {
         DebugPrint("QueryDeviceIdentity(): instance ID '%ws'\n", deviceId);
-        if (!MkpIdentityFromBluetoothDeviceId(deviceId, identity)
-            && QueryDeviceString(device, &DEVPKEY_Device_Parent, deviceId, DEVICE_ID_BYTES)) {
+        if (MkpIdentityFromBluetoothDeviceId(deviceId, identity)) {
+            *pProductId = MkpProductIdFromBluetoothDeviceId(deviceId);
+        } else if (QueryDeviceString(device, &DEVPKEY_Device_Parent, deviceId, DEVICE_ID_BYTES)) {
             DebugPrint("QueryDeviceIdentity(): parent '%ws'\n", deviceId);
             MkpIdentityFromUsbDeviceId(deviceId, identity);
+            *pProductId = MkpProductIdFromUsbDeviceId(deviceId);
         }
     }
 
     ExFreePool(deviceId);
-    DebugPrint("QueryDeviceIdentity(): the identity of the keyboard is '%ws'\n", identity);
+    DebugPrint("QueryDeviceIdentity(): the identity of the keyboard is '%ws', the product ID is 0x%04lX\n", identity, *pProductId);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -395,6 +465,9 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT driverObject, IN PUNICODE_STRING registry
     RtlStringCbPrintfW(g_KeyboardsPathBuffer, sizeof(g_KeyboardsPathBuffer), L"%wZ\\Parameters\\Keyboards", registryPath);
     RtlInitUnicodeString(&g_KeyboardsPath, g_KeyboardsPathBuffer);
 
+    RtlStringCbPrintfW(g_DefaultsPathBuffer, sizeof(g_DefaultsPathBuffer), L"%wZ\\Parameters\\Defaults", registryPath);
+    RtlInitUnicodeString(&g_DefaultsPath, g_DefaultsPathBuffer);
+
     return STATUS_SUCCESS;
 }
 
@@ -437,17 +510,17 @@ NTSTATUS EvtDriverDeviceAdd(IN WDFDRIVER driver, IN PWDFDEVICE_INIT deviceInit) 
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
-    QueryDeviceIdentity(hDevice, deviceContext->Identity);
+    QueryDeviceIdentity(hDevice, deviceContext->Identity, &deviceContext->ProductId);
 
     // From here on the device takes part in config reloads. The first keyboard also brings the
-    // control device along. The profile is read afresh: settings saved while no keyboard was
+    // control device along. The configuration is read afresh: settings saved while no keyboard was
     // connected (so there was no control device to tell) apply to it now.
     WdfWaitLockAcquire(g_StateLock, NULL);
-    BOOLEAN profileFound = LoadProfile(deviceContext->Identity);
+    CONFIGURATION_SOURCE source = LoadConfiguration(deviceContext->Identity, deviceContext->ProductId);
     ULONG rulesAccepted = KeyProcessorLoadConfig(deviceContext->KeyProcessorHandle, g_dwFnLock, g_Rules, g_RuleCount);
-    DebugPrint("EvtDriverDeviceAdd(): keyboard '%ws': profile found: %d, FnLock=%lu, rules read: %lu, accepted: %lu\n",
-        deviceContext->Identity, profileFound, g_dwFnLock, g_RuleCount, rulesAccepted);
-    UNREFERENCED_PARAMETER(profileFound);
+    DebugPrint("EvtDriverDeviceAdd(): keyboard '%ws': configuration from: %d (0 none, 1 profile, 2 defaults), FnLock=%lu, rules read: %lu, accepted: %lu\n",
+        deviceContext->Identity, source, g_dwFnLock, g_RuleCount, rulesAccepted);
+    UNREFERENCED_PARAMETER(source);
     UNREFERENCED_PARAMETER(rulesAccepted);
     status = WdfCollectionAdd(g_DeviceCollection, hDevice);
     if (NT_SUCCESS(status)) {
