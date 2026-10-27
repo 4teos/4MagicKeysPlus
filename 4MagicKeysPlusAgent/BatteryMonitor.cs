@@ -2,17 +2,16 @@ using _4MagicKeysPlus.Core;
 
 namespace _4MagicKeysPlusAgent;
 
-// Polls the keyboard battery and shows a notice when it runs low. The first check comes one
-// interval after start, so a freshly started session isn't greeted by a popup.
+// Polls the battery of every connected keyboard and shows a notice, a window of its own, for each one that runs low. The
+// first check comes one interval after start, so a freshly started session isn't greeted by a popup.
 internal sealed class BatteryMonitor : IDisposable {
     public static readonly TimeSpan DefaultInterval = TimeSpan.FromMinutes(15);
 
     private readonly System.Windows.Forms.Timer timer = new();
-    private readonly BatteryAlertPolicy policy = new();
+    private readonly BatteryAlerts alerts = new();
+    private readonly Dictionary<string, LowBatteryForm> forms = [];
     private readonly bool verbose;
-    private DetectedKeyboard? detectedKeyboard;
     private bool checking;
-    private LowBatteryForm? form;
 
     public BatteryMonitor(TimeSpan interval, bool verbose) {
         this.verbose = verbose;
@@ -31,13 +30,13 @@ internal sealed class BatteryMonitor : IDisposable {
 
         checking = true;
         try {
-            KeyboardBatteryStatus? status = await Task.Run(ReadStatus);
+            IReadOnlyList<BatteryReading> readings = await Task.Run(ReadAll);
             if (verbose) {
-                Logger.Info(status == null ? "Battery: keyboard not found." : $"Battery: {status.Percent}%, charging={status.IsCharging}.");
+                Log(readings);
             }
 
-            if (status != null && policy.Evaluate(status) is not null) {
-                Show(status.Percent);
+            foreach (BatteryNotice notice in alerts.Evaluate(readings)) {
+                Show(notice);
             }
         } catch (Exception ex) {
             Logger.Error($"Battery check failed: {ex.Message}");
@@ -46,29 +45,44 @@ internal sealed class BatteryMonitor : IDisposable {
         }
     }
 
-    // The path found earlier goes stale on sleep or a USB/Bluetooth switch, so a failed read
-    // triggers one fresh detection instead of retrying the dead path forever.
-    private KeyboardBatteryStatus? ReadStatus() {
-        detectedKeyboard ??= KeyboardDetector.DetectConnectedKeyboard();
-
-        KeyboardBatteryStatus? status = KeyboardBattery.ReadStatus(detectedKeyboard);
-        if (status == null && detectedKeyboard != null) {
-            detectedKeyboard = KeyboardDetector.DetectConnectedKeyboard();
-            status = KeyboardBattery.ReadStatus(detectedKeyboard);
-        }
-
-        return status;
+    // The keyboards are looked for afresh each time: the paths found earlier go stale on sleep or a USB/Bluetooth switch,
+    // and a keyboard may have been connected or taken away since.
+    private static IReadOnlyList<BatteryReading> ReadAll() {
+        IReadOnlyList<BatteryTarget> targets = BatteryTargets.Select(KeyboardEnumerator.Enumerate(), new RegistryKeyboardProfileStore().Load(), Strings.ModelName);
+        return [.. targets.Select(target => new BatteryReading(target, KeyboardBattery.ReadStatus(target.Keyboard)))];
     }
 
-    private void Show(int percent) {
-        form?.Close();
-        form = new LowBatteryForm(percent);
-        form.FormClosed += (_, _) => form = null;
+    private static void Log(IReadOnlyList<BatteryReading> readings) {
+        if (readings.Count == 0) {
+            Logger.Info("Battery: keyboard not found.");
+        }
+
+        foreach (BatteryReading reading in readings) {
+            string name = reading.Target.Name ?? reading.Target.Key;
+            Logger.Info(reading.Status == null ? $"Battery {name}: not readable." : $"Battery {name}: {reading.Status.Percent}%, charging={reading.Status.IsCharging}.");
+        }
+    }
+
+    // A keyboard that is warned about again (the next threshold) replaces its own notice; the notices of the other keyboards stay.
+    private void Show(BatteryNotice notice) {
+        if (forms.TryGetValue(notice.Key, out LowBatteryForm? previous)) {
+            previous.Close();
+        }
+
+        LowBatteryForm form = new(notice.Percent, notice.KeyboardName);
+        forms[notice.Key] = form;
+        form.FormClosed += (_, _) => {
+            if (forms.TryGetValue(notice.Key, out LowBatteryForm? current) && current == form) {
+                forms.Remove(notice.Key);
+            }
+        };
         form.Show();
     }
 
     public void Dispose() {
         timer.Dispose();
-        form?.Close();
+        foreach (LowBatteryForm form in forms.Values.ToList()) {
+            form.Close();
+        }
     }
 }

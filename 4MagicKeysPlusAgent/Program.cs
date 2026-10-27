@@ -24,6 +24,28 @@ internal static class Program {
             return;
         }
 
+        // --demo-batteries: the notices of three keyboards at once, to see that they do not overlap.
+        if (args.Contains("--demo-batteries")) {
+            ApplicationContext demoContext = new ApplicationContext();
+            int shown = 0;
+            foreach ((int percent, string name) in new[] {
+                (18, Strings.ModelName(KeyboardProduct.A1644)),
+                (4, $"{Strings.ModelName(KeyboardProduct.A1644)} (2)"),
+                (15, Strings.ModelName(KeyboardProduct.A1843)),
+            }) {
+                LowBatteryForm form = new LowBatteryForm(percent, name);
+                shown++;
+                form.FormClosed += (_, _) => {
+                    if (--shown == 0) {
+                        demoContext.ExitThread();
+                    }
+                };
+                form.Show();
+            }
+            Application.Run(demoContext);
+            return;
+        }
+
         int? demoPercent = IntArgument(args, "--demo-battery");
         if (demoPercent is not null) {
             using LowBatteryForm demo = new LowBatteryForm(demoPercent.Value);
