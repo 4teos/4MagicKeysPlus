@@ -21,8 +21,14 @@
     <ClCompile Include="4MagicKeysPlusDriverTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="KeyboardIdentityTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\4MagicKeysPlusDriver\KeyboardIdentity.cpp">
+      <Filter>4MagicKeysPlusDriver</Filter>
     </ClCompile>
     <ClCompile Include="..\4MagicKeysPlusDriver\KeyProcessor.cpp">
       <Filter>4MagicKeysPlusDriver</Filter>
@@ -31,6 +37,9 @@
   <ItemGroup>
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\4MagicKeysPlusDriver\KeyboardIdentity.h">
+      <Filter>4MagicKeysPlusDriver</Filter>
     </ClInclude>
     <ClInclude Include="..\4MagicKeysPlusDriver\KeyProcessor.h">
       <Filter>4MagicKeysPlusDriver</Filter>

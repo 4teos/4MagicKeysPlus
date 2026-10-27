@@ -179,7 +179,7 @@ public sealed class RegistryRulesStoreTests : IDisposable {
 
 public class KeyRemapEditorApplyTests {
     private static KeyRemapEditor Editor(FakeStore store, FakeDriver driver) {
-        return new KeyRemapEditor([], store, driver);
+        return new KeyRemapEditor([], store, driver, new FakeFnLockStore());
     }
 
     [Fact]

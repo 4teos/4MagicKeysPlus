@@ -47,9 +47,6 @@ internal sealed class RegistryRulesStore : IRulesStore {
     private readonly RegistryKey root;
     private readonly string rulesPath;
 
-    public RegistryRulesStore() : this(Registry.LocalMachine, DriverStatus.RulesKeyPath) {
-    }
-
     // The root and path are parameters so that tests can use a scratch key of their own.
     public RegistryRulesStore(RegistryKey root, string rulesPath) {
         this.root = root;

@@ -34,6 +34,11 @@ public partial class OptionsView : UserControl {
         await viewModel.Agent.StartAsync();
     }
 
+    private void OpenForNewKeyboard_Click(object sender, RoutedEventArgs e) {
+        viewModel.Agent.SetOpenAppForNewKeyboard(OpenForNewKeyboardToggle.IsChecked == true);
+        OpenForNewKeyboardToggle.SetCurrentValue(ToggleButton.IsCheckedProperty, viewModel.Agent.OpenAppForNewKeyboard);
+    }
+
     private void Autostart_Click(object sender, RoutedEventArgs e) {
         viewModel.Agent.SetAutostart(AutostartToggle.IsChecked == true);
         // Assigning IsChecked would replace its binding, which keeps the switch in step with the registry.

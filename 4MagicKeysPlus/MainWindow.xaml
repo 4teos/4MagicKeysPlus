@@ -21,15 +21,85 @@
         <shell:WindowChrome />
     </shell:WindowChrome.WindowChrome>
 
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- A keyboard in the title bar: a tab with its glyph, and the glyph of the connection (green) while it is connected.
+             A keyboard that is not connected is dimmed and cannot be chosen; its name is in the tooltip. -->
+        <Style x:Key="KeyboardTabStyle" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+            <Setter Property="IsEnabled" Value="{Binding IsConnected}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bg" Height="24" Padding="9,0" Margin="0,0,4,0" CornerRadius="4" BorderThickness="1"
+                                Background="Transparent" BorderBrush="Transparent"
+                                ToolTipService.InitialShowDelay="0" ToolTipService.BetweenShowDelay="0" ToolTipService.ShowOnDisabled="True">
+                            <Border.ToolTip>
+                                <ToolTip Content="{Binding Tooltip}" Style="{StaticResource TooltipBelow}"/>
+                            </Border.ToolTip>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Static views:Glyphs.KeyboardClassic}" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                           VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+                                <TextBlock Text="{Binding ConnectionGlyph}" FontFamily="Segoe MDL2 Assets" FontSize="11"
+                                           VerticalAlignment="Center" Margin="4,0,0,0" Foreground="{DynamicResource ResultSuccess}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ConnectionGlyph}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource ControlHoverBackground}"/>
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource ControlBorder}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource ControlCheckedBackground}"/>
+                                <Setter TargetName="Bg" Property="BorderBrush" Value="{DynamicResource ControlActiveBorder}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource TextDisabled}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>    </Window.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text="4MagicKeys+" VerticalAlignment="Center" Margin="15,0,15,0"
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Text="4MagicKeys+" VerticalAlignment="Center" Margin="15,0,10,0"
                        FontSize="12" Foreground="{DynamicResource TextPrimary}" />
+
+            <ListBox x:Name="KeyboardSelector" ItemContainerStyle="{StaticResource KeyboardTabStyle}" VerticalAlignment="Center"
+                     Background="Transparent" BorderThickness="0" Padding="0" Focusable="False"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                     ItemsSource="{Binding Items}" SelectedItem="{Binding Selected, Mode=TwoWay}"
+                     Visibility="{Binding HasSeveralKeyboards, Converter={StaticResource BoolToVis}}"
+                     Margin="24,0" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+            </ListBox>
+        </StackPanel>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="4">
             <Button Content="—" Width="24" Height="24" Click="MinimizeButton_Click"
@@ -117,7 +187,37 @@
             </StackPanel>
         </StackPanel>
 
-        <ContentControl Grid.Row="2" x:Name="MainContent" Margin="24,96,24,24"
+        <!-- Asks whether a keyboard that has just been connected is one that is already known. -->
+        <Border x:Name="LinkBanner" Grid.Row="2" Margin="24,8,24,0" Padding="16,10" CornerRadius="8" BorderThickness="1"
+                Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource PanelBorder}"
+                Visibility="{Binding HasLinkPrompt, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{x:Static views:Glyphs.KeyboardClassic}" FontFamily="Segoe MDL2 Assets" FontSize="20"
+                           VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{DynamicResource TextSecondary}"/>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding LinkPromptText}" FontSize="13" TextWrapping="Wrap" Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock Text="{Binding Problem}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
+                               Foreground="{DynamicResource ResultError}"
+                               Visibility="{Binding HasProblem, Converter={StaticResource BoolToVis}}"/>
+                </StackPanel>
+                <ComboBox Grid.Column="2" Style="{StaticResource OptionComboBoxStyle}" Margin="16,0,0,0" VerticalAlignment="Center"
+                          DisplayMemberPath="Name" ItemsSource="{Binding Candidates}" SelectedItem="{Binding SelectedCandidate}"
+                          Visibility="{Binding HasSeveralCandidates, Converter={StaticResource BoolToVis}}"/>
+                <Button Grid.Column="3" Style="{StaticResource PanelButtonStyle}" Margin="16,0,0,0" FontSize="13" VerticalAlignment="Center"
+                        Content="{x:Static properties:Strings.LinkPromptYes}" Click="LinkYes_Click"/>
+                <Button Grid.Column="4" Style="{StaticResource PanelButtonStyle}" Margin="8,0,0,0" FontSize="13" VerticalAlignment="Center"
+                        Content="{x:Static properties:Strings.LinkPromptNo}" Click="LinkNo_Click"/>
+            </Grid>
+        </Border>
+
+        <ContentControl Grid.Row="3" x:Name="MainContent" Margin="24,96,24,24"
                         HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     </Grid>
 </Window>

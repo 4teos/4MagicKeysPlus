@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace _4MagicKeysPlus.Core;
@@ -36,6 +37,9 @@ internal static class HidNativeMethods {
 
     [DllImport("hid.dll", SetLastError = true)]
     public static extern bool HidD_GetInputReport(SafeFileHandle hidDeviceObject, byte[] reportBuffer, int reportBufferLength);
+
+    [DllImport("hid.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    public static extern bool HidD_GetSerialNumberString(SafeFileHandle hidDeviceObject, StringBuilder buffer, int bufferLength);
 
     [DllImport("setupapi.dll", SetLastError = true)]
     public static extern IntPtr SetupDiGetClassDevs(ref Guid classGuid, IntPtr enumerator, IntPtr hwndParent, int flags);

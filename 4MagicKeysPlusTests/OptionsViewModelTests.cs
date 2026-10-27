@@ -245,11 +245,12 @@ public class AgentOptionsViewModelTests {
         Reply = null
     };
     private readonly FakeAutostart autostart = new();
+    private readonly FakeAppSettingsStore settings = new();
     private string? startProblem;
     private Action onStart = () => { };
 
     private AgentOptionsViewModel Agent() {
-        return new AgentOptionsViewModel(link, autostart, () => {
+        return new AgentOptionsViewModel(link, autostart, settings, () => {
             onStart();
             return startProblem;
         });
@@ -482,7 +483,7 @@ public class OptionsViewModelTests {
     public void TheApplicationVersion_IsWhatItWasGiven() {
         OptionsViewModel options = new(
             new AppearanceViewModel(new FakeAppSettingsStore(), new FakeThemes(), [], new AppSettings(), () => null),
-            new AgentOptionsViewModel(new FakeAgentLink(), new FakeAutostart(), () => null),
+            new AgentOptionsViewModel(new FakeAgentLink(), new FakeAutostart(), new FakeAppSettingsStore(), () => null),
             new SystemStatusViewModel(new FakeDriverProbe(), () => null),
             "2.3.0.14");
 
@@ -499,7 +500,7 @@ public class OptionsViewModelTests {
         };
         OptionsViewModel options = new(
             new AppearanceViewModel(new FakeAppSettingsStore(), new FakeThemes(), [], new AppSettings(), () => null),
-            new AgentOptionsViewModel(link, new FakeAutostart(), () => null),
+            new AgentOptionsViewModel(link, new FakeAutostart(), new FakeAppSettingsStore(), () => null),
             new SystemStatusViewModel(driver, () => null),
             "2.3.0.14");
         await options.RefreshAsync();

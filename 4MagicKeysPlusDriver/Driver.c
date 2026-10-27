@@ -1,21 +1,26 @@
 #include "Driver.h"
+#include <devpkey.h>
 
-// Upper bound on subkeys examined under Parameters\Rules, so a damaged key can't keep the enumeration loop running.
-#define MAX_RULE_SUBKEYS 1024
+// Upper bounds on the profiles and on the rule subkeys examined, so a damaged key can't keep an enumeration loop running.
+#define MAX_PROFILE_SUBKEYS 256
+#define MAX_RULE_SUBKEYS    1024
+
+// Room for the instance ID of a device, and for the Identities list of a profile (bytes).
+#define DEVICE_ID_BYTES      1024
+#define IDENTITIES_MAX_BYTES 4096
 
 ///////////////////////////////////////////////////////////////////////////////
-// Globals Initialisation
+// The configuration of the keyboard being loaded: its FnLock and its rules. They are filled from the
+// profile of one keyboard and handed to that keyboard at once, so they are only scratch space.
 //
-DWORD g_dwFnLock = 0;
-KEY_RULE g_Rules[MAX_RULES] = {0};
-ULONG g_RuleCount = 0;
+static DWORD g_dwFnLock = 0;
+static KEY_RULE g_Rules[MAX_RULES] = {0};
+static ULONG g_RuleCount = 0;
 
-static WCHAR g_ParametersPathBuffer[512];
-static WCHAR g_RulesPathBuffer[512];
-static UNICODE_STRING g_ParametersPath;
-static UNICODE_STRING g_RulesPath;
+static WCHAR g_KeyboardsPathBuffer[512];
+static UNICODE_STRING g_KeyboardsPath;
 
-// g_StateLock guards the configuration globals above, g_DeviceCollection (every filtered
+// g_StateLock guards the scratch configuration above, g_DeviceCollection (every filtered
 // keyboard's WDFDEVICE) and g_ControlDevice, so that a reload and a keyboard being added or
 // removed never see each other half done.
 static WDFWAITLOCK g_StateLock;
@@ -52,27 +57,19 @@ static NTSTATUS ReadDwordValue(HANDLE hKey, PCWSTR wcszValName, DWORD* pValue) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Load every rule subkey of Parameters\Rules into g_Rules. A subkey is a rule
+// Load every rule subkey of an open Rules key into g_Rules. A subkey is a rule
 // only if it has REG_DWORD Source and Target; the subkey name itself is
-// irrelevant, and subkeys without a Target (launch-only entries) are skipped.
+// irrelevant, and subkeys without a Target are skipped.
 //
-static void ReadRules(PUNICODE_STRING rulesPath) {
+static void ReadRules(HANDLE hRules) {
     PAGED_CODE();
 
     g_RuleCount = 0;
-
-    HANDLE hRules;
-    OBJECT_ATTRIBUTES oa;
-    InitializeObjectAttributes(&oa, rulesPath, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
-    if (!NT_SUCCESS(ZwOpenKey(&hRules, KEY_READ, &oa))) {
-        return;
-    }
 
     // Registry key names are at most 255 characters.
     ULONG infoSize = sizeof(KEY_BASIC_INFORMATION) + 256 * sizeof(WCHAR);
     PKEY_BASIC_INFORMATION info = (PKEY_BASIC_INFORMATION)ExAllocatePool2(POOL_FLAG_PAGED, infoSize, 'uRyK');
     if (!info) {
-        ZwClose(hRules);
         return;
     }
 
@@ -110,42 +107,181 @@ static void ReadRules(PUNICODE_STRING rulesPath) {
     }
 
     ExFreePool(info);
-    ZwClose(hRules);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// (Re)read FnLock and the rules from the registry into the globals. A missing value or
-// key means the defaults: FnLock off, no rules. The caller serializes access to the globals.
+// Whether the Identities list (REG_MULTI_SZ) of an open profile key has this identity.
 //
-static void LoadConfiguration(void) {
+static BOOLEAN ProfileHasIdentity(HANDLE hProfile, const WCHAR* identity) {
+    PAGED_CODE();
+
+    ULONG size = sizeof(KEY_VALUE_PARTIAL_INFORMATION) + IDENTITIES_MAX_BYTES;
+    PKEY_VALUE_PARTIAL_INFORMATION info = (PKEY_VALUE_PARTIAL_INFORMATION)ExAllocatePool2(POOL_FLAG_PAGED, size, 'dIyK');
+    if (!info) {
+        return FALSE;
+    }
+
+    UNICODE_STRING valueName;
+    RtlInitUnicodeString(&valueName, L"Identities");
+    ULONG resultLength = 0;
+    BOOLEAN found = FALSE;
+    NTSTATUS status = ZwQueryValueKey(hProfile, &valueName, KeyValuePartialInformation, info, size, &resultLength);
+    if (NT_SUCCESS(status) && info->Type == REG_MULTI_SZ) {
+        found = MkpIdentityListContains((const WCHAR*)info->Data, info->DataLength / sizeof(WCHAR), identity) != 0;
+    }
+
+    ExFreePool(info);
+    return found;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Load the configuration of the keyboard with this identity into g_dwFnLock and g_Rules: that of the
+// first profile under Parameters\Keyboards whose Identities has it. A keyboard without an identity or
+// without a profile gets Fn Lock off and no rules. The caller holds g_StateLock.
+//
+static BOOLEAN LoadProfile(const WCHAR* identity) {
     PAGED_CODE();
 
     g_dwFnLock = 0;
-
-    HANDLE hParams;
-    OBJECT_ATTRIBUTES paramOa;
-    InitializeObjectAttributes(&paramOa, &g_ParametersPath, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
-    if (NT_SUCCESS(ZwOpenKey(&hParams, KEY_READ, &paramOa))) {
-        ReadDwordValue(hParams, L"FnLock", &g_dwFnLock);
-        ZwClose(hParams);
+    g_RuleCount = 0;
+    if (identity[0] == L'\0') {
+        return FALSE;
     }
 
-    ReadRules(&g_RulesPath);
+    HANDLE hKeyboards;
+    OBJECT_ATTRIBUTES oa;
+    InitializeObjectAttributes(&oa, &g_KeyboardsPath, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, NULL, NULL);
+    if (!NT_SUCCESS(ZwOpenKey(&hKeyboards, KEY_READ, &oa))) {
+        return FALSE;
+    }
+
+    // Registry key names are at most 255 characters.
+    ULONG infoSize = sizeof(KEY_BASIC_INFORMATION) + 256 * sizeof(WCHAR);
+    PKEY_BASIC_INFORMATION info = (PKEY_BASIC_INFORMATION)ExAllocatePool2(POOL_FLAG_PAGED, infoSize, 'uRyK');
+    if (!info) {
+        ZwClose(hKeyboards);
+        return FALSE;
+    }
+
+    BOOLEAN found = FALSE;
+    for (ULONG index = 0; index < MAX_PROFILE_SUBKEYS && !found; index++) {
+        ULONG resultLength = 0;
+        NTSTATUS status = ZwEnumerateKey(hKeyboards, index, KeyBasicInformation, info, infoSize, &resultLength);
+        if (status == STATUS_NO_MORE_ENTRIES) {
+            break;
+        }
+        if (!NT_SUCCESS(status)) {
+            continue;
+        }
+
+        UNICODE_STRING name;
+        name.Buffer = info->Name;
+        name.Length = (USHORT)info->NameLength;
+        name.MaximumLength = (USHORT)info->NameLength;
+
+        OBJECT_ATTRIBUTES profileOa;
+        InitializeObjectAttributes(&profileOa, &name, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, hKeyboards, NULL);
+        HANDLE hProfile;
+        if (!NT_SUCCESS(ZwOpenKey(&hProfile, KEY_READ, &profileOa))) {
+            continue;
+        }
+
+        if (ProfileHasIdentity(hProfile, identity)) {
+            found = TRUE;
+            ReadDwordValue(hProfile, L"FnLock", &g_dwFnLock);
+
+            UNICODE_STRING rulesName;
+            RtlInitUnicodeString(&rulesName, L"Rules");
+            OBJECT_ATTRIBUTES rulesOa;
+            InitializeObjectAttributes(&rulesOa, &rulesName, OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE, hProfile, NULL);
+            HANDLE hRules;
+            if (NT_SUCCESS(ZwOpenKey(&hRules, KEY_READ, &rulesOa))) {
+                ReadRules(hRules);
+                ZwClose(hRules);
+            }
+        }
+        ZwClose(hProfile);
+    }
+
+    ExFreePool(info);
+    ZwClose(hKeyboards);
+    return found;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Hand the current configuration to every filtered keyboard. Returns how many there are;
-// *pAccepted is how many rules the processors kept. The caller holds g_StateLock.
+// Look up the profile of every filtered keyboard again and hand it to that keyboard. Returns how
+// many keyboards there are; *pRulesRead and *pRulesAccepted are the rules found for them and the
+// ones the processors kept, summed over the keyboards. The caller holds g_StateLock.
 //
-static ULONG ApplyConfigurationToDevices(ULONG* pAccepted) {
+static ULONG ReloadDevices(ULONG* pRulesRead, ULONG* pRulesAccepted) {
     ULONG count = WdfCollectionGetCount(g_DeviceCollection);
-    *pAccepted = 0;
+    *pRulesRead = 0;
+    *pRulesAccepted = 0;
 
     for (ULONG i = 0; i < count; i++) {
         PDEVICE_CONTEXT context = GetDeviceContext((WDFDEVICE)WdfCollectionGetItem(g_DeviceCollection, i));
-        *pAccepted = KeyProcessorLoadConfig(context->KeyProcessorHandle, g_dwFnLock, g_Rules, g_RuleCount);
+        BOOLEAN found = LoadProfile(context->Identity);
+        ULONG accepted = KeyProcessorLoadConfig(context->KeyProcessorHandle, g_dwFnLock, g_Rules, g_RuleCount);
+        DebugPrint("Reload: keyboard '%ws': profile found: %d, FnLock=%lu, rules read: %lu, accepted: %lu\n",
+            context->Identity, found, g_dwFnLock, g_RuleCount, accepted);
+        UNREFERENCED_PARAMETER(found);
+
+        *pRulesRead += g_RuleCount;
+        *pRulesAccepted += accepted;
     }
     return count;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Reads a string property of the device's own devnode (an instance ID here) into the buffer,
+// which is left empty when the property is not there.
+//
+static BOOLEAN QueryDeviceString(WDFDEVICE device, const DEVPROPKEY* key, PWCHAR buffer, ULONG bufferBytes) {
+    PAGED_CODE();
+
+    RtlZeroMemory(buffer, bufferBytes);
+
+    WDF_DEVICE_PROPERTY_DATA data;
+    WDF_DEVICE_PROPERTY_DATA_INIT(&data, key);
+
+    ULONG resultLength = 0;
+    DEVPROPTYPE type = 0;
+    NTSTATUS status = WdfDeviceQueryPropertyEx(device, &data, bufferBytes - sizeof(WCHAR), buffer, &resultLength, &type);
+    if (!NT_SUCCESS(status) || type != DEVPROP_TYPE_STRING) {
+        DebugPrint("QueryDeviceString(): the property is not available: 0x%x (type %lu)\n", status, type);
+        RtlZeroMemory(buffer, bufferBytes);
+        return FALSE;
+    }
+    return TRUE;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// The identity of the keyboard this device is, written to 'identity' (empty when there is none): the
+// Bluetooth address, taken from the instance ID of the paired HID service the driver is attached to,
+// or the serial number, taken from the instance ID of the USB device that is the parent of the
+// interface it is attached to (USB\VID_05AC&PID_026C\<serial>). The same texts as the configuration app's.
+//
+static void QueryDeviceIdentity(WDFDEVICE device, WCHAR* identity) {
+    PAGED_CODE();
+
+    identity[0] = L'\0';
+
+    PWCHAR deviceId = (PWCHAR)ExAllocatePool2(POOL_FLAG_PAGED, DEVICE_ID_BYTES, 'dIyK');
+    if (!deviceId) {
+        return;
+    }
+
+    if (QueryDeviceString(device, &DEVPKEY_Device_InstanceId, deviceId, DEVICE_ID_BYTES)) {
+        DebugPrint("QueryDeviceIdentity(): instance ID '%ws'\n", deviceId);
+        if (!MkpIdentityFromBluetoothDeviceId(deviceId, identity)
+            && QueryDeviceString(device, &DEVPKEY_Device_Parent, deviceId, DEVICE_ID_BYTES)) {
+            DebugPrint("QueryDeviceIdentity(): parent '%ws'\n", deviceId);
+            MkpIdentityFromUsbDeviceId(deviceId, identity);
+        }
+    }
+
+    ExFreePool(deviceId);
+    DebugPrint("QueryDeviceIdentity(): the identity of the keyboard is '%ws'\n", identity);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -163,13 +299,11 @@ static VOID EvtControlIoDeviceControl(IN WDFQUEUE queue, IN WDFREQUEST request, 
     MKP_RELOAD_RESULT result = {0};
 
     WdfWaitLockAcquire(g_StateLock, NULL);
-    LoadConfiguration();
-    result.RulesRead = g_RuleCount;
-    result.Devices = ApplyConfigurationToDevices(&result.RulesAccepted);
+    result.Devices = ReloadDevices(&result.RulesRead, &result.RulesAccepted);
     WdfWaitLockRelease(g_StateLock);
 
-    DebugPrint("Config reloaded: FnLock=%lu, rules read: %lu, accepted: %lu, keyboards: %lu\n",
-        g_dwFnLock, result.RulesRead, result.RulesAccepted, result.Devices);
+    DebugPrint("Config reloaded: keyboards: %lu, rules read: %lu, accepted: %lu\n",
+        result.Devices, result.RulesRead, result.RulesAccepted);
 
     size_t bytesWritten = 0;
     NTSTATUS status = STATUS_SUCCESS;
@@ -258,14 +392,8 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT driverObject, IN PUNICODE_STRING registry
         return status;
     }
 
-    RtlStringCbPrintfW(g_ParametersPathBuffer, sizeof(g_ParametersPathBuffer), L"%wZ\\Parameters", registryPath);
-    RtlInitUnicodeString(&g_ParametersPath, g_ParametersPathBuffer);
-    RtlStringCbPrintfW(g_RulesPathBuffer, sizeof(g_RulesPathBuffer), L"%wZ\\Rules", &g_ParametersPath);
-    RtlInitUnicodeString(&g_RulesPath, g_RulesPathBuffer);
-
-    LoadConfiguration();
-
-    DebugPrint("FnLock=%lu, rules loaded: %lu\n", g_dwFnLock, g_RuleCount);
+    RtlStringCbPrintfW(g_KeyboardsPathBuffer, sizeof(g_KeyboardsPathBuffer), L"%wZ\\Parameters\\Keyboards", registryPath);
+    RtlInitUnicodeString(&g_KeyboardsPath, g_KeyboardsPathBuffer);
 
     return STATUS_SUCCESS;
 }
@@ -309,12 +437,18 @@ NTSTATUS EvtDriverDeviceAdd(IN WDFDRIVER driver, IN PWDFDEVICE_INIT deviceInit) 
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
+    QueryDeviceIdentity(hDevice, deviceContext->Identity);
+
     // From here on the device takes part in config reloads. The first keyboard also brings the
-    // control device along. The registry is read afresh: rules saved while no keyboard was
+    // control device along. The profile is read afresh: settings saved while no keyboard was
     // connected (so there was no control device to tell) apply to it now.
     WdfWaitLockAcquire(g_StateLock, NULL);
-    LoadConfiguration();
-    KeyProcessorLoadConfig(deviceContext->KeyProcessorHandle, g_dwFnLock, g_Rules, g_RuleCount);
+    BOOLEAN profileFound = LoadProfile(deviceContext->Identity);
+    ULONG rulesAccepted = KeyProcessorLoadConfig(deviceContext->KeyProcessorHandle, g_dwFnLock, g_Rules, g_RuleCount);
+    DebugPrint("EvtDriverDeviceAdd(): keyboard '%ws': profile found: %d, FnLock=%lu, rules read: %lu, accepted: %lu\n",
+        deviceContext->Identity, profileFound, g_dwFnLock, g_RuleCount, rulesAccepted);
+    UNREFERENCED_PARAMETER(profileFound);
+    UNREFERENCED_PARAMETER(rulesAccepted);
     status = WdfCollectionAdd(g_DeviceCollection, hDevice);
     if (NT_SUCCESS(status)) {
         deviceContext->InDeviceCollection = TRUE;

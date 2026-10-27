@@ -88,7 +88,11 @@ public sealed class AppearanceViewModel : ObservableObject {
     private bool Save(AppSettings wanted) {
         bool saved = false;
         try {
-            store.Write(wanted);
+            // The other settings are not the business of this screen, and may have been changed meanwhile.
+            store.Write(store.Read() with {
+                Theme = wanted.Theme,
+                Language = wanted.Language
+            });
             settings = wanted;
             problem = null;
             saved = true;

@@ -1,0 +1,162 @@
+#include "KeyboardIdentity.h"
+
+namespace {
+    wchar_t Upper(wchar_t c) {
+        return (c >= L'a' && c <= L'z') ? (wchar_t)(c - L'a' + L'A') : c;
+    }
+
+    bool IsHex(wchar_t c) {
+        return (c >= L'0' && c <= L'9') || (c >= L'A' && c <= L'F') || (c >= L'a' && c <= L'f');
+    }
+
+    unsigned int Length(const wchar_t* text) {
+        unsigned int length = 0;
+        while (text[length]) {
+            length++;
+        }
+        return length;
+    }
+
+    // What follows the prefix, or null when the text does not start with it (letters compared without case).
+    const wchar_t* SkipPrefix(const wchar_t* text, const wchar_t* prefix) {
+        while (*prefix) {
+            if (Upper(*text) != Upper(*prefix)) {
+                return nullptr;
+            }
+            text++;
+            prefix++;
+        }
+        return text;
+    }
+
+    // What follows the last backslash, or null when there is none.
+    const wchar_t* LastSegment(const wchar_t* text) {
+        const wchar_t* segment = nullptr;
+        for (const wchar_t* p = text; *p; p++) {
+            if (*p == L'\\') {
+                segment = p + 1;
+            }
+        }
+        return segment;
+    }
+
+    int NoIdentity(wchar_t* identity) {
+        identity[0] = L'\0';
+        return 0;
+    }
+
+    bool EqualsIgnoringCase(const wchar_t* text, unsigned int length, const wchar_t* other) {
+        for (unsigned int i = 0; i < length; i++) {
+            if (other[i] == L'\0' || Upper(text[i]) != Upper(other[i])) {
+                return false;
+            }
+        }
+        return other[length] == L'\0';
+    }
+}
+
+extern "C" {
+
+    int MkpIdentityFromBluetoothDeviceId(const wchar_t* deviceId, wchar_t* identity) {
+        identity[0] = L'\0';
+        if (!deviceId) {
+            return 0;
+        }
+
+        const wchar_t* afterPrefix = SkipPrefix(deviceId, L"BTHENUM\\");
+        const wchar_t* segment = afterPrefix ? LastSegment(afterPrefix) : nullptr;
+        if (!segment) {
+            return 0;
+        }
+
+        // The last segment ends with &<12 hex digits of the address>_C<8 hex digits>.
+        unsigned int length = Length(segment);
+        if (length < 23) {
+            return 0;
+        }
+        const wchar_t* tail = segment + length - 10;
+        if (tail[0] != L'_' || Upper(tail[1]) != L'C') {
+            return 0;
+        }
+        for (int i = 2; i < 10; i++) {
+            if (!IsHex(tail[i])) {
+                return 0;
+            }
+        }
+        const wchar_t* address = tail - 12;
+        if (address[-1] != L'&') {
+            return 0;
+        }
+        for (int i = 0; i < 12; i++) {
+            if (!IsHex(address[i])) {
+                return NoIdentity(identity);
+            }
+        }
+
+        identity[0] = L'b';
+        identity[1] = L't';
+        identity[2] = L':';
+        for (int i = 0; i < 12; i++) {
+            identity[3 + i] = Upper(address[i]);
+        }
+        identity[15] = L'\0';
+        return 1;
+    }
+
+    int MkpIdentityFromUsbDeviceId(const wchar_t* deviceId, wchar_t* identity) {
+        identity[0] = L'\0';
+        if (!deviceId) {
+            return 0;
+        }
+
+        // USB\<hardware IDs>\<serial number>
+        const wchar_t* hardware = SkipPrefix(deviceId, L"USB\\");
+        if (!hardware) {
+            return 0;
+        }
+        const wchar_t* separator = hardware;
+        while (*separator && *separator != L'\\') {
+            separator++;
+        }
+        if (*separator != L'\\' || separator == hardware) {
+            return 0;
+        }
+
+        const wchar_t* serial = separator + 1;
+        unsigned int length = Length(serial);
+        if (length == 0 || length + 5 > MKP_IDENTITY_MAX_CHARS) {
+            return 0;
+        }
+        for (unsigned int i = 0; i < length; i++) {
+            if (serial[i] == L'&' || serial[i] == L'\\') {
+                return NoIdentity(identity);
+            }
+        }
+
+        identity[0] = L'u';
+        identity[1] = L's';
+        identity[2] = L'b';
+        identity[3] = L':';
+        for (unsigned int i = 0; i < length; i++) {
+            identity[4 + i] = Upper(serial[i]);
+        }
+        identity[4 + length] = L'\0';
+        return 1;
+    }
+
+    int MkpIdentityListContains(const wchar_t* list, unsigned int chars, const wchar_t* identity) {
+        unsigned int i = 0;
+        while (i < chars) {
+            unsigned int start = i;
+            while (i < chars && list[i] != L'\0') {
+                i++;
+            }
+            if (i > start && EqualsIgnoringCase(list + start, i - start, identity)) {
+                return 1;
+            }
+            i++;
+        }
+        return 0;
+    }
+
+} // extern "C"

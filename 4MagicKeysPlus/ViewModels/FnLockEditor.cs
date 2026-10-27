@@ -4,14 +4,11 @@ using _4MagicKeysPlus.Services;
 
 namespace _4MagicKeysPlus.ViewModels;
 
-// The Fn Lock switch above the keyboard. Lives for the whole app session (owned by MainWindow);
-// a change is saved to the registry and handed to the driver at once, like a rule.
+// The Fn Lock switch above the keyboard, of one keyboard. Lives for the whole app session (see
+// ProfileEditors); a change is saved to the registry and handed to the driver at once, like a rule.
 public sealed class FnLockEditor {
     private readonly IFnLockStore store;
     private readonly IDriverControl driver;
-
-    public FnLockEditor() : this(new RegistryFnLockStore(), new DriverControl()) {
-    }
 
     internal FnLockEditor(IFnLockStore store, IDriverControl driver) {
         this.store = store;

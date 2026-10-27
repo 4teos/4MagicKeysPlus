@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using _4MagicKeysPlus.Core;
 using _4MagicKeysPlus.Models;
 
 namespace _4MagicKeysPlus.Services;
@@ -6,26 +7,24 @@ namespace _4MagicKeysPlus.Services;
 internal static class DriverStatus {
     internal const string ServiceKeyPath = @"SYSTEM\CurrentControlSet\Services\4MagicKeysPlus";
     internal const string ParametersKeyPath = $@"{ServiceKeyPath}\Parameters";
-    private const string RulesKeyName = "Rules";
     private const string HotkeysKeyName = "Hotkeys";
 
-    public const string RulesKeyPath = $@"{ParametersKeyPath}\{RulesKeyName}";
     public const string HotkeysKeyPath = $@"{ParametersKeyPath}\{HotkeysKeyName}";
 
-    public static bool ReadFnLockEnabled() {
-        using RegistryKey? key = Registry.LocalMachine.OpenSubKey(ParametersKeyPath);
-        return key?.GetValue("FnLock") is int fnLock && fnLock != 0;
+    // The key of a keyboard profile, which holds its FnLock and its Rules.
+    public static string ProfileKeyPath(Guid profileId) {
+        return $@"{RegistryKeyboardProfileStore.KeyboardsKeyPath}\{RegistryKeyboardProfileStore.ProfileKeyName(profileId)}";
     }
 
-    public static DriverKeyRemapConfig ReadKeyRemapConfig() {
-        return new DriverKeyRemapConfig(ReadRules(), ReadFnLockEnabled());
+    public static string ProfileRulesKeyPath(Guid profileId) {
+        return $@"{ProfileKeyPath(profileId)}\Rules";
     }
 
     // Subkeys without both Source and Target as DWORDs are not driver rules.
-    private static List<KeyRule> ReadRules() {
+    public static List<KeyRule> ReadRules(RegistryKey root, string rulesKeyPath) {
         List<KeyRule> rules = [];
 
-        using RegistryKey? rulesKey = Registry.LocalMachine.OpenSubKey(RulesKeyPath);
+        using RegistryKey? rulesKey = root.OpenSubKey(rulesKeyPath);
         if (rulesKey is null) {
             return rules;
         }

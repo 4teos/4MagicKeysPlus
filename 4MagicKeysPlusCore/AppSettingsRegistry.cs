@@ -4,10 +4,12 @@ using Microsoft.Win32;
 
 namespace _4MagicKeysPlus.Core;
 
-// Where the configuration app keeps its settings (they are per user). The agent follows the language.
+// Where the configuration app keeps its settings (they are per user). The agent follows the language and whether to
+// open the app for a keyboard that has no profile.
 public static class AppSettingsRegistry {
     public const string KeyPath = @"Software\4MagicKeysPlus";
     public const string LanguageValue = "Language";
+    public const string OpenAppForNewKeyboardValue = "OpenAppForNewKeyboard";
 
     public static CultureInfo? ReadLanguage() {
         return ReadLanguage(Registry.CurrentUser, KeyPath);
@@ -21,6 +23,20 @@ public static class AppSettingsRegistry {
             return ParseLanguage(key?.GetValue(LanguageValue) as string);
         } catch (Exception exception) when (exception is IOException or SecurityException or UnauthorizedAccessException) {
             return null;
+        }
+    }
+
+    public static bool ReadOpenAppForNewKeyboard() {
+        return ReadOpenAppForNewKeyboard(Registry.CurrentUser, KeyPath);
+    }
+
+    // On unless the value is a DWORD of 0: that is the default, and what an unreadable setting falls back to.
+    public static bool ReadOpenAppForNewKeyboard(RegistryKey root, string keyPath) {
+        try {
+            using RegistryKey? key = root.OpenSubKey(keyPath);
+            return key?.GetValue(OpenAppForNewKeyboardValue) is not int value || value != 0;
+        } catch (Exception exception) when (exception is IOException or SecurityException or UnauthorizedAccessException) {
+            return true;
         }
     }
 

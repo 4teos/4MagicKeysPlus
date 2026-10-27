@@ -13,21 +13,21 @@ Originally forked from the [samartzidis/winAppleKey](https://github.com/samartzi
 
 ### Features
 
-- One list of key rules in the registry (`Parameters\Rules`) replaces all the old remap tables: remap any key to another key, swap modifiers, map Fn/Eject to a modifier or a key (and back), turn a key into a modifier combination, or into a media/brightness/volume action
+- One list of key rules in the registry (per keyboard, see [Keyboard Profiles](#keyboard-profiles)) replaces all the old remap tables: remap any key to another key, swap modifiers, map Fn/Eject to a modifier or a key (and back), turn a key into a modifier combination, or into a media/brightness/volume action
 - Fn layer: any key can have a separate "with Fn" rule (Home/End/Page Up/Down, Insert, Print Screen, etc. are ordinary rules now, nothing is hardcoded)
 - `FnLock`-aware rules, so the F-row media keys can behave as media keys by default or as regular function keys, with Fn flipping them
-- A small agent (`4MagicKeysPlusAgent`) that launches an application on a hotkey, and warns when the keyboard battery runs low
-- A configuration app (`4MagicKeysPlus`) that shows the connected keyboard, its battery/connection/Fn Lock state, highlights the remapped keys and lets you edit the rules on a picture of the keyboard. Changes are saved to the registry and applied by the driver at once, no restart needed
+- A small agent (`4MagicKeysPlusAgent`) that launches an application on a hotkey, warns when the keyboard battery runs low, and opens the configuration app when a keyboard that has no profile is connected
+- A configuration app (`4MagicKeysPlus`) that shows the connected keyboards (a selector in the title bar), the battery/connection/Fn Lock state of the selected one, highlights its remapped keys and lets you edit its rules and Fn Lock on a picture of the keyboard. Every keyboard has settings of its own, the same over USB and over Bluetooth. Changes are saved to the registry and applied by the driver at once, no restart needed
 - A Settings screen in the configuration app: theme (system, dark or light), language, whether the agent runs (with a button to start it) and whether it starts with Windows, and whether the driver and the keyboard are there
 
 ### Technical Details
 
 4MagicKeys+ consists of four parts:
 
-- **Driver** (`4MagicKeysPlusDriver`) - a HIDCLASS LowerFilter WDM kernel mode driver. It intercepts HID input at the Bluetooth (L2CAP) or USB (URB) level and transforms the 9-byte keyboard report buffer before it reaches the HID class driver. For media/brightness/volume actions it also exposes a virtual Consumer Control HID device (via VHF) that reports the corresponding usage code. All behavior comes from the rules in the registry; the driver has no built-in key tables. While a keyboard is connected the driver also has a control device that makes it re-read the rules without a restart (see [Applying Changes](#applying-changes)).
-- **Agent** (`4MagicKeysPlusAgent`) - a small WinForms background process (no tray icon): registers global hotkeys for the launch entries in the registry, and polls the keyboard battery.
+- **Driver** (`4MagicKeysPlusDriver`) - a HIDCLASS LowerFilter WDM kernel mode driver. It intercepts HID input at the Bluetooth (L2CAP) or USB (URB) level and transforms the 9-byte keyboard report buffer before it reaches the HID class driver. For media/brightness/volume actions it also exposes a virtual Consumer Control HID device (via VHF) that reports the corresponding usage code. All behavior comes from the rules in the registry, in the profile of the keyboard; the driver has no built-in key tables. While a keyboard is connected the driver also has a control device that makes it re-read the rules without a restart (see [Applying Changes](#applying-changes)).
+- **Agent** (`4MagicKeysPlusAgent`) - a small WinForms background process (no tray icon): registers global hotkeys for the launch entries in the registry, polls the keyboard battery, and watches for keyboards that have no profile.
 - **Configuration app** (`4MagicKeysPlus`) - WPF app. Needs the .NET 10 Desktop Runtime and runs as administrator (see [Agent and Configuration App](#agent-and-configuration-app)).
-- **Core** (`4MagicKeysPlusCore`) - class library shared by the app and the agent: finds the connected keyboard over HID and reads its battery.
+- **Core** (`4MagicKeysPlusCore`) - class library shared by the app and the agent: finds the keyboards (over PnP and HID), works out their identities (see [Keyboard Profiles](#keyboard-profiles)) and reads the battery.
 
 ### Installation
 
@@ -63,6 +63,21 @@ bcdedit.exe -set TESTSIGNING OFF
 
 Both are framework-dependent .NET 10 apps, so they need the **.NET Desktop Runtime 10** installed. There is no installer yet: copy the build output (`bin\Release\` in the root of the repository, without its `driver` subfolder) to a folder of your choice. The agent and the configuration app need the same kind of files (the `.exe`, `.dll`, `.runtimeconfig.json`, `.deps.json`, `4MagicKeysPlus.Core.dll` and the `ru` satellite folder), so they can run from one folder. To start the agent at logon, turn on **Start with Windows** on the Settings screen of the configuration app (see below), or add a string value named `4MagicKeysPlusAgent` with its full path to `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` by hand.
 
+#### Keyboards in the configuration app
+
+The screens that are about a keyboard (the header with its name, connection, battery and Fn Lock, and the Keys screen) show the one that is selected among the tabs in the title bar, next to the name of the app. There is a tab for every keyboard that has a profile (see [Keyboard Profiles](#keyboard-profiles)), shown once there are two keyboards or more, since there is nothing to choose from with one: a keyboard glyph, and while the keyboard is connected a green glyph of the way (USB or Bluetooth) next to it. The name of the keyboard is in the tooltip. A tab of a keyboard that is not connected is dimmed and cannot be chosen, so there is nothing to edit for it. The selection is not remembered: the keyboard that is shown stays while it is connected, otherwise the first connected one is shown, and while none is connected the Keys screen says so.
+
+The app looks at the keyboards when it starts and every few seconds, and gives a profile to every connected keyboard that has none:
+
+- A keyboard that cannot be the other way of connecting of one that is known gets a new, empty profile. A keyboard is shown by its model, in the language of the app; a second keyboard of a model gets `Index` 2 and is shown as `... (2)`, a third one `... (3)`, and so on. That is a keyboard of a model no profile has, or of which every profile has a way of this kind (USB or Bluetooth) already.
+- Otherwise a bar under the header asks whether it is the same keyboard as one of those profiles (with a list to choose from when there are several). **Yes, it is** adds the way of connecting to that profile and tells the driver, so the rules apply at once; **No, another one** makes a profile of its own. A profile is offered also while its keyboard is not connected: Windows drops the Bluetooth link of a keyboard a moment after its cable goes in. Nothing is linked without the answer, or two keyboards of one model would end up with the same rules.
+
+Until a keyboard has a profile the driver gives it no rules.
+
+#### New keyboards and the agent
+
+The configuration app is almost never open, so the agent watches for the keyboards no profile lists. Every 10 seconds (the first time 10 seconds after it starts) it looks at the connected keyboards and, when one is connected over a way that no profile has (a new keyboard, or a known one over its other connection), it starts the configuration app, which settles it as described above. Windows asks for permission first, because the app runs as administrator. The agent does this once for every way of connecting per session of the agent (starting it again asks again for a keyboard that still has no profile), not while the app is running, and not for a paired Bluetooth keyboard that is out of reach. The **Open the app for a new keyboard** switch of the Settings screen turns it off.
+
 #### Editing rules in the configuration app
 
 The configuration app asks for administrator rights when it starts: it writes the rules under `HKEY_LOCAL_MACHINE` and talks to the driver's control device, and both need them. (When debugging it from Visual Studio, start Visual Studio as administrator.)
@@ -72,28 +87,65 @@ The configuration app asks for administrator rights when it starts: it writes th
 - **Only with Fn** makes it a rule of the Fn layer (and changes which targets are allowed; you can switch it while picking). **Follow Fn Lock** makes that rule `FnLockAware` and only applies to the Fn layer. When a key can be remapped in one layer only, the first option is fixed.
 - **Remove mapping** deletes every rule of the key, in both layers. Be careful with the F-row: removing the Fn+F8 rule also removes the media action, and there is no "reset to defaults" yet.
 - Setting a mapping replaces only the rule of the same key and layer; the key's rules of the other layer stay.
-- Every change is saved to `Parameters\Rules` and the driver is told to reload at once. The glyph at the right of the panel shows how that went: a green check, a yellow triangle (saved, but the driver did not take the rules: no keyboard is connected, the driver is too old to reload, or it ignored some rules; they are loaded when the keyboard connects), or a red cross (nothing was saved). Hover it for the details.
+- Every change is saved to the `Rules` of the profile of the selected keyboard and the driver is told to reload at once. The glyph at the right of the panel shows how that went: a green check, a yellow triangle (saved, but the driver did not take the rules: no keyboard is connected, the driver is too old to reload, or it ignored some rules; they are loaded when the keyboard connects), or a red cross (nothing was saved). Hover it for the details.
 
-The configuration app only edits key rules. The launch entries and `FnLock` still have to be set in the registry.
+The Fn Lock switch above the picture is the `FnLock` of the profile of the keyboard, saved and applied the same way.
 
 #### Settings screen
 
-The gear in the header opens it. The settings of the app itself are per user, in `HKEY_CURRENT_USER\Software\4MagicKeysPlus` (the agent reads the language from it): `Theme` (`System`, `Dark` or `Light`) and `Language` (a language code such as `ru` or `de`; no value means the language of Windows).
+The gear in the header opens it. The settings of the app itself are per user, in `HKEY_CURRENT_USER\Software\4MagicKeysPlus` (the agent reads the language from it): `Theme` (`System`, `Dark` or `Light`), `Language` (a language code such as `ru` or `de`; no value means the language of Windows) and `OpenAppForNewKeyboard` (a DWORD the agent reads, see [New keyboards and the agent](#new-keyboards-and-the-agent); on unless it is `0`).
 
 - **Theme** applies at once. *System* follows the app mode of Windows (`AppsUseLightTheme`), also while the app is open.
 - **Language** is read once at start-up, so a change waits for a restart: a notice with a **Restart** button appears. The list is English (the neutral resources) plus every folder next to the app that is named after a language (`ru`, `de`, `es`, ...) and holds a `4MagicKeysPlus.resources.dll`, so a new `Strings.<language>.resx` shows up there without any code. There are no regional variants: the languages are only the languages themselves (a folder such as `ru-RU` is not offered, and a `Language` value of `ru-RU` is read as `ru`), and a Windows in a regional variant of a language (`ru-UA`) gets that language too. The agent follows the same language in its notices: it reads the value each time it shows one, so it does not have to be restarted. The reason of a failed hotkey registration is Windows' own text in the language of Windows, except "already registered", which the agent translates.
 - **Agent** shows whether it answers on its pipe, with a **Start** button (started through Explorer, so that it keeps the normal rights of the user; the agent is the one next to the app or, when there is none, the one the autostart value points at). **Start with Windows** adds the `4MagicKeysPlusAgent` value to `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run` for the agent next to the app, unless the value is already there: an existing one keeps its path. Turning it off does not delete the value but sets the "off" flag that Task Manager keeps in `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run`, so it can be turned back on without knowing where the agent is, and Task Manager shows it as disabled. The switch counts that flag: an entry switched off in Task Manager shows as off, and turning it on clears the flag.
+- **Open the app for a new keyboard** (on by default) lets the agent start the configuration app when a connected keyboard has no profile (see [New keyboards and the agent](#new-keyboards-and-the-agent)).
 - **Driver and keyboard** show whether the driver is installed (its service key exists), whether it is working (its control device `\\.\4MagicKeysPlus` exists, which it does while a keyboard is filtered) and which keyboard is connected.
 - **Versions** are written in two lines in the bottom-left corner: the version of the application (that of the running app, which is also that of the agent and the libraries) and the version of the installed driver. The driver version is that of the installed driver package, read from the registry: the service names the `.inf` it was installed from (`DisplayName` like `@oem157.inf,...`), and the device keys of the HID class keep the version of that `.inf`. It shows a dash while there is none (no driver is installed).
 
 All colors of the app are in `4MagicKeysPlus\Themes\` (`Dark.xaml` and `Light.xaml`); the rest of the XAML and the code only refer to those keys. A theme has to define the same keys, which the tests check.
 
-### Key Rules
+### Keyboard Profiles
 
-The driver has no built-in key mappings. Everything - Fn combinations, media keys, modifier swaps - is a rule under:
+The settings belong to a keyboard, not to the driver: every physical keyboard has a profile, a subkey of
 
 ```
-HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\<subkey>
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\<profile>
+```
+
+The name of the subkey does not matter to the driver (the configuration app names it by a GUID in braces, and lists only the profiles that are named so and have a `Model`). Values:
+
+| Value | Type | |
+|-------|------|-|
+| `Identities` | MULTI_SZ | how the driver recognizes the keyboard, see below |
+| `FnLock` | DWORD | optional, default `0`, see [FnLock](#fnlock-dword) |
+| `Rules` | subkey | the key rules of the keyboard, see [Key Rules](#key-rules) |
+| `Index` | DWORD | optional, default `1`, for the configuration app, ignored by the driver; tells apart the keyboards of one model: the app shows a keyboard by its model, followed by the index in brackets from 2 up |
+| `Model` | DWORD | the USB product ID of the model (`0x0267` A1644, `0x026C` A1843), for the configuration app, ignored by the driver |
+
+An identity is a text in upper case: `bt:` and the 12 hex digits of the Bluetooth address of the keyboard (`bt:C4141104498E`), or `usb:` and its serial number (`usb:F0T125100BWJKPGAS`). One keyboard has both: Windows sees its cable and its Bluetooth pairing as unrelated devices, so a profile lists both, and then the keyboard has the same settings whichever way it is connected.
+
+When a keyboard connects the driver works out its identity (the address from the instance ID of the paired Bluetooth device, the serial number from the instance ID of the USB device the interface belongs to; the Debug build prints it) and takes the first profile that lists it, ignoring case. A keyboard that has no profile, or no identity (a USB device without a serial number), gets no rules and Fn Lock off. List an identity in one profile only. The older `Parameters\Rules` and `Parameters\FnLock` are not read any more.
+
+The identities of your keyboards are in the instance IDs of the devices:
+
+```powershell
+Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -match '^(USB\\VID_05AC&PID_026[7C]\\|BTHENUM\\\{00001124-.*_VID&0001004C_PID&026[7C]\\)' } | Select-Object InstanceId
+```
+
+`BTHENUM\{00001124-...}\D&15B70467&0&C4141104498E_C00000000` is `bt:C4141104498E` (the 12 digits before `_C0000000`), `USB\VID_05AC&PID_026C\F0T125100BWJKPGAS` is `usb:F0T125100BWJKPGAS`. A profile for a keyboard, from an administrative command prompt (the settings of the keyboard are under it; the rules are described below):
+
+```
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}" /v Identities /t REG_MULTI_SZ /d "bt:C4141104498E\0usb:F0T125100BWJKPGAS" /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}" /v Model /t REG_DWORD /d 0x026C /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}" /v FnLock /t REG_DWORD /d 1 /f
+```
+
+### Key Rules
+
+The driver has no built-in key mappings. Everything - Fn combinations, media keys, modifier swaps - is a rule under the profile of the keyboard:
+
+```
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\<profile>\Rules\<subkey>
 ```
 
 The subkey name does not matter to the driver; the convention is the 8-digit hex of `Source` (`01000041`), which also keeps two rules from sharing a source. Values:
@@ -175,14 +227,14 @@ Consumer usages used above: `6F` Brightness Up, `70` Brightness Down, `B5` Scan 
 Adding one rule from an administrative command prompt (Fn+F8 -> Play/Pause):
 
 ```
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\01000041" /v Source /t REG_DWORD /d 0x01000041 /f
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\01000041" /v Target /t REG_DWORD /d 0x010000CD /f
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Rules\01000041" /v FnLockAware /t REG_DWORD /d 1 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}\Rules\01000041" /v Source /t REG_DWORD /d 0x01000041 /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}\Rules\01000041" /v Target /t REG_DWORD /d 0x010000CD /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}\Rules\01000041" /v FnLockAware /t REG_DWORD /d 1 /f
 ```
 
 Other examples: swap Left Alt and Left Cmd needs two rules (`0x00040000 -> 0x00080000` and `0x00080000 -> 0x00040000`); Eject as Fn is `0xF0 -> 0xF1`; Fn typing Insert is `0xF1 -> 0x49`.
 
-The configuration app is not able to edit rules yet. Hand editing is meant for development and for advanced users.
+The configuration app edits the rules of the selected keyboard, so hand editing is meant for development and for advanced users.
 
 ### Launch Entries
 
@@ -216,13 +268,13 @@ All settings are in the registry at:
 HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters
 ```
 
-Settings and rules are read when a keyboard connects and when the driver is told to reload them (see below).
+The profiles of the keyboards are under `Keyboards` (see [Keyboard Profiles](#keyboard-profiles)); nothing else is read. A profile is read when its keyboard connects and when the driver is told to reload (see below).
 
 #### Applying Changes
 
 The configuration app does this for you. After changing the registry by hand, apply the changes in one of these ways:
 
-- Tell the driver to reload (below). It re-reads `FnLock` and all the rules and applies them to every connected keyboard at once.
+- Tell the driver to reload (below). It looks up the profile of every connected keyboard again and applies it, to all of them at once.
 - Or restart the device (Administrative command prompt):
 
   ```
@@ -231,7 +283,7 @@ The configuration app does this for you. After changing the registry by hand, ap
 
   Replace the device instance ID with the appropriate one for your keyboard model. You can also disconnect/reconnect the keyboard or reboot.
 
-**Control device.** While at least one keyboard is connected, the driver has a device `\\.\4MagicKeysPlus`, open to administrators and SYSTEM only. The request `IOCTL_MKP_RELOAD_CONFIG` (`0x0022A000`, `CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_WRITE_ACCESS)`) makes the driver reload. It takes no input; the optional output is three DWORDs: the rules read, the rules the driver could interpret and the number of keyboards. The definitions are in `4MagicKeysPlusDriver\DriverInterface.h`.
+**Control device.** While at least one keyboard is connected, the driver has a device `\\.\4MagicKeysPlus`, open to administrators and SYSTEM only. The request `IOCTL_MKP_RELOAD_CONFIG` (`0x0022A000`, `CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_WRITE_ACCESS)`) makes the driver reload. It takes no input; the optional output is three DWORDs: the rules read, the rules the driver could interpret (both summed over the keyboards) and the number of keyboards. The definitions are in `4MagicKeysPlusDriver\DriverInterface.h`.
 
 Open the device, send the request and close the handle at once; never keep it open. An open handle keeps the device alive after the last keyboard is gone, which blocks unloading the driver (an update then needs a reboot) and makes reloading fail the next time a keyboard connects. `CreateFile` fails with error 2 when no keyboard is connected or the driver is older than this feature, and with error 5 when not elevated.
 
@@ -267,11 +319,13 @@ $r = [MagicKeysDriver]::Reload()
 "Rules read: $($r[0]), accepted: $($r[1]), keyboards: $($r[2])"
 ```
 
+The rules read are those of the profiles the connected keyboards have found, counted per keyboard: `0` with a profile that has rules means that no connected keyboard found it (check its [identity](#keyboard-profiles)).
+
 #### FnLock (DWORD)
 
-Used by rules with `FnLockAware=1` (see [How the rules are applied](#how-the-rules-are-applied)); any non-zero value means on. Does not affect rules that are not `FnLockAware`. Default: `0`.
+A value of the profile of the keyboard, so every keyboard has its own. Used by rules with `FnLockAware=1` (see [How the rules are applied](#how-the-rules-are-applied)); any non-zero value means on. Does not affect rules that are not `FnLockAware`. Default: `0`.
 
-The older `KeyMap`, `ModMap` and `SpecialModMap` binary values are no longer read and the driver INF no longer creates them; they can be deleted.
+The older `KeyMap`, `ModMap` and `SpecialModMap` binary values are no longer read and the driver INF no longer creates them; they can be deleted. So can `Rules` and `FnLock` directly under `Parameters`: the driver reads the profiles only.
 
 ### HID Key Code Reference
 
@@ -371,8 +425,8 @@ The "Product version" in the file properties of a .NET file is followed by `+` a
 #### Tests
 
 - Driver logic (`KeyProcessor`, compiled into the test project as plain user-mode C++): `4MagicKeysPlusDriverTests`, run from Visual Studio's Test Explorer or `vstest.console.exe` on the built DLL.
-- Agent (launch entry loading, battery notice policy): `dotnet test 4MagicKeysPlusAgentTests`.
-- Configuration app (rule decoding and encoding, editing, saving rules, tooltips, key names, theme keys, settings, languages, autostart): `dotnet test 4MagicKeysPlusTests`. The tests of saving use a scratch key under `HKEY_CURRENT_USER\Software\4MagicKeysPlusTests`, which they delete afterwards; they never touch the driver's rules.
+- Agent (launch entry loading, battery notice policy, watching for new keyboards): `dotnet test 4MagicKeysPlusAgentTests`.
+- Configuration app (rule decoding and encoding, editing, saving rules, keyboards, profiles and their selection, tooltips, key names, theme keys, settings, languages, autostart): `dotnet test 4MagicKeysPlusTests`. The tests of saving use a scratch key under `HKEY_CURRENT_USER\Software\4MagicKeysPlusTests`, which they delete afterwards; they never touch the driver's rules.
 
 The Debug build of the agent accepts two test switches that are not compiled into Release: `--demo-battery <percent> [delay seconds]` shows the battery notice once and exits, `--battery-interval <seconds>` checks the battery that often and logs every reading.
 
