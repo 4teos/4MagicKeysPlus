@@ -24,7 +24,7 @@ public partial class MainWindow : Window {
     }
 
     private MainWindow(IAppSettingsStore settings, AppSettings launched, IThemeApplier themes, IDriverControl driver)
-        : this(settings, launched, themes, driver, new KeyboardSession(new RegistryKeyboardProfileStore(), KeyboardEnumerator.Enumerate, driver, new RegistryFactoryDefaults())) {
+        : this(settings, launched, themes, driver, new KeyboardSession(new RegistryKeyboardProfileStore(), KeyboardEnumerator.Enumerate, driver, new RegistryDefaultSettings())) {
     }
 
     // The driver and the keyboards are parameters so that tests can use fakes.
@@ -55,10 +55,11 @@ public partial class MainWindow : Window {
         return new RegistryFnLockStore(Registry.LocalMachine, DriverStatus.ProfileKeyPath(profileId)).Read();
     }
 
-    private ProfileEditors EditorsOf(Guid profileId) {
+    private ProfileEditors EditorsOf(Guid profileId, KeyboardProduct product) {
         if (!editors.TryGetValue(profileId, out ProfileEditors? profileEditors)) {
-            profileEditors = ProfileEditors.Open(profileId, driver);
+            profileEditors = ProfileEditors.Open(profileId, product, driver, new RegistryDefaultSettings());
             profileEditors.FnLock.Changed += deviceStatus.Refresh;
+            profileEditors.Defaults.Changed += deviceStatus.Refresh;
             editors[profileId] = profileEditors;
         }
         return profileEditors;
@@ -68,7 +69,7 @@ public partial class MainWindow : Window {
     private void ShowKeys() {
         KeyboardEntry? selected = keyboards.Selected;
         shownKeyboard = selected?.Profile.Id;
-        MainContent.Content = selected is null ? new NoKeyboardView() : new KeysView(EditorsOf(selected.Profile.Id), selected.Profile.Product);
+        MainContent.Content = selected is null ? new NoKeyboardView() : new KeysView(EditorsOf(selected.Profile.Id, selected.Profile.Product), selected.Profile.Product);
     }
 
     // The screen is built anew only for another keyboard: a refresh that changes nothing must not undo what is being edited.

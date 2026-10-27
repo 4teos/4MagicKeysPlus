@@ -8,11 +8,11 @@ namespace _4MagicKeysPlusTests;
 public sealed class DefaultsCommandTests : IDisposable {
     private readonly ScratchKey scratch = new();
     private readonly string appFolder = Path.Combine(Path.GetTempPath(), $"mkp-app-{Guid.NewGuid():N}");
-    private readonly RegistryFactoryDefaults target;
+    private readonly RegistryDefaultSettings target;
 
     public DefaultsCommandTests() {
         Directory.CreateDirectory(Path.Combine(appFolder, "defaults"));
-        target = new RegistryFactoryDefaults(Registry.CurrentUser, scratch.Path("Defaults"), scratch.Path("Keyboards"));
+        target = new RegistryDefaultSettings(Registry.CurrentUser, scratch.Path("Defaults"), scratch.Path("Keyboards"));
     }
 
     public void Dispose() {

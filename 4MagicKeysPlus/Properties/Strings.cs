@@ -302,6 +302,36 @@ public static class Strings {
         }
     }
 
+    public static string ResetDefaultsLabel {
+        get {
+            return Get(nameof(ResetDefaultsLabel));
+        }
+    }
+
+    public static string ResetDefaultsUnavailable {
+        get {
+            return Get(nameof(ResetDefaultsUnavailable));
+        }
+    }
+
+    public static string ResetDefaultsPrompt {
+        get {
+            return Get(nameof(ResetDefaultsPrompt));
+        }
+    }
+
+    public static string DialogYes {
+        get {
+            return Get(nameof(DialogYes));
+        }
+    }
+
+    public static string DialogNo {
+        get {
+            return Get(nameof(DialogNo));
+        }
+    }
+
     public static string OptionsAppearance {
         get {
             return Get(nameof(OptionsAppearance));

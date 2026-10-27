@@ -5,23 +5,23 @@ namespace _4MagicKeysPlus.Core;
 // Problems is empty when every file was written (the models are those of the files).
 public sealed record DefaultsInstallResult(IReadOnlyList<KeyboardProduct> Installed, IReadOnlyList<string> Problems);
 
-// Puts the shipped files of factory defaults (the .json files of a folder) into the registry as the defaults of their models.
+// Puts the shipped files of default settings (the .json files of a folder) into the registry as the defaults of their models.
 // Nothing is written unless every file is good, so that a damaged file does not leave a mix of old and new defaults; the
 // profiles of the keyboards are never touched.
-public static class FactoryDefaultsInstaller {
-    public static DefaultsInstallResult Install(string folder, RegistryFactoryDefaults target) {
+public static class DefaultSettingsInstaller {
+    public static DefaultsInstallResult Install(string folder, RegistryDefaultSettings target) {
         List<string> problems = [];
-        List<FactoryDefaults> files = [];
+        List<DefaultSettings> files = [];
 
         string[] paths = Directory.Exists(folder) ? Directory.GetFiles(folder, "*.json") : [];
         Array.Sort(paths, StringComparer.OrdinalIgnoreCase);
         if (paths.Length == 0) {
-            problems.Add($"{folder}: there are no .json files of factory defaults.");
+            problems.Add($"{folder}: there are no .json files of default settings.");
         }
 
         foreach (string path in paths) {
             try {
-                FactoryDefaults defaults = FactoryDefaultsFile.Load(path);
+                DefaultSettings defaults = DefaultSettingsFile.Load(path);
                 if (!string.Equals(Path.GetFileNameWithoutExtension(path), defaults.Model.ToString(), StringComparison.OrdinalIgnoreCase)) {
                     problems.Add($"{Path.GetFileName(path)}: the file is of the model {defaults.Model}, so it has to be named {defaults.Model}.json.");
                 } else {
@@ -37,7 +37,7 @@ public static class FactoryDefaultsInstaller {
         }
 
         List<KeyboardProduct> installed = [];
-        foreach (FactoryDefaults defaults in files) {
+        foreach (DefaultSettings defaults in files) {
             try {
                 target.Write(defaults);
                 installed.Add(defaults.Model);

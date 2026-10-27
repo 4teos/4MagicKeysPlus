@@ -42,7 +42,7 @@ extern "C" {
     // here so this header and Driver.c can stay plain C), and the identity of
     // the keyboard (bt:... / usb:..., empty when it has none) that its settings
     // are looked up by, and the USB product ID of its model (0 when unknown),
-    // which finds the factory defaults for a keyboard that has no profile.
+    // which finds the default settings for a keyboard that has no profile.
     //
     typedef struct _DEVICE_CONTEXT {
         VHFHANDLE VhfHandle;

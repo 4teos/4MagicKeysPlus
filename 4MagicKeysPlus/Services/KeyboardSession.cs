@@ -13,12 +13,12 @@ internal sealed class KeyboardSession {
     private readonly IKeyboardProfileStore store;
     private readonly Func<IReadOnlyList<KeyboardEndpoint>> enumerate;
     private readonly IDriverControl driver;
-    private readonly IFactoryDefaults? defaults;
+    private readonly IDefaultSettings? defaults;
     private readonly object access = new();
     private int refreshing;
 
-    // A new profile begins as a copy of the factory defaults of its model, when there are any.
-    public KeyboardSession(IKeyboardProfileStore store, Func<IReadOnlyList<KeyboardEndpoint>> enumerate, IDriverControl driver, IFactoryDefaults? defaults = null) {
+    // A new profile begins as a copy of the default settings of its model, when there are any.
+    public KeyboardSession(IKeyboardProfileStore store, Func<IReadOnlyList<KeyboardEndpoint>> enumerate, IDriverControl driver, IDefaultSettings? defaults = null) {
         this.store = store;
         this.enumerate = enumerate;
         this.driver = driver;

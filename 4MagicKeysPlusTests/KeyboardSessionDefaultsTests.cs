@@ -4,15 +4,25 @@ using _4MagicKeysPlus.ViewModels;
 
 namespace _4MagicKeysPlusTests;
 
-internal sealed class FakeFactoryDefaults : IFactoryDefaults {
+internal sealed class FakeDefaultSettings : IDefaultSettings {
     public List<(Guid ProfileId, KeyboardProduct Model)> Copies { get; } = [];
     public Exception? Failure {
         get; set;
     }
 
+    // Whether the models have defaults at all.
+    public bool Available { get; set; } = true;
+
+    public bool Has(KeyboardProduct model) {
+        return Available;
+    }
+
     public bool CopyToProfile(Guid profileId, KeyboardProduct model) {
         if (Failure is not null) {
             throw Failure;
+        }
+        if (!Available) {
+            return false;
         }
 
         Copies.Add((profileId, model));
@@ -26,7 +36,7 @@ public sealed class KeyboardSessionDefaultsTests {
 
     private readonly FakeProfileStore store = new();
     private readonly FakeDriver driver = new();
-    private readonly FakeFactoryDefaults defaults = new();
+    private readonly FakeDefaultSettings defaults = new();
     private List<KeyboardEndpoint> endpoints = [];
 
     private KeyboardSession Session() {
@@ -34,7 +44,7 @@ public sealed class KeyboardSessionDefaultsTests {
     }
 
     [Fact]
-    public void ANewKeyboard_GetsTheFactoryDefaultsOfItsModel() {
+    public void ANewKeyboard_GetsTheDefaultSettingsOfItsModel() {
         endpoints = [KeyboardTestData.Endpoint(Bluetooth, product: KeyboardProduct.A1644)];
 
         Session().Refresh();

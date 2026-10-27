@@ -19,6 +19,7 @@ public partial class KeysView : UserControl {
 
     private readonly KeyRemapEditor editor;
     private readonly FnLockEditor fnLock;
+    private readonly DefaultsEditor defaults;
     private KeyboardModel? model;
     private PhysicalKey? selectedKey;
     private bool isPicking;
@@ -31,7 +32,12 @@ public partial class KeysView : UserControl {
         InitializeComponent();
         editor = editors.Rules;
         fnLock = editors.FnLock;
+        defaults = editors.Defaults;
         FnLockToggle.IsChecked = fnLock.IsEnabled;
+        ResetButton.IsEnabled = defaults.IsAvailable;
+        if (!ResetButton.IsEnabled) {
+            ResetButton.ToolTip = Strings.ResetDefaultsUnavailable;
+        }
 
         Loaded += (_, _) => {
             hostWindow = Window.GetWindow(this);
@@ -57,10 +63,11 @@ public partial class KeysView : UserControl {
         Refresh();
     }
 
-    // The strip of extra keys is as wide as the keyboard.
+    // The strip of extra keys, the toolbar and the footer are as wide as the keyboard.
     private void KeyboardViewbox_SizeChanged(object sender, SizeChangedEventArgs e) {
         VirtualKeysHost.Width = e.NewSize.Width;
         Toolbar.Width = e.NewSize.Width;
+        Footer.Width = e.NewSize.Width;
     }
 
     // Keys, buttons and the status panel handle their own clicks; a click that reaches the window
@@ -155,6 +162,30 @@ public partial class KeysView : UserControl {
             FnLockResult.ToolTip = null;
         } else {
             ShowResult(FnLockResult, result);
+        }
+    }
+
+    // The keyboard has its default settings again once the user agrees: the keys, the panel and the switch are shown afresh, nothing is selected.
+    private void ResetButton_Click(object sender, RoutedEventArgs e) {
+        if (!ConfirmDialog.Ask(Window.GetWindow(this), Strings.ResetDefaultsPrompt)) {
+            return;
+        }
+
+        ApplyResult result = defaults.Reset();
+
+        isPicking = false;
+        SelectKey(null);
+        Refresh();
+        FnLockToggle.IsChecked = fnLock.IsEnabled;
+        FnLockResult.Visibility = Visibility.Hidden;
+        FnLockResult.ToolTip = null;
+
+        // As beside the Fn Lock switch, the glyph is for trouble only.
+        if (result.Outcome == ApplyOutcome.Applied) {
+            ResetResult.Visibility = Visibility.Hidden;
+            ResetResult.ToolTip = null;
+        } else {
+            ShowResult(ResetResult, result);
         }
     }
 

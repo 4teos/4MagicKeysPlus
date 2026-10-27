@@ -3,7 +3,7 @@ using _4MagicKeysPlus.Services;
 
 namespace _4MagicKeysPlusTests;
 
-// The factory defaults that are shipped (the defaults folder in the root of the repository): a file that the installer or the
+// The default settings that are shipped (the defaults folder in the root of the repository): a file that the installer or the
 // driver would not take, or a rule the driver would drop, must break the build here, not a keyboard.
 public sealed class ShippedDefaultsTests {
     private static string Folder {
@@ -32,7 +32,7 @@ public sealed class ShippedDefaultsTests {
     [Theory]
     [MemberData(nameof(Files))]
     public void EveryFile_IsOfTheModelItIsNamedAfter(string name) {
-        FactoryDefaults defaults = FactoryDefaultsFile.Load(Path.Combine(Folder, name));
+        DefaultSettings defaults = DefaultSettingsFile.Load(Path.Combine(Folder, name));
 
         Assert.Equal(Path.GetFileNameWithoutExtension(name), defaults.Model.ToString());
     }
@@ -40,9 +40,9 @@ public sealed class ShippedDefaultsTests {
     [Theory]
     [MemberData(nameof(Files))]
     public void EveryRule_IsOneTheDriverKeeps(string name) {
-        FactoryDefaults defaults = FactoryDefaultsFile.Load(Path.Combine(Folder, name));
+        DefaultSettings defaults = DefaultSettingsFile.Load(Path.Combine(Folder, name));
 
-        foreach (FactoryRule rule in defaults.Rules) {
+        foreach (DefaultRule rule in defaults.Rules) {
             Assert.True(
                 DriverConfigParser.ParseRule(rule.Source, rule.Target, rule.FnLockAware) is not null,
                 $"{name}: the driver would drop the rule 0x{rule.Source:X8} -> 0x{rule.Target:X8} ({rule.Comment}).");

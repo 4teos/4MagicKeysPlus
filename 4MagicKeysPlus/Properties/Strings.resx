@@ -264,6 +264,21 @@
   <data name="FnLockToggleHint" xml:space="preserve">
     <value>Fn Lock makes the keys that follow it work as if the Fn key was held down.</value>
   </data>
+  <data name="ResetDefaultsLabel" xml:space="preserve">
+    <value>Reset to defaults</value>
+  </data>
+  <data name="ResetDefaultsUnavailable" xml:space="preserve">
+    <value>There are no default settings for this model.</value>
+  </data>
+  <data name="ResetDefaultsPrompt" xml:space="preserve">
+    <value>Set the key settings of this keyboard to defaults?</value>
+  </data>
+  <data name="DialogYes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="DialogNo" xml:space="preserve">
+    <value>No</value>
+  </data>
   <data name="OptionsAppearance" xml:space="preserve">
     <value>Appearance</value>
   </data>
