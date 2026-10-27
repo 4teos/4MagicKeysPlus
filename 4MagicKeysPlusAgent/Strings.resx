@@ -24,4 +24,10 @@
   <data name="HotkeyAlreadyRegistered" xml:space="preserve">
     <value>The combination is already used by another program.</value>
   </data>
+  <data name="KeyboardModelA1644" xml:space="preserve">
+    <value>Magic Keyboard (no numeric keypad, A1644)</value>
+  </data>
+  <data name="KeyboardModelA1843" xml:space="preserve">
+    <value>Magic Keyboard with Numeric Keypad (A1843)</value>
+  </data>
 </root>

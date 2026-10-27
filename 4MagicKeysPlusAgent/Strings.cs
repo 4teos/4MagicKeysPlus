@@ -36,6 +36,26 @@ internal static class Strings {
         }
     }
 
+    public static string KeyboardModelA1644 {
+        get {
+            return Get(nameof(KeyboardModelA1644));
+        }
+    }
+
+    public static string KeyboardModelA1843 {
+        get {
+            return Get(nameof(KeyboardModelA1843));
+        }
+    }
+
+    public static string ModelName(KeyboardProduct product) {
+        return product switch {
+            KeyboardProduct.A1644 => KeyboardModelA1644,
+            KeyboardProduct.A1843 => KeyboardModelA1843,
+            _ => product.ToString(),
+        };
+    }
+
     private static string Get(string key) {
         return ResourceManager.GetString(key, LanguageSource() ?? CultureInfo.CurrentUICulture) ?? key;
     }

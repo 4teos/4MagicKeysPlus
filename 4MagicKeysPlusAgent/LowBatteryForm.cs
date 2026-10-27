@@ -8,7 +8,8 @@ internal sealed class LowBatteryForm : NoticeForm {
 
     private readonly System.Windows.Forms.Timer dismissTimer = new();
 
-    public LowBatteryForm(int percent) {
+    // keyboardName is given when there are several keyboards, to tell the notices apart.
+    public LowBatteryForm(int percent, string? keyboardName = null) {
         Color accent = percent <= BatteryAlertPolicy.CriticalPercent ? CriticalColor : WarningColor;
 
         BackColor = accent;
@@ -26,7 +27,7 @@ internal sealed class LowBatteryForm : NoticeForm {
             Anchor = AnchorStyles.Left,
             Font = new Font("Segoe UI", 11f),
             ForeColor = Color.White,
-            Margin = new Padding(0, 10, 18, 10),
+            Margin = Padding.Empty,
             Text = string.Format(Strings.LowBatteryMessage, percent),
         };
 
@@ -39,16 +40,41 @@ internal sealed class LowBatteryForm : NoticeForm {
             RowCount = 1,
         };
         layout.Controls.Add(glyph, 0, 0);
-        layout.Controls.Add(message, 1, 0);
+        FlowLayoutPanel text = new FlowLayoutPanel {
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Anchor = AnchorStyles.Left,
+            BackColor = Background,
+            FlowDirection = FlowDirection.TopDown,
+            Margin = new Padding(0, 10, 18, 10),
+            WrapContents = false,
+        };
+        List<Control> clickable = [this, layout, glyph, text, message];
+        if (keyboardName is not null) {
+            Label name = new Label {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9f),
+                ForeColor = Color.Gainsboro,
+                Margin = Padding.Empty,
+                Text = keyboardName,
+            };
+            text.Controls.Add(name);
+            clickable.Add(name);
+        }
+        text.Controls.Add(message);
+        layout.Controls.Add(text, 1, 0);
         Controls.Add(layout);
 
-        foreach (Control control in new Control[] { this, layout, glyph, message }) {
+        foreach (Control control in clickable) {
             control.Click += (_, _) => Close();
         }
 
         dismissTimer.Interval = DismissDelayMs;
         dismissTimer.Tick += (_, _) => Close();
     }
+
+    // Wide enough for the longest name of a keyboard (its model and an index) beside the glyph.
+    protected override int FixedWidthDip => 420;
 
     protected override void OnLoad(EventArgs e) {
         base.OnLoad(e);
@@ -63,8 +89,8 @@ internal sealed class LowBatteryForm : NoticeForm {
         base.Dispose(disposing);
     }
 
-    // Segoe MDL2 Assets Battery0 (U+E850, empty) .. Battery10 (U+E85A, full) - the same
-    // verified range the config UI's status icon uses.
+    // Segoe MDL2 Assets Battery0 (U+E850, empty) .. Battery9 (U+E859) are contiguous; a notice is only
+    // due for a low charge, so the levels above, where the range does not go on, are never asked for.
     private static string BatteryGlyph(int percent) {
         return ((char)(0xE850 + Math.Clamp(percent / 10, 0, 10))).ToString();
     }

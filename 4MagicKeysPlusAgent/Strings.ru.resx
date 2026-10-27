@@ -24,4 +24,10 @@
   <data name="HotkeyAlreadyRegistered" xml:space="preserve">
     <value>Это сочетание уже занято другой программой.</value>
   </data>
+  <data name="KeyboardModelA1644" xml:space="preserve">
+    <value>Magic Keyboard (без цифрового блока, A1644)</value>
+  </data>
+  <data name="KeyboardModelA1843" xml:space="preserve">
+    <value>Magic Keyboard с цифровым блоком (A1843)</value>
+  </data>
 </root>

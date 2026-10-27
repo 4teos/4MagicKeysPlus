@@ -258,7 +258,7 @@ The agent reads the entries at start and registers the hotkeys; restart it after
 
 ### Battery Notice
 
-The agent reads the keyboard battery (the vendor HID report `0x90` of the keyboard, no driver involved) every 15 minutes, the first time 15 minutes after it starts, and shows a small always-on-top notice at the bottom center of the screen when the charge reaches 20% and again at 5%. It does not take focus, closes by itself after a few seconds or on a click, and stays quiet while the keyboard is charging. Plugging the keyboard in re-arms both warnings.
+The agent reads the keyboard battery (the vendor HID report `0x90` of the keyboard, no driver involved) every 15 minutes, the first time 15 minutes after it starts, of every keyboard that is connected (over the cable, if a keyboard is connected both ways), and shows a small always-on-top notice at the bottom center of the screen when the charge reaches 20% and again at 5%. It does not take focus, closes by itself after a few seconds or on a click, and stays quiet while the keyboard is charging. Plugging the keyboard in re-arms both warnings. Every keyboard has its own warnings, the same whichever way it is connected: if the charge of several falls below a threshold together, there is a notice for each, stacked upward from the usual place so that they do not overlap (the notice of the hotkey errors keeps clear of them the same way). When more than one keyboard is known, a notice also says which keyboard it is about, by its model (and its index, see [Keyboard Profiles](#keyboard-profiles)).
 
 ### Driver Settings
 
@@ -428,7 +428,7 @@ The "Product version" in the file properties of a .NET file is followed by `+` a
 - Agent (launch entry loading, battery notice policy, watching for new keyboards): `dotnet test 4MagicKeysPlusAgentTests`.
 - Configuration app (rule decoding and encoding, editing, saving rules, keyboards, profiles and their selection, tooltips, key names, theme keys, settings, languages, autostart): `dotnet test 4MagicKeysPlusTests`. The tests of saving use a scratch key under `HKEY_CURRENT_USER\Software\4MagicKeysPlusTests`, which they delete afterwards; they never touch the driver's rules.
 
-The Debug build of the agent accepts two test switches that are not compiled into Release: `--demo-battery <percent> [delay seconds]` shows the battery notice once and exits, `--battery-interval <seconds>` checks the battery that often and logs every reading.
+The Debug build of the agent accepts three test switches that are not compiled into Release: `--demo-battery <percent> [delay seconds]` shows the battery notice once and exits, `--demo-batteries` shows the notices of three keyboards at once (to see that they do not overlap) and exits when they have closed, `--battery-interval <seconds>` checks the battery that often and logs every reading.
 
 #### Code Formatting
 
