@@ -1,22 +1,13 @@
-// Kernel-only glue between plain-C Driver.c/Driver.h and the portable
-// KeyProcessor class (KeyProcessor.h/.cpp, no kernel headers, also compiled
-// into the KeyProcessor.Tests project). Keeps VHFHANDLE/VhfReadReportSubmit/
-// pool allocation out of KeyProcessor itself so that class stays unit-testable
-// in user mode.
 #include "Driver.h"
 #include "KeyProcessor.h"
 
-// Kernel mode has no <new> header (no CRT backing it) - placement new must be
-// declared by hand. This overload takes no allocator action, it only lets us
-// construct KeyProcessor into memory we already got from ExAllocatePool2.
+// Kernel mode has no <new>: placement new is declared by hand.
 inline void* operator new(size_t, void* location) noexcept {
     return location;
 }
 
 namespace {
-    // A reload (passive level, from the control device) can come while Process() runs for a
-    // report (up to dispatch level), so each instance carries the lock that keeps them apart.
-    // KeyProcessor itself stays free of kernel types.
+    // A reload (passive level) can come while Process() runs (up to dispatch level): the lock keeps them apart.
     struct KeyProcessorInstance {
         KSPIN_LOCK Lock;
         KeyProcessor Processor;
@@ -27,7 +18,7 @@ namespace {
             return;
         }
 
-        // reportBuffer must start with the report ID byte itself, followed by the report data.
+        // reportBuffer starts with the report ID byte itself.
         UCHAR reportBuffer[3] = {2, (UCHAR)(usage & 0xFF), (UCHAR)(usage >> 8)};
         HID_XFER_PACKET packet;
         packet.reportBuffer = reportBuffer;

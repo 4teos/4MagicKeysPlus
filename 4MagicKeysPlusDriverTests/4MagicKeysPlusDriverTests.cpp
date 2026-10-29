@@ -7,8 +7,7 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace My4MagicKeysPlusDriverTests {
     namespace {
-        // 9-byte HID report layout Process() expects: [0]=modifiers,
-        // [1]=reserved, [2..7]=keycodes, [8]=virtual Fn/Eject bits.
+        // [0]=modifiers, [1]=reserved, [2..7]=keycodes, [8]=special key bits
         struct Report {
             BYTE bytes[9] = {};
             Report& Modifier(BYTE mask) {
@@ -20,11 +19,15 @@ namespace My4MagicKeysPlusDriverTests {
                 return *this;
             }
             Report& Fn() {
-                bytes[8] |= 0x2;
+                bytes[8] |= SPECIAL_KEY_FN;
                 return *this;
             }
             Report& Eject() {
-                bytes[8] |= 0x1;
+                bytes[8] |= SPECIAL_KEY_EJECT;
+                return *this;
+            }
+            Report& Lock() {
+                bytes[8] |= SPECIAL_KEY_LOCK;
                 return *this;
             }
         };
@@ -47,9 +50,6 @@ namespace My4MagicKeysPlusDriverTests {
             kp.LoadConfig(fnLock, nullptr, 0);
         }
 
-        // Mirrors the Parameters\Rules subkeys created for the user's own
-        // setup (their old KeyMap/ModMap plus the Fn behavior that used to be
-        // hardcoded in the driver). Keep identical to the registry script.
         const KEY_RULE kUserRules[] = {
             {0x000000F0, 0x000000F1, false}, // Eject -> Fn
             {0x000000F1, 0x00000049, false}, // Fn -> Insert
@@ -180,10 +180,6 @@ namespace My4MagicKeysPlusDriverTests {
         }
     };
 
-    // Regression coverage for the snapshot approach used in
-    // ProcessModifiersAndVirtualKeys: an earlier draft decided from values it
-    // had already written earlier in the same pass, which let independently
-    // configured rules silently cancel or chain into each other.
     TEST_CLASS(VirtualKeyRuleTests) {
     public:
         TEST_METHOD(ModifierMapsToFn) {
@@ -204,9 +200,7 @@ namespace My4MagicKeysPlusDriverTests {
         }
 
         TEST_METHOD(IndependentRulesDoNotChainInSamePass) {
-            // LeftCmd->Fn and Fn->LeftAlt configured together. Only LeftCmd is
-            // actually pressed, so Fn->LeftAlt must NOT also fire just because
-            // LeftCmd->Fn produced Fn earlier in this same call.
+            // Only LeftCmd is pressed: Fn->LeftAlt must not fire because LeftCmd->Fn produced Fn.
             KeyProcessor kp;
             const KEY_RULE rules[] = {
                 {Mods(HidLeftCmdMask), VIRTUAL_FN, false},
@@ -240,8 +234,6 @@ namespace My4MagicKeysPlusDriverTests {
             Assert::AreEqual((int)HidLeft, (int)report.bytes[2]);
         }
 
-        // The user's own setup: Eject acts as Fn, the physical Fn types Insert.
-        // Neither may leak into the other within one report.
         TEST_METHOD(EjectActsAsFnAndFnTypesInsert) {
             KeyProcessor kp;
             const KEY_RULE rules[] = {
@@ -324,6 +316,106 @@ namespace My4MagicKeysPlusDriverTests {
             Assert::IsFalse(result.ShouldSubmit);
         }
 
+        TEST_METHOD(OtherBitsOfTheSpecialByteArePassedThrough) {
+            KeyProcessor kp;
+            LoadNone(kp);
+
+            Report report;
+            report.Fn().Eject();
+            report.bytes[8] |= 0xF8;
+            kp.Process(report.bytes, sizeof(report.bytes));
+            Assert::AreEqual(0xF8, (int)report.bytes[8]);
+        }
+
+        TEST_METHOD(LockPassesThroughWithoutARule) {
+            KeyProcessor kp;
+            LoadNone(kp);
+
+            Report report;
+            report.Lock();
+            kp.Process(report.bytes, sizeof(report.bytes));
+            Assert::AreEqual((int)SPECIAL_KEY_LOCK, (int)report.bytes[8]);
+        }
+
+        TEST_METHOD(LockBecomesAKey) {
+            KeyProcessor kp;
+            const KEY_RULE rules[] = {{VIRTUAL_LOCK, HidInsert, false}};
+            Load(kp, 0, rules);
+
+            Report report;
+            report.Lock();
+            kp.Process(report.bytes, sizeof(report.bytes));
+            Assert::AreEqual((int)HidInsert, (int)report.bytes[2]);
+            Assert::AreEqual(0, (int)report.bytes[8]);
+        }
+
+        TEST_METHOD(LockBecomesAModifier) {
+            KeyProcessor kp;
+            const KEY_RULE rules[] = {{VIRTUAL_LOCK, Mods(HidLeftCtrlMask), false}};
+            Load(kp, 0, rules);
+
+            Report report;
+            report.Lock();
+            kp.Process(report.bytes, sizeof(report.bytes));
+            Assert::AreEqual((int)HidLeftCtrlMask, (int)report.bytes[0]);
+            Assert::AreEqual(0, (int)report.bytes[8]);
+        }
+
+        TEST_METHOD(LockActsAsFn) {
+            KeyProcessor kp;
+            const KEY_RULE rules[] = {
+                {VIRTUAL_LOCK, VIRTUAL_FN, false},
+                {kFn | HidLeft, HidHome, false},
+            };
+            Load(kp, 0, rules);
+
+            Report report;
+            report.Lock().Key(0, HidLeft);
+            kp.Process(report.bytes, sizeof(report.bytes));
+            Assert::AreEqual((int)HidHome, (int)report.bytes[2]);
+            Assert::AreEqual(0, (int)report.bytes[8]);
+        }
+
+        TEST_METHOD(LockRuleDoesNothingWhileLockIsNotPressed) {
+            KeyProcessor kp;
+            const KEY_RULE rules[] = {{VIRTUAL_LOCK, HidInsert, false}};
+            Load(kp, 0, rules);
+
+            Report report;
+            report.Key(0, HidKeyB);
+            kp.Process(report.bytes, sizeof(report.bytes));
+            Assert::AreEqual((int)HidKeyB, (int)report.bytes[2]);
+            Assert::AreEqual(0, (int)report.bytes[3]);
+        }
+
+        TEST_METHOD(LockCannotBeATarget) {
+            KeyProcessor kp;
+            const KEY_RULE rules[] = {
+                {HidKeyB, VIRTUAL_LOCK, false},
+                {VIRTUAL_EJECT, VIRTUAL_LOCK, false},
+                {Mods(HidLeftCtrlMask), VIRTUAL_LOCK, false},
+            };
+            Assert::AreEqual(0, (int)kp.LoadConfig(0, rules, 3));
+        }
+
+        TEST_METHOD(EjectFnAndLockEachInjectTheirKey) {
+            KeyProcessor kp;
+            const KEY_RULE rules[] = {
+                {VIRTUAL_EJECT, HidEnd, false},
+                {VIRTUAL_FN, HidInsert, false},
+                {VIRTUAL_LOCK, HidHome, false},
+            };
+            Load(kp, 0, rules);
+
+            Report report;
+            report.Eject().Fn().Lock();
+            kp.Process(report.bytes, sizeof(report.bytes));
+            Assert::AreEqual((int)HidEnd, (int)report.bytes[2]);
+            Assert::AreEqual((int)HidInsert, (int)report.bytes[3]);
+            Assert::AreEqual((int)HidHome, (int)report.bytes[4]);
+            Assert::AreEqual(0, (int)report.bytes[8]);
+        }
+
         TEST_METHOD(FnLockDoesNotAffectNonAwareRules) {
             KeyProcessor kp;
             const KEY_RULE rules[] = {{kFn | HidLeft, HidHome, false}};
@@ -341,7 +433,6 @@ namespace My4MagicKeysPlusDriverTests {
         }
     };
 
-    // FnLock on: F8 is F8 and Fn+F8 is Play/Pause. FnLock off: the opposite.
     TEST_CLASS(FnLockAwareTests) {
     public:
         TEST_METHOD(FnLockOffMediaWithoutFn) {
@@ -433,11 +524,6 @@ namespace My4MagicKeysPlusDriverTests {
             Assert::AreEqual((int)CONSUMER_USAGE_NONE, (int)result.Usage);
         }
 
-        // Regression test for the original bug this whole KeyProcessor class split
-        // was meant to fix: two physical keyboards used to share one global
-        // g_LastConsumerUsage, so an identical key press on the second keyboard
-        // was silently swallowed. Two independent KeyProcessor instances (one per
-        // DEVICE_CONTEXT in the real driver) must not do that.
         TEST_METHOD(TwoDevicesDoNotShareDedupState) {
             KeyProcessor deviceA;
             KeyProcessor deviceB;
@@ -511,7 +597,6 @@ namespace My4MagicKeysPlusDriverTests {
         }
     };
 
-    // The control device's reload calls LoadConfig again on a processor that is already in use.
     TEST_CLASS(ReloadTests) {
     public:
         TEST_METHOD(LoadConfigReturnsHowManyRulesWereKept) {
@@ -568,8 +653,6 @@ namespace My4MagicKeysPlusDriverTests {
             Assert::AreEqual((int)CONSUMER_USAGE_PLAYPAUSE, (int)result.Usage);
         }
 
-        // A media key still held when its rule is removed must be released: the dedup state
-        // survives the reload, so the release report is submitted and the usage doesn't stick.
         TEST_METHOD(MediaKeyHeldAcrossAReloadIsStillReleased) {
             KeyProcessor kp;
             Load(kp, 0, kUserRules);

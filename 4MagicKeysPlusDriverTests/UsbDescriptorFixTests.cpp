@@ -1,0 +1,155 @@
+#include "pch.h"
+#include "CppUnitTest.h"
+
+#include <vector>
+
+#include "UsbDescriptorFix.h"
+
+using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+
+namespace My4MagicKeysPlusDriverTests {
+    namespace {
+        const unsigned char kThirdGenerationBattery[] = {
+            0x06, 0x00, 0xFF, 0x09, 0x0B, 0xA1, 0x01, 0x06, 0x00, 0xFF, 0x09, 0x0B,
+            0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x96, 0x04, 0x00, 0x85, 0xE0,
+            0x81, 0x22, 0x09, 0x0B, 0x96, 0x01, 0x00, 0x85, 0x9A, 0x81, 0x22, 0xC0,
+            0x06, 0x00, 0xFF, 0x09, 0x14, 0xA1, 0x01, 0x85, 0x90, 0x05, 0x84, 0x75,
+            0x01, 0x95, 0x03, 0x15, 0x00, 0x25, 0x01, 0x09, 0x61, 0x05, 0x85, 0x09,
+            0x44, 0x09, 0x46, 0x81, 0x02, 0x95, 0x05, 0x81, 0x01, 0x75, 0x08, 0x95,
+            0x01, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x09, 0x65, 0x81, 0x02, 0xC0, 0x06,
+            0x00, 0xFF, 0x09, 0x14, 0xA1, 0x01, 0x85, 0x9B, 0x05, 0x84, 0x75, 0x01,
+            0x95, 0x03, 0x15, 0x00, 0x25, 0x01, 0x09, 0x61, 0x05, 0x85, 0x09, 0x44,
+            0x09, 0x46, 0x81, 0x02, 0x95, 0x05, 0x81, 0x01, 0x75, 0x08, 0x95, 0x01,
+            0x15, 0x00, 0x26, 0xFF, 0x00, 0x09, 0x65, 0x81, 0x02, 0x75, 0x08, 0x95,
+            0x01, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x09, 0x6E, 0x81, 0x02, 0x75, 0x08,
+            0x95, 0x01, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x09, 0x6C, 0x81, 0x02, 0x75,
+            0x08, 0x95, 0x01, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x09, 0x6D, 0x81, 0x02,
+            0x75, 0x08, 0x95, 0x04, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x09, 0x6F, 0x81,
+            0x02, 0x75, 0x08, 0x95, 0x04, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x09, 0x70,
+            0x81, 0x02, 0xC0, 0x06, 0x00, 0xFF, 0x09, 0x14, 0xA1, 0x01, 0x85, 0x9C,
+            0x05, 0x84, 0x75, 0x08, 0x95, 0x01, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x09,
+            0x71, 0x81, 0x02, 0x75, 0x08, 0x95, 0x04, 0x15, 0x00, 0x26, 0xFF, 0x00,
+            0x09, 0x73, 0x81, 0x02, 0x75, 0x08, 0x95, 0x01, 0x15, 0x00, 0x26, 0xFF,
+            0x00, 0x09, 0x72, 0x81, 0x02, 0x75, 0x08, 0x95, 0x04, 0x15, 0x00, 0x26,
+            0xFF, 0x00, 0x09, 0x74, 0x81, 0x02, 0xC0, 0x00, 0x00, 0x00, 0x00};
+        const unsigned int kFirstGenerationLength = 83;
+
+        std::vector<unsigned char> Bytes(std::initializer_list<unsigned char> bytes) {
+            return std::vector<unsigned char>(bytes);
+        }
+    }
+
+    TEST_CLASS(ReportDescriptorTests) {
+    public:
+        TEST_METHOD(TheDescriptorOfTheThirdGenerationIsCutToTheFirstGenerationOne) {
+            Assert::AreEqual(263u, (unsigned int)sizeof(kThirdGenerationBattery));
+            Assert::AreEqual(kFirstGenerationLength, MkpTrimBatteryReportDescriptor(kThirdGenerationBattery, sizeof(kThirdGenerationBattery)));
+        }
+
+        TEST_METHOD(TheDescriptorOfTheFirstGenerationIsLeftAlone) {
+            Assert::AreEqual(kFirstGenerationLength, MkpTrimBatteryReportDescriptor(kThirdGenerationBattery, kFirstGenerationLength));
+        }
+
+        TEST_METHOD(AShortReadIsLeftAlone) {
+            Assert::AreEqual(64u, MkpTrimBatteryReportDescriptor(kThirdGenerationBattery, 64));
+            Assert::AreEqual(0u, MkpTrimBatteryReportDescriptor(kThirdGenerationBattery, 0));
+        }
+
+        TEST_METHOD(ADifferentDescriptorIsLeftAlone) {
+            std::vector<unsigned char> keyboard(207, 0x15);
+            keyboard[0] = 0x05;
+            keyboard[1] = 0x01;
+            Assert::AreEqual(207u, MkpTrimBatteryReportDescriptor(keyboard.data(), (unsigned int)keyboard.size()));
+        }
+
+        TEST_METHOD(ADescriptorThatDiffersInTheLastByteOfThePrefixIsLeftAlone) {
+            std::vector<unsigned char> changed(kThirdGenerationBattery, kThirdGenerationBattery + sizeof(kThirdGenerationBattery));
+            changed[kFirstGenerationLength - 1] = 0x00;
+            Assert::AreEqual((unsigned int)changed.size(), MkpTrimBatteryReportDescriptor(changed.data(), (unsigned int)changed.size()));
+        }
+
+        TEST_METHOD(NothingIsReadFromAMissingBuffer) {
+            Assert::AreEqual(263u, MkpTrimBatteryReportDescriptor(nullptr, 263));
+        }
+    };
+
+    TEST_CLASS(HidDescriptorTests) {
+    public:
+        TEST_METHOD(TheReportDescriptorLengthOfTheThirdGenerationIsPatched) {
+            std::vector<unsigned char> hid = Bytes({0x09, 0x21, 0x11, 0x01, 0x00, 0x01, 0x22, 0x07, 0x01});
+
+            Assert::AreEqual(1u, MkpPatchHidDescriptorLength(hid.data(), (unsigned int)hid.size()));
+            Assert::AreEqual(0x53, (int)hid[7]);
+            Assert::AreEqual(0x00, (int)hid[8]);
+        }
+
+        TEST_METHOD(AHidDescriptorInsideAConfigurationDescriptorIsPatched) {
+            std::vector<unsigned char> configuration = Bytes({
+                0x09,
+                0x02,
+                0x29,
+                0x00,
+                0x03,
+                0x01,
+                0x00,
+                0xA0,
+                0x32,
+                0x09,
+                0x04,
+                0x00,
+                0x00,
+                0x01,
+                0x03,
+                0x00,
+                0x00,
+                0x00,
+                0x09,
+                0x21,
+                0x11,
+                0x01,
+                0x00,
+                0x01,
+                0x22,
+                0x07,
+                0x01,
+                0x07,
+                0x05,
+                0x81,
+                0x03,
+                0x40,
+                0x00,
+                0x0A,
+            });
+
+            Assert::AreEqual(1u, MkpPatchHidDescriptorLength(configuration.data(), (unsigned int)configuration.size()));
+            Assert::AreEqual(0x53, (int)configuration[25]);
+            Assert::AreEqual(0x00, (int)configuration[26]);
+            Assert::AreEqual(0x40, (int)configuration[31]);
+        }
+
+        TEST_METHOD(OtherReportDescriptorLengthsAreLeftAlone) {
+            std::vector<unsigned char> hid = Bytes({0x09, 0x21, 0x11, 0x01, 0x00, 0x01, 0x22, 0xCF, 0x00});
+
+            Assert::AreEqual(0u, MkpPatchHidDescriptorLength(hid.data(), (unsigned int)hid.size()));
+            Assert::AreEqual(0xCF, (int)hid[7]);
+        }
+
+        TEST_METHOD(ADescriptorThatIsNotAHidDescriptorIsLeftAlone) {
+            std::vector<unsigned char> endpoint = Bytes({0x09, 0x05, 0x11, 0x01, 0x00, 0x01, 0x22, 0x07, 0x01});
+
+            Assert::AreEqual(0u, MkpPatchHidDescriptorLength(endpoint.data(), (unsigned int)endpoint.size()));
+            Assert::AreEqual(0x07, (int)endpoint[7]);
+        }
+
+        TEST_METHOD(AMalformedChainOfDescriptorsStopsTheWalk) {
+            std::vector<unsigned char> zeroSize = Bytes({0x00, 0x21, 0x09, 0x21, 0x11, 0x01, 0x00, 0x01, 0x22, 0x07, 0x01});
+            std::vector<unsigned char> tooLong = Bytes({0x20, 0x21, 0x11, 0x01, 0x00, 0x01, 0x22, 0x07, 0x01});
+            std::vector<unsigned char> cut = Bytes({0x09, 0x21, 0x11, 0x01, 0x00, 0x01, 0x22, 0x07});
+
+            Assert::AreEqual(0u, MkpPatchHidDescriptorLength(zeroSize.data(), (unsigned int)zeroSize.size()));
+            Assert::AreEqual(0u, MkpPatchHidDescriptorLength(tooLong.data(), (unsigned int)tooLong.size()));
+            Assert::AreEqual(0u, MkpPatchHidDescriptorLength(cut.data(), (unsigned int)cut.size()));
+            Assert::AreEqual(0u, MkpPatchHidDescriptorLength(nullptr, 9));
+        }
+    };
+}

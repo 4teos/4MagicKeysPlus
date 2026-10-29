@@ -36,7 +36,6 @@ namespace My4MagicKeysPlusDriverTests {
             Assert::AreEqual(expected, result.Identity);
         }
 
-        // The instance IDs are the ones of the A1843 on the development machine.
         const wchar_t* kBluetoothHid = L"BTHENUM\\{00001124-0000-1000-8000-00805F9B34FB}_VID&0001004C_PID&026C\\D&15B70467&0&C4141104498E_C00000000";
         const wchar_t* kUsbDevice = L"USB\\VID_05AC&PID_026C\\F0T125100BWJKPGAS";
     }
@@ -126,11 +125,13 @@ namespace My4MagicKeysPlusDriverTests {
         TEST_METHOD(TheProductIdOfThePairedHidServiceIsTheModel) {
             Assert::AreEqual(0x026Cu, MkpProductIdFromBluetoothDeviceId(kBluetoothHid));
             Assert::AreEqual(0x0267u, MkpProductIdFromBluetoothDeviceId(L"BTHENUM\\{00001124-0000-1000-8000-00805F9B34FB}_VID&0001004C_PID&0267\\D&15B70467&0&C4141104498E_C00000000"));
+            Assert::AreEqual(0x0321u, MkpProductIdFromBluetoothDeviceId(L"BTHENUM\\{00001124-0000-1000-8000-00805F9B34FB}_VID&0001004C_PID&0321\\D&15B70467&0&1C1DD38137D0_C00000000"));
         }
 
         TEST_METHOD(TheProductIdOfTheParentUsbDeviceIsTheModel) {
             Assert::AreEqual(0x026Cu, MkpProductIdFromUsbDeviceId(kUsbDevice));
             Assert::AreEqual(0x0267u, MkpProductIdFromUsbDeviceId(L"USB\\VID_05AC&PID_0267\\F0T125100BWJKPGAS"));
+            Assert::AreEqual(0x0321u, MkpProductIdFromUsbDeviceId(L"USB\\VID_05AC&PID_0321\\F0THCD0AG1A0000TXQ"));
         }
 
         TEST_METHOD(TheCaseOfTheIdDoesNotMatter) {
@@ -220,6 +221,24 @@ namespace My4MagicKeysPlusDriverTests {
             Assert::AreEqual(0, MkpIdentityListContains(nullptr, 0, L"bt:AA"));
             Assert::AreEqual(0, MkpIdentityListContains(gaps, sizeof(gaps) / sizeof(wchar_t), L""));
             Assert::AreEqual(1, MkpIdentityListContains(gaps, sizeof(gaps) / sizeof(wchar_t), L"bt:AA"));
+        }
+    };
+
+    TEST_CLASS(UsbInterfaceTests) {
+    public:
+        TEST_METHOD(TheFirstInterfaceOfAUsbDeviceIsRecognized) {
+            Assert::AreEqual(1, MkpIsUsbInterface0(L"USB\\VID_05AC&PID_0321&MI_00\\9&2C7E0693&0&0000"));
+            Assert::AreEqual(1, MkpIsUsbInterface0(L"usb\\vid_05ac&pid_0321&mi_00\\9&2c7e0693&0&0000"));
+        }
+
+        TEST_METHOD(OtherIdsAreNotTheFirstInterface) {
+            Assert::AreEqual(0, MkpIsUsbInterface0(L"USB\\VID_05AC&PID_0321&MI_01\\9&2C7E0693&0&0001"));
+            Assert::AreEqual(0, MkpIsUsbInterface0(L"USB\\VID_05AC&PID_0321&MI_02\\9&2C7E0693&0&0002"));
+            Assert::AreEqual(0, MkpIsUsbInterface0(L"USB\\VID_05AC&PID_0321\\F0THCD0AG1A0000TXQ"));
+            Assert::AreEqual(0, MkpIsUsbInterface0(L"USB\\VID_05AC&PID_0321&MI_00"));
+            Assert::AreEqual(0, MkpIsUsbInterface0(kBluetoothHid));
+            Assert::AreEqual(0, MkpIsUsbInterface0(L""));
+            Assert::AreEqual(0, MkpIsUsbInterface0(nullptr));
         }
     };
 }

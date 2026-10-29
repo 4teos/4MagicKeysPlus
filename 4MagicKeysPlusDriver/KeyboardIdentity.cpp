@@ -17,7 +17,6 @@ namespace {
         return length;
     }
 
-    // What follows the prefix, or null when the text does not start with it (letters compared without case).
     const wchar_t* SkipPrefix(const wchar_t* text, const wchar_t* prefix) {
         while (*prefix) {
             if (Upper(*text) != Upper(*prefix)) {
@@ -29,7 +28,6 @@ namespace {
         return text;
     }
 
-    // What follows the last backslash, or null when there is none.
     const wchar_t* LastSegment(const wchar_t* text) {
         const wchar_t* segment = nullptr;
         for (const wchar_t* p = text; *p; p++) {
@@ -54,9 +52,6 @@ namespace {
         return other[length] == L'\0';
     }
 
-    // The four hex digits that end the first segment of the ID (what is before the first backslash after the
-    // prefix), when the marker comes right before them: _PID& in BTHENUM\{...}_VID&0001004C_PID&026C\..., &PID_ in
-    // USB\VID_05AC&PID_026C\.... 0 when it is not so.
     unsigned int ProductIdOfFirstSegment(const wchar_t* deviceId, const wchar_t* prefix, const wchar_t* marker) {
         if (!deviceId) {
             return 0;
@@ -186,6 +181,28 @@ extern "C" {
         }
         identity[4 + length] = L'\0';
         return 1;
+    }
+
+    int MkpIsUsbInterface0(const wchar_t* deviceId) {
+        if (!deviceId) {
+            return 0;
+        }
+
+        const wchar_t* segment = SkipPrefix(deviceId, L"USB\\");
+        if (!segment) {
+            return 0;
+        }
+        const wchar_t* end = segment;
+        while (*end && *end != L'\\') {
+            end++;
+        }
+
+        const wchar_t marker[] = L"&MI_00";
+        unsigned int markerLength = Length(marker);
+        if (*end != L'\\' || (unsigned int)(end - segment) < markerLength) {
+            return 0;
+        }
+        return EqualsIgnoringCase(end - markerLength, markerLength, marker) ? 1 : 0;
     }
 
     int MkpIdentityListContains(const wchar_t* list, unsigned int chars, const wchar_t* identity) {

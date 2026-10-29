@@ -36,6 +36,9 @@
     <ClCompile Include="KeyProcessorInterop.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="UsbDescriptorFix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Driver.rc">
@@ -56,6 +59,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="KeyProcessorTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UsbDescriptorFix.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

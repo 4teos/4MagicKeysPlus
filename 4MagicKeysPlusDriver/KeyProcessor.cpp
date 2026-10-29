@@ -1,6 +1,8 @@
 #include "KeyProcessor.h"
 
 namespace {
+    const ULONG kMaxInjectedKeys = 3;
+
     BYTE ModsOf(DWORD value) {
         return (BYTE)((value & RULE_MODS_MASK) >> RULE_MODS_SHIFT);
     }
@@ -8,14 +10,25 @@ namespace {
     DWORD CodeOf(DWORD value) {
         return value & RULE_CODE_MASK;
     }
+
+    BYTE SpecialKeyBit(DWORD code) {
+        switch (code) {
+            case VIRTUAL_EJECT:
+                return SPECIAL_KEY_EJECT;
+            case VIRTUAL_FN:
+                return SPECIAL_KEY_FN;
+            case VIRTUAL_LOCK:
+                return SPECIAL_KEY_LOCK;
+            default:
+                return 0;
+        }
+    }
 }
 
 BOOLEAN KeyProcessor::IsSpecialVirtualKey(DWORD code) {
-    return code == VIRTUAL_EJECT || code == VIRTUAL_FN;
+    return code == VIRTUAL_EJECT || code == VIRTUAL_FN || code == VIRTUAL_LOCK;
 }
 
-// Shapes that are not interpreted (key -> Fn/Eject, modifier -> key code,
-// modifiers in a key source, ...) come back as RuleInvalid and are dropped.
 KeyProcessor::RuleKind KeyProcessor::ClassifyRule(DWORD source, DWORD target) {
     DWORD sourceFlags = source & RULE_FLAGS_MASK;
     DWORD targetFlags = target & RULE_FLAGS_MASK;
@@ -49,7 +62,7 @@ KeyProcessor::RuleKind KeyProcessor::ClassifyRule(DWORD source, DWORD target) {
             return sourceIsMod ? RuleModToMod : RuleVirtualToMod;
         }
         if (IsSpecialVirtualKey(targetCode)) {
-            if (targetMods != 0) {
+            if (targetMods != 0 || targetCode == VIRTUAL_LOCK) {
                 return RuleInvalid;
             }
             return sourceIsMod ? RuleModToVirtual : RuleVirtualToVirtual;
@@ -97,11 +110,9 @@ void KeyProcessor::InjectKey(BYTE* buf, BYTE keyCode) {
     }
 }
 
-// Decides everything from the original modifiers/Fn/Eject state, never from
-// what an earlier rule in this same pass produced, so independent rules can't
-// chain into each other or cancel a swap. Only the SOURCE side of a rule is
-// cleared; a rule's target bits are only ever added.
-void KeyProcessor::ProcessModifiersAndVirtualKeys(BYTE* buf, BOOLEAN* pFnPressed, BOOLEAN ejectPressed, BYTE* injectedKeys, ULONG* pInjectedCount) const {
+// Decides from the original state only, never from what an earlier rule of the same pass produced: independent rules
+// must not chain into each other. Only the source side of a rule is cleared, the target bits are only added.
+void KeyProcessor::ProcessModifiersAndVirtualKeys(BYTE* buf, BOOLEAN* pFnPressed, BYTE specialKeys, BYTE* injectedKeys, ULONG* pInjectedCount) const {
     const BYTE originalMods = buf[0];
     const BOOLEAN originalFn = *pFnPressed;
 
@@ -109,8 +120,7 @@ void KeyProcessor::ProcessModifiersAndVirtualKeys(BYTE* buf, BOOLEAN* pFnPressed
     BYTE producedMods = 0;
     BOOLEAN consumedFn = FALSE;
     BOOLEAN producedFn = FALSE;
-    BOOLEAN fnRuleApplied = FALSE;
-    BOOLEAN ejectRuleApplied = FALSE;
+    BYTE appliedSpecialKeys = 0;
 
     for (ULONG i = 0; i < m_RuleCount; i++) {
         const ParsedRule& rule = m_Rules[i];
@@ -134,14 +144,14 @@ void KeyProcessor::ProcessModifiersAndVirtualKeys(BYTE* buf, BOOLEAN* pFnPressed
             case RuleVirtualToMod:
             case RuleVirtualToVirtual:
             case RuleVirtualToKey: {
-                BOOLEAN sourceIsFn = CodeOf(rule.Source) == VIRTUAL_FN;
-                BOOLEAN sourcePressed = sourceIsFn ? originalFn : ejectPressed;
-                BOOLEAN* applied = sourceIsFn ? &fnRuleApplied : &ejectRuleApplied;
-                if (!sourcePressed || *applied) {
+                DWORD sourceCode = CodeOf(rule.Source);
+                BYTE sourceBit = SpecialKeyBit(sourceCode);
+                if (!(specialKeys & sourceBit) || (appliedSpecialKeys & sourceBit)) {
                     break;
                 }
-                *applied = TRUE;
-                if (sourceIsFn) {
+                appliedSpecialKeys |= sourceBit;
+                buf[8] &= (BYTE)~sourceBit;
+                if (sourceCode == VIRTUAL_FN) {
                     consumedFn = TRUE;
                 }
                 producedMods |= targetMods;
@@ -149,7 +159,7 @@ void KeyProcessor::ProcessModifiersAndVirtualKeys(BYTE* buf, BOOLEAN* pFnPressed
                     if (targetCode == VIRTUAL_FN) {
                         producedFn = TRUE;
                     }
-                } else if (rule.Kind == RuleVirtualToKey && *pInjectedCount < 2) {
+                } else if (rule.Kind == RuleVirtualToKey && *pInjectedCount < kMaxInjectedKeys) {
                     injectedKeys[(*pInjectedCount)++] = (BYTE)targetCode;
                 }
                 break;
@@ -168,8 +178,6 @@ void KeyProcessor::ProcessModifiersAndVirtualKeys(BYTE* buf, BOOLEAN* pFnPressed
     }
 }
 
-// Rules marked FnLockAware have their Fn requirement inverted while FnLock is
-// off, so one "Fn+F8 -> Play/Pause" rule covers both lock modes.
 BOOLEAN KeyProcessor::IsFnLayerActive(const ParsedRule& rule, BOOLEAN fnPressed) const {
     BOOLEAN active = fnPressed != FALSE;
     if (rule.FnLockAware && m_FnLock == 0) {
@@ -190,8 +198,6 @@ const KeyProcessor::ParsedRule* KeyProcessor::FindKeyRule(BYTE key, BOOLEAN fnLa
     return nullptr;
 }
 
-// An active Fn-layer rule wins; otherwise the plain rule for the key applies
-// (so e.g. a plain F13 remap keeps working while Fn is held).
 USHORT KeyProcessor::ProcessKeys(BYTE* buf, BOOLEAN fnPressed) const {
     USHORT consumerUsage = CONSUMER_USAGE_NONE;
     BYTE extraMods = 0;
@@ -228,14 +234,8 @@ USHORT KeyProcessor::ProcessKeys(BYTE* buf, BOOLEAN fnPressed) const {
     return consumerUsage;
 }
 
-// Decides whether the caller should submit a Consumer Control usage report.
-// Submits only on a state transition (including the transition back to
-// CONSUMER_USAGE_NONE) - Volume/Brightness/Scan Next/Previous are Re-Trigger
-// Controls, so the host keeps repeating the action for as long as the reported
-// value stays non-zero, and will only stop once it sees a report with 0. Without
-// ever sending that release report the action would repeat indefinitely, which
-// happened to be masked for Play/Pause only because it is a One-Shot Control
-// that fires once per transition regardless of how long the value stays set.
+// Submits only on a transition, including the one back to NONE: Volume and Brightness are re-trigger controls,
+// the host repeats them until it sees a report with 0.
 ConsumerUsageSubmission KeyProcessor::DecideConsumerUsageSubmission(USHORT usage) {
     if (usage == m_LastConsumerUsage) {
         return {false, usage};
@@ -260,16 +260,14 @@ ConsumerUsageSubmission KeyProcessor::Process(BYTE* buf, ULONG size) {
         }
     }
 
-    BYTE* pSpecialKey = &buf[8];
-    BOOLEAN fnPressed = (*pSpecialKey & 0x2) != 0;
-    BOOLEAN ejectPressed = (*pSpecialKey & 0x1) != 0;
-    *pSpecialKey = 0;
+    const BYTE specialKeys = buf[8];
+    BOOLEAN fnPressed = (specialKeys & SPECIAL_KEY_FN) != 0;
+    buf[8] &= (BYTE) ~(SPECIAL_KEY_EJECT | SPECIAL_KEY_FN);
 
-    // Keys produced by Fn/Eject -> key rules are injected only after the key
-    // pass so they are not remapped a second time.
-    BYTE injectedKeys[2] = {};
+    // Keys produced by special key rules are injected after the key pass so they are not remapped a second time.
+    BYTE injectedKeys[kMaxInjectedKeys] = {};
     ULONG injectedCount = 0;
-    ProcessModifiersAndVirtualKeys(buf, &fnPressed, ejectPressed, injectedKeys, &injectedCount);
+    ProcessModifiersAndVirtualKeys(buf, &fnPressed, specialKeys, injectedKeys, &injectedCount);
 
     USHORT consumerUsage = ProcessKeys(buf, fnPressed);
 
