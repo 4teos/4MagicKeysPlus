@@ -20,14 +20,10 @@
 extern "C" {
 #endif
 
-// DRIVERNAME and DebugPrint come from KeyProcessorTypes.h (its
-// KEYPROCESSOR_KERNEL_BUILD branch - defined project-wide by
-// 4MagicKeysPlus.vcxproj). It also carries the HID codes/enums, the rule
-// encoding and MAX_RULES, VIRTUAL_EJECT/FN and CONSUMER_USAGE_* constants,
-// shared as-is with the portable KeyProcessor class and its user-mode unit tests.
 #include "KeyProcessorTypes.h"
 #include "DriverInterface.h"
 #include "KeyboardIdentity.h"
+#include "UsbDescriptorFix.h"
 
 #if defined(DBG)
 #define DebugPrintBuffer(text, buffer, length) KdPrintBuffer(text, buffer, length)
@@ -35,34 +31,18 @@ extern "C" {
 #define DebugPrintBuffer(...) ((void)0)
 #endif
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // Per-device context - holds the handle to our virtual Consumer Control HID
-    // device and to this device's own KeyProcessor instance (opaque handle -
-    // KeyProcessor is a C++ class defined in KeyProcessor.h/.cpp; kept as PVOID
-    // here so this header and Driver.c can stay plain C), and the identity of
-    // the keyboard (bt:... / usb:..., empty when it has none) that its settings
-    // are looked up by, and the USB product ID of its model (0 when unknown),
-    // which finds the default settings for a keyboard that has no profile.
-    //
     typedef struct _DEVICE_CONTEXT {
         VHFHANDLE VhfHandle;
         PVOID KeyProcessorHandle;
         BOOLEAN InDeviceCollection;
         WCHAR Identity[MKP_IDENTITY_MAX_CHARS];
         ULONG ProductId;
+        BOOLEAN DescriptorFixOnly;
     } DEVICE_CONTEXT, *PDEVICE_CONTEXT;
 
     WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, GetDeviceContext)
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // Report Descriptor for the virtual Consumer Control device (media/brightness
-    // keys that cannot be expressed on the physical keyboard's own report).
-    //
-    // Array/selector style: a single 16-bit field reports the usage code of
-    // whichever Consumer Control key is currently pressed (0 = none). This
-    // matches how real multimedia keyboards report Consumer Control usages -
-    // Windows' legacy media-key translation (WM_APPCOMMAND / VK_MEDIA_*) does
-    // not appear to recognize a per-usage bitmap encoding.
+    // A single 16-bit selector instead of a per-usage bitmap: the legacy media-key translation of Windows does not recognize bitmaps.
     static const UCHAR g_ConsumerReportDescriptor[] = {
         0x05, 0x0C,        // USAGE_PAGE (Consumer Devices)
         0x09, 0x01,        // USAGE (Consumer Control)
@@ -78,9 +58,6 @@ extern "C" {
         0xC0                // END_COLLECTION
     };
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // Global functions
-
     NTSTATUS DriverEntry(IN PDRIVER_OBJECT driverObject, IN PUNICODE_STRING registryPath);
     NTSTATUS EvtDriverDeviceAdd(IN WDFDRIVER driver, IN PWDFDEVICE_INIT deviceInit);
     void EvtDeviceContextCleanup(IN WDFOBJECT object);
@@ -90,13 +67,6 @@ extern "C" {
 
     VOID EvtVhfReadyForNextReadReport(IN PVOID VhfClientContext);
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // KeyProcessor - opaque C wrapper around the KeyProcessor C++ class
-    // (KeyProcessor.h/.cpp, wrapped for kernel use in KeyProcessorInterop.cpp).
-    // One instance per physical device, owned by that device's DEVICE_CONTEXT.
-    // LoadConfig may run at the same time as Process; the wrapper serializes them.
-    // LoadConfig returns how many of the rules it kept.
-    //
     PVOID KeyProcessorCreate(void);
     void KeyProcessorDestroy(PVOID handle);
     ULONG KeyProcessorLoadConfig(PVOID handle, DWORD fnLock, const KEY_RULE* rules, ULONG ruleCount);

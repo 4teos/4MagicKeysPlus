@@ -1,28 +1,8 @@
 #pragma once
 
-// Pure HID constants/enums shared between the kernel driver build and the
-// user-mode KeyProcessor unit tests. Deliberately free of kernel-only headers
-// (ntddk.h/wdf.h/vhf.h) - see Driver.h for those, and for DEVICE_CONTEXT /
-// VHFHANDLE, which the tests don't need.
-
-// KEYPROCESSOR_KERNEL_BUILD is defined project-wide by 4MagicKeysPlus.vcxproj
-// (NOT by KeyProcessor.Tests.vcxproj). This has to be a project-level define
-// rather than something deduced from each translation unit's own #include
-// history: KeyProcessor.cpp never includes Driver.h/ntddk.h itself, so a
-// per-TU guard (e.g. "is _NTDDK_ defined yet") would let it disagree with
-// KeyProcessorInterop.cpp about whether BYTE/ULONG/... are the real ntddk.h
-// typedefs or fallback ones - same-named types with different underlying
-// types means different mangled names, and the two .obj files fail to link
-// (this happened once - LNK2019 on KeyProcessor::LoadConfig/Process).
+// Defined project-wide by the driver project, never by the tests: every file must agree on the types it sees.
 #if defined(KEYPROCESSOR_KERNEL_BUILD)
 
-// BYTE/DWORD/... aren't actually typedef'd by ntddk.h/wdm.h alone - they come
-// from further down this same chain (pulled in transitively by the
-// Bluetooth/USB/WDF headers). Mirror Driver.h's include list exactly rather
-// than guessing which single header is "the" one that provides them; Driver.h
-// already includes all of these before reaching this file, so this is a
-// no-op there (include guards) and only does real work for KeyProcessor.cpp,
-// which doesn't go through Driver.h at all.
 #include <ntddk.h>
 #include <wdf.h>
 #include <vhf.h>
@@ -47,7 +27,7 @@
 #define DebugPrint(...) ((void)0)
 #endif
 
-#else // !KEYPROCESSOR_KERNEL_BUILD - KeyProcessor.Tests, plain user-mode C++
+#else
 
 #if !defined(_WINDEF_)
 #include <cstdint>
@@ -67,14 +47,13 @@ typedef std::uint8_t BOOLEAN;
 
 #define DebugPrint(...) ((void)0)
 
-#endif // KEYPROCESSOR_KERNEL_BUILD
+#endif
 
-// Sanity cap on rules loaded from Parameters\Rules, not a functional limit.
 #define MAX_RULES 128
 
 // Rule encoding (Parameters\Rules\<name>\Source / Target, both REG_DWORD):
-//   bits  0-15  code: HID keyboard usage, VIRTUAL_EJECT/VIRTUAL_FN, or - in a
-//               target with RULE_TARGET_CONSUMER - a Consumer Control usage.
+//   bits  0-15  code: HID keyboard usage, VIRTUAL_EJECT/VIRTUAL_FN/VIRTUAL_LOCK (the last one only in a
+//               source), or - in a target with RULE_TARGET_CONSUMER - a Consumer Control usage.
 //               0 means "no key" (a pure modifier rule).
 //   bits 16-23  modifier mask (HidModifierMasks bits).
 //   bit  24     source: Fn must be held (RULE_SOURCE_FN);
@@ -95,10 +74,13 @@ typedef struct _KEY_RULE {
 
 #define VIRTUAL_EJECT 0xF0
 #define VIRTUAL_FN    0xF1
+#define VIRTUAL_LOCK  0xF2
 
-// Consumer Control (usage page 0x0C) usage codes reported in the virtual
-// Consumer Control report - see g_ConsumerReportDescriptor (Driver.c), which
-// reports the currently pressed key as a single 16-bit usage value.
+// Bits of the last byte of the keyboard report. Apple reports the Lock key (Touch ID on the models that have it) as the consumer usage Menu.
+#define SPECIAL_KEY_EJECT 0x01
+#define SPECIAL_KEY_FN    0x02
+#define SPECIAL_KEY_LOCK  0x04
+
 #define CONSUMER_USAGE_NONE        0x0000
 #define CONSUMER_USAGE_NEXT        0x00B5
 #define CONSUMER_USAGE_PREV        0x00B6
@@ -109,7 +91,7 @@ typedef struct _KEY_RULE {
 #define CONSUMER_VOLUME_UP         0x00E9
 #define CONSUMER_VOLUME_DOWN       0x00EA
 #define CONSUMER_CALCULATOR        0x0192
-// Upper bound of the usage range declared in g_ConsumerReportDescriptor (Driver.h).
+// The maximum of g_ConsumerReportDescriptor.
 #define CONSUMER_USAGE_MAX 0x03FF
 
 enum HidCodes {

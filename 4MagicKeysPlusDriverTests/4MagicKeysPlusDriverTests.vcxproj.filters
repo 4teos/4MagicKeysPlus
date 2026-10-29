@@ -24,6 +24,9 @@
     <ClCompile Include="KeyboardIdentityTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="UsbDescriptorFixTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -31,6 +34,9 @@
       <Filter>4MagicKeysPlusDriver</Filter>
     </ClCompile>
     <ClCompile Include="..\4MagicKeysPlusDriver\KeyProcessor.cpp">
+      <Filter>4MagicKeysPlusDriver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\4MagicKeysPlusDriver\UsbDescriptorFix.cpp">
       <Filter>4MagicKeysPlusDriver</Filter>
     </ClCompile>
   </ItemGroup>
@@ -45,6 +51,9 @@
       <Filter>4MagicKeysPlusDriver</Filter>
     </ClInclude>
     <ClInclude Include="..\4MagicKeysPlusDriver\KeyProcessorTypes.h">
+      <Filter>4MagicKeysPlusDriver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\4MagicKeysPlusDriver\UsbDescriptorFix.h">
       <Filter>4MagicKeysPlusDriver</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,18 +1,12 @@
 #include "Driver.h"
 #include <devpkey.h>
 
-// Upper bounds on the profiles and on the rule subkeys examined, so a damaged key can't keep an enumeration loop running.
 #define MAX_PROFILE_SUBKEYS 256
 #define MAX_RULE_SUBKEYS    1024
 
-// Room for the instance ID of a device, and for the Identities list of a profile (bytes).
 #define DEVICE_ID_BYTES      1024
 #define IDENTITIES_MAX_BYTES 4096
 
-///////////////////////////////////////////////////////////////////////////////
-// The configuration of the keyboard being loaded: its FnLock and its rules. They are filled from the
-// profile of one keyboard and handed to that keyboard at once, so they are only scratch space.
-//
 static DWORD g_dwFnLock = 0;
 static KEY_RULE g_Rules[MAX_RULES] = {0};
 static ULONG g_RuleCount = 0;
@@ -22,16 +16,12 @@ static UNICODE_STRING g_KeyboardsPath;
 static WCHAR g_DefaultsPathBuffer[512];
 static UNICODE_STRING g_DefaultsPath;
 
-// Where the configuration of a keyboard came from, for the log.
 typedef enum _CONFIGURATION_SOURCE {
     ConfigurationNone,
     ConfigurationProfile,
     ConfigurationDefaults
 } CONFIGURATION_SOURCE;
 
-// g_StateLock guards the scratch configuration above, g_DeviceCollection (every filtered
-// keyboard's WDFDEVICE) and g_ControlDevice, so that a reload and a keyboard being added or
-// removed never see each other half done.
 static WDFWAITLOCK g_StateLock;
 static WDFCOLLECTION g_DeviceCollection;
 static WDFDEVICE g_ControlDevice;
@@ -41,9 +31,6 @@ DECLARE_CONST_UNICODE_STRING(g_ControlSymbolicLink, MKP_CONTROL_SYMLINK_NAME);
 // Only SYSTEM and administrators may open the control device.
 DECLARE_CONST_UNICODE_STRING(g_ControlSddl, L"D:P(A;;GA;;;SY)(A;;GA;;;BA)");
 
-///////////////////////////////////////////////////////////////////////////////
-// Read a REG_DWORD value from an open key. *pValue is only written on success.
-//
 static NTSTATUS ReadDwordValue(HANDLE hKey, PCWSTR wcszValName, DWORD* pValue) {
     PAGED_CODE();
 
@@ -65,17 +52,11 @@ static NTSTATUS ReadDwordValue(HANDLE hKey, PCWSTR wcszValName, DWORD* pValue) {
     return STATUS_SUCCESS;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Load every rule subkey of an open Rules key into g_Rules. A subkey is a rule
-// only if it has REG_DWORD Source and Target; the subkey name itself is
-// irrelevant, and subkeys without a Target are skipped.
-//
 static void ReadRules(HANDLE hRules) {
     PAGED_CODE();
 
     g_RuleCount = 0;
 
-    // Registry key names are at most 255 characters.
     ULONG infoSize = sizeof(KEY_BASIC_INFORMATION) + 256 * sizeof(WCHAR);
     PKEY_BASIC_INFORMATION info = (PKEY_BASIC_INFORMATION)ExAllocatePool2(POOL_FLAG_PAGED, infoSize, 'uRyK');
     if (!info) {
@@ -118,9 +99,6 @@ static void ReadRules(HANDLE hRules) {
     ExFreePool(info);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Whether the Identities list (REG_MULTI_SZ) of an open profile key has this identity.
-//
 static BOOLEAN ProfileHasIdentity(HANDLE hProfile, const WCHAR* identity) {
     PAGED_CODE();
 
@@ -143,10 +121,6 @@ static BOOLEAN ProfileHasIdentity(HANDLE hProfile, const WCHAR* identity) {
     return found;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Load the settings under an open key of a profile (or of the default settings of a model, which are
-// laid out the same way) into g_dwFnLock and g_Rules: its FnLock value and its Rules subkey.
-//
 static void ReadSettings(HANDLE hSettings) {
     PAGED_CODE();
 
@@ -163,11 +137,6 @@ static void ReadSettings(HANDLE hSettings) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Load the configuration of the keyboard with this identity into g_dwFnLock and g_Rules: that of the
-// first profile under Parameters\Keyboards whose Identities has it. Fn Lock is off and there are no
-// rules when no profile has it. The caller holds g_StateLock.
-//
 static BOOLEAN LoadProfile(const WCHAR* identity) {
     PAGED_CODE();
 
@@ -184,7 +153,6 @@ static BOOLEAN LoadProfile(const WCHAR* identity) {
         return FALSE;
     }
 
-    // Registry key names are at most 255 characters.
     ULONG infoSize = sizeof(KEY_BASIC_INFORMATION) + 256 * sizeof(WCHAR);
     PKEY_BASIC_INFORMATION info = (PKEY_BASIC_INFORMATION)ExAllocatePool2(POOL_FLAG_PAGED, infoSize, 'uRyK');
     if (!info) {
@@ -227,11 +195,6 @@ static BOOLEAN LoadProfile(const WCHAR* identity) {
     return found;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Load the default settings of a model (its USB product ID) into g_dwFnLock and g_Rules: the subkey
-// of Parameters\Defaults named by the product ID as four hex digits. Fn Lock is off and there are no
-// rules when the model has none. The caller holds g_StateLock.
-//
 static BOOLEAN LoadDefaults(ULONG productId) {
     PAGED_CODE();
 
@@ -260,11 +223,7 @@ static BOOLEAN LoadDefaults(ULONG productId) {
     return TRUE;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Load the configuration of a keyboard into g_dwFnLock and g_Rules: that of its profile, or, when no
-// profile has its identity (or it has none), the default settings of its model. A profile that is
-// there is never mixed with the defaults, even if it has no rules. The caller holds g_StateLock.
-//
+// A profile that exists is never mixed with the defaults, even when it has no rules.
 static CONFIGURATION_SOURCE LoadConfiguration(const WCHAR* identity, ULONG productId) {
     PAGED_CODE();
 
@@ -274,11 +233,6 @@ static CONFIGURATION_SOURCE LoadConfiguration(const WCHAR* identity, ULONG produ
     return LoadDefaults(productId) ? ConfigurationDefaults : ConfigurationNone;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Look up the configuration of every filtered keyboard again and hand it to that keyboard. Returns
-// how many keyboards there are; *pRulesRead and *pRulesAccepted are the rules found for them and the
-// ones the processors kept, summed over the keyboards. The caller holds g_StateLock.
-//
 static ULONG ReloadDevices(ULONG* pRulesRead, ULONG* pRulesAccepted) {
     ULONG count = WdfCollectionGetCount(g_DeviceCollection);
     *pRulesRead = 0;
@@ -298,10 +252,6 @@ static ULONG ReloadDevices(ULONG* pRulesRead, ULONG* pRulesAccepted) {
     return count;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Reads a string property of the device's own devnode (an instance ID here) into the buffer,
-// which is left empty when the property is not there.
-//
 static BOOLEAN QueryDeviceString(WDFDEVICE device, const DEVPROPKEY* key, PWCHAR buffer, ULONG bufferBytes) {
     PAGED_CODE();
 
@@ -321,18 +271,13 @@ static BOOLEAN QueryDeviceString(WDFDEVICE device, const DEVPROPKEY* key, PWCHAR
     return TRUE;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// The identity of the keyboard this device is, written to 'identity' (empty when there is none): the
-// Bluetooth address, taken from the instance ID of the paired HID service the driver is attached to,
-// or the serial number, taken from the instance ID of the USB device that is the parent of the
-// interface it is attached to (USB\VID_05AC&PID_026C\<serial>). The same texts as the configuration app's.
-// The USB product ID of the model comes from the same instance IDs (*pProductId, 0 when they have none).
-//
-static void QueryDeviceIdentity(WDFDEVICE device, WCHAR* identity, ULONG* pProductId) {
+// The serial of a USB keyboard is in the instance ID of the parent of the interface the driver is attached to.
+static void QueryDeviceIdentity(WDFDEVICE device, WCHAR* identity, ULONG* pProductId, BOOLEAN* pDescriptorFixOnly) {
     PAGED_CODE();
 
     identity[0] = L'\0';
     *pProductId = 0;
+    *pDescriptorFixOnly = FALSE;
 
     PWCHAR deviceId = (PWCHAR)ExAllocatePool2(POOL_FLAG_PAGED, DEVICE_ID_BYTES, 'dIyK');
     if (!deviceId) {
@@ -341,6 +286,7 @@ static void QueryDeviceIdentity(WDFDEVICE device, WCHAR* identity, ULONG* pProdu
 
     if (QueryDeviceString(device, &DEVPKEY_Device_InstanceId, deviceId, DEVICE_ID_BYTES)) {
         DebugPrint("QueryDeviceIdentity(): instance ID '%ws'\n", deviceId);
+        *pDescriptorFixOnly = MkpIsUsbInterface0(deviceId) != 0;
         if (MkpIdentityFromBluetoothDeviceId(deviceId, identity)) {
             *pProductId = MkpProductIdFromBluetoothDeviceId(deviceId);
         } else if (QueryDeviceString(device, &DEVPKEY_Device_Parent, deviceId, DEVICE_ID_BYTES)) {
@@ -354,9 +300,6 @@ static void QueryDeviceIdentity(WDFDEVICE device, WCHAR* identity, ULONG* pProdu
     DebugPrint("QueryDeviceIdentity(): the identity of the keyboard is '%ws', the product ID is 0x%04lX\n", identity, *pProductId);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Control device: lets the configuration app tell the driver to reload its rules.
-//
 static VOID EvtControlIoDeviceControl(IN WDFQUEUE queue, IN WDFREQUEST request, IN size_t outputBufferLength, IN size_t inputBufferLength, IN ULONG ioControlCode) {
     UNREFERENCED_PARAMETER(queue);
     UNREFERENCED_PARAMETER(inputBufferLength);
@@ -388,10 +331,6 @@ static VOID EvtControlIoDeviceControl(IN WDFQUEUE queue, IN WDFREQUEST request, 
     WdfRequestCompleteWithInformation(request, status, bytesWritten);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Creates the control device. Called with g_StateLock held, when the first keyboard appears;
-// a failure only costs live reload, so the caller carries on without it.
-//
 static NTSTATUS CreateControlDevice(WDFDRIVER driver) {
     PAGED_CODE();
 
@@ -438,9 +377,6 @@ static NTSTATUS CreateControlDevice(WDFDRIVER driver) {
     return STATUS_SUCCESS;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Driver Entry
-//
 NTSTATUS DriverEntry(IN PDRIVER_OBJECT driverObject, IN PUNICODE_STRING registryPath) {
     DebugPrint("DriverEntry(): driverObject = 0x%p\n", driverObject);
 
@@ -471,9 +407,6 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT driverObject, IN PUNICODE_STRING registry
     return STATUS_SUCCESS;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// EvtDriverDeviceAdd - creates the KMDF filter device object and its I/O queue
-//
 NTSTATUS EvtDriverDeviceAdd(IN WDFDRIVER driver, IN PWDFDEVICE_INIT deviceInit) {
     DebugPrint("EvtDriverDeviceAdd()\n");
 
@@ -504,17 +437,17 @@ NTSTATUS EvtDriverDeviceAdd(IN WDFDRIVER driver, IN PWDFDEVICE_INIT deviceInit) 
     PDEVICE_CONTEXT deviceContext = GetDeviceContext(hDevice);
     deviceContext->VhfHandle = NULL;
 
+    QueryDeviceIdentity(hDevice, deviceContext->Identity, &deviceContext->ProductId, &deviceContext->DescriptorFixOnly);
+    if (deviceContext->DescriptorFixOnly) {
+        return STATUS_SUCCESS;
+    }
+
     deviceContext->KeyProcessorHandle = KeyProcessorCreate();
     if (!deviceContext->KeyProcessorHandle) {
         DebugPrint("EvtDriverDeviceAdd(): KeyProcessorCreate failed\n");
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
-    QueryDeviceIdentity(hDevice, deviceContext->Identity, &deviceContext->ProductId);
-
-    // From here on the device takes part in config reloads. The first keyboard also brings the
-    // control device along. The configuration is read afresh: settings saved while no keyboard was
-    // connected (so there was no control device to tell) apply to it now.
     WdfWaitLockAcquire(g_StateLock, NULL);
     CONFIGURATION_SOURCE source = LoadConfiguration(deviceContext->Identity, deviceContext->ProductId);
     ULONG rulesAccepted = KeyProcessorLoadConfig(deviceContext->KeyProcessorHandle, g_dwFnLock, g_Rules, g_RuleCount);
@@ -562,24 +495,15 @@ NTSTATUS EvtDriverDeviceAdd(IN WDFDRIVER driver, IN PWDFDEVICE_INIT deviceInit) 
     return STATUS_SUCCESS;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Diagnostic: fires whenever hidclass issues a new IOCTL_HID_READ_REPORT to
-// our virtual device and VHF is ready to accept another VhfReadReportSubmit.
-//
 VOID EvtVhfReadyForNextReadReport(IN PVOID VhfClientContext) {
     UNREFERENCED_PARAMETER(VhfClientContext);
     DebugPrint("EvtVhfReadyForNextReadReport()\n");
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Called when the filter device object is torn down - releases the VHF device
-// and this device's KeyProcessor instance
-//
 void EvtDeviceContextCleanup(IN WDFOBJECT object) {
     PDEVICE_CONTEXT deviceContext = GetDeviceContext(object);
 
-    // The last keyboard takes the control device with it. It is deleted outside the lock: that
-    // waits for a running IOCTL, which may itself be waiting for the lock.
+    // Deleted outside the lock: that waits for a running IOCTL, which may itself be waiting for the lock.
     WDFDEVICE controlDevice = NULL;
     WdfWaitLockAcquire(g_StateLock, NULL);
     if (deviceContext->InDeviceCollection) {
@@ -606,12 +530,34 @@ void EvtDeviceContextCleanup(IN WDFOBJECT object) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// All internal device control requests (including raw BT/USB transfers)
-// pass through here. We forward everything unchanged; requests carrying a
-// raw HID input report transfer get a completion routine attached so we can
-// peek (and, later, modify) the report bytes in transit.
-//
+static BOOLEAN IsDescriptorRequest(USHORT function) {
+    return function == URB_FUNCTION_GET_DESCRIPTOR_FROM_DEVICE || function == URB_FUNCTION_GET_DESCRIPTOR_FROM_INTERFACE;
+}
+
+static void FixDescriptorRequest(PURB urb) {
+    struct _URB_CONTROL_DESCRIPTOR_REQUEST* request = &urb->UrbControlDescriptorRequest;
+    PUCHAR buffer = (PUCHAR)request->TransferBuffer;
+    if (!buffer && request->TransferBufferMDL) {
+        buffer = (PUCHAR)MmGetSystemAddressForMdlSafe(request->TransferBufferMDL, NormalPagePriority | MdlMappingNoExecute);
+    }
+    if (!buffer) {
+        return;
+    }
+
+    ULONG length = request->TransferBufferLength;
+    DebugPrint("FixDescriptorRequest(): function 0x%x, descriptor type 0x%x, %lu bytes\n", urb->UrbHeader.Function, request->DescriptorType, length);
+
+    if (request->DescriptorType == MKP_USB_DESCRIPTOR_HID_REPORT) {
+        ULONG trimmed = MkpTrimBatteryReportDescriptor(buffer, length);
+        if (trimmed != length) {
+            request->TransferBufferLength = trimmed;
+            DebugPrint("FixDescriptorRequest(): the report descriptor is cut from %lu to %lu bytes\n", length, trimmed);
+        }
+    } else if (MkpPatchHidDescriptorLength(buffer, length) != 0) {
+        DebugPrint("FixDescriptorRequest(): the length of the report descriptor is patched in the HID descriptor\n");
+    }
+}
+
 void EvtIoInternalDeviceControl(IN WDFQUEUE queue, IN WDFREQUEST request, IN size_t outputBufferLength, IN size_t inputBufferLength, IN ULONG ioControlCode) {
     UNREFERENCED_PARAMETER(outputBufferLength);
     UNREFERENCED_PARAMETER(inputBufferLength);
@@ -627,8 +573,12 @@ void EvtIoInternalDeviceControl(IN WDFQUEUE queue, IN WDFREQUEST request, IN siz
         }
     } else if (ioControlCode == IOCTL_INTERNAL_USB_SUBMIT_URB) {
         PURB purb = (PURB)irpSp->Parameters.Others.Argument1;
-        if (purb && purb->UrbHeader.Function == URB_FUNCTION_BULK_OR_INTERRUPT_TRANSFER) {
-            bWatch = TRUE;
+        if (purb) {
+            if (GetDeviceContext(WdfIoQueueGetDevice(queue))->DescriptorFixOnly) {
+                bWatch = IsDescriptorRequest(purb->UrbHeader.Function);
+            } else {
+                bWatch = purb->UrbHeader.Function == URB_FUNCTION_BULK_OR_INTERRUPT_TRANSFER;
+            }
         }
     }
 
@@ -656,9 +606,6 @@ void EvtIoInternalDeviceControl(IN WDFQUEUE queue, IN WDFREQUEST request, IN siz
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Completion routine for watched requests - inspects the raw report bytes
-//
 void InternalIoctlRequestCompletion(IN WDFREQUEST request, IN WDFIOTARGET target, IN PWDF_REQUEST_COMPLETION_PARAMS params, IN WDFCONTEXT context) {
     UNREFERENCED_PARAMETER(target);
 
@@ -699,6 +646,8 @@ void InternalIoctlRequestCompletion(IN WDFREQUEST request, IN WDFIOTARGET target
                         KeyProcessorProcess(deviceContext->KeyProcessorHandle, buf + 1, 9, deviceContext->VhfHandle);
                     }
                 }
+            } else if (purb && IsDescriptorRequest(purb->UrbHeader.Function)) {
+                FixDescriptorRequest(purb);
             }
         }
     }

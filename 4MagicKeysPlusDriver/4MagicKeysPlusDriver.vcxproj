@@ -155,6 +155,7 @@
     <ClCompile Include="KeyboardIdentity.cpp" />
     <ClCompile Include="KeyProcessor.cpp" />
     <ClCompile Include="KeyProcessorInterop.cpp" />
+    <ClCompile Include="UsbDescriptorFix.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Driver.rc" />
@@ -165,6 +166,7 @@
     <ClInclude Include="KeyboardIdentity.h" />
     <ClInclude Include="KeyProcessor.h" />
     <ClInclude Include="KeyProcessorTypes.h" />
+    <ClInclude Include="UsbDescriptorFix.h" />
   </ItemGroup>
   <Target Name="CheckDriverVersion" BeforeTargets="ResourceCompile">
     <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(MkpDriverVersion)', '^[0-9]+(\.[0-9]+){3}$'))" Text="No version of the form a.b.c.d was found in the DriverVer line of 4MagicKeysPlus.inf (got '$(MkpDriverVersion)')." />
