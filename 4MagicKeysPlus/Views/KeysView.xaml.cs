@@ -20,19 +20,22 @@ public partial class KeysView : UserControl {
     private readonly KeyRemapEditor editor;
     private readonly FnLockEditor fnLock;
     private readonly DefaultsEditor defaults;
+    private readonly LayoutEditor layout;
     private KeyboardModel? model;
+    private LayoutStandard standard;
     private PhysicalKey? selectedKey;
     private bool isPicking;
     private bool withFn;
     private bool followFnLock;
     private Window? hostWindow;
 
-    // The model starts as that of the keyboard; the selector at the bottom is temporary.
+    // The model and the layout start as those of the keyboard; the selector at the bottom is temporary and saves nothing.
     internal KeysView(ProfileEditors editors, KeyboardProduct product) {
         InitializeComponent();
         editor = editors.Rules;
         fnLock = editors.FnLock;
         defaults = editors.Defaults;
+        layout = editors.Layout;
         FnLockToggle.IsChecked = fnLock.IsEnabled;
         ResetButton.IsEnabled = defaults.IsAvailable;
         if (!ResetButton.IsEnabled) {
@@ -51,14 +54,22 @@ public partial class KeysView : UserControl {
         };
 
         foreach (KeyboardProduct known in Enum.GetValues<KeyboardProduct>()) {
-            ModelSelector.Items.Add(KeyboardModel.From(known));
+            foreach (LayoutStandard each in Enum.GetValues<LayoutStandard>()) {
+                ModelSelector.Items.Add(new LayoutVariant(KeyboardModel.From(known), each));
+            }
         }
 
-        ModelSelector.SelectedValue = KeyboardModel.From(product);
+        ModelSelector.SelectedValue = new LayoutVariant(KeyboardModel.From(product), layout.Standard);
     }
 
     private void ModelSelector_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-        model = e.AddedItems.OfType<KeyboardModel>().FirstOrDefault();
+        if (e.AddedItems.OfType<LayoutVariant>().FirstOrDefault() is not { } variant) {
+            return;
+        }
+
+        model = variant.Model;
+        standard = variant.Standard;
+        LayoutToggle.IsChecked = standard == LayoutStandard.Iso;
         selectedKey = null;
         isPicking = false;
         Refresh();
@@ -165,6 +176,20 @@ public partial class KeysView : UserControl {
         }
     }
 
+    private void LayoutToggle_Click(object sender, RoutedEventArgs e) {
+        LayoutStandard wanted = LayoutToggle.IsChecked == true ? LayoutStandard.Iso : LayoutStandard.Ansi;
+        ApplyResult result = layout.Set(wanted);
+        if (result.Outcome == ApplyOutcome.Failed) {
+            LayoutToggle.IsChecked = wanted == LayoutStandard.Ansi;
+            ShowResult(LayoutResult, result);
+            return;
+        }
+
+        LayoutResult.Visibility = Visibility.Hidden;
+        LayoutResult.ToolTip = null;
+        ModelSelector.SelectedValue = new LayoutVariant(model!, wanted);
+    }
+
     private void ResetButton_Click(object sender, RoutedEventArgs e) {
         if (!ConfirmDialog.Ask(Window.GetWindow(this), Strings.ResetDefaultsPrompt)) {
             return;
@@ -236,7 +261,7 @@ public partial class KeysView : UserControl {
         bool canRemapWithFn = KeyRemapRules.CanRemap(key, fnLayer: true);
 
         StatusPanel.Visibility = Visibility.Visible;
-        PanelKeyHost.Content = BuildKeyTile(model, key);
+        PanelKeyHost.Content = BuildKeyTile(model, standard, key);
         PanelKeyName.Text = PhysicalKeyNames.GetDisplayName(key);
 
         if (isPicking) {
@@ -270,8 +295,8 @@ public partial class KeysView : UserControl {
         return rule.FnLockAware ? $"{description} ({Strings.KeyRuleFollowsFnLock})" : description;
     }
 
-    private static KeyBorder BuildKeyTile(KeyboardModel model, PhysicalKey key) {
-        KeyLayoutEntry? entry = KeyboardLayout.GetKeys(model).SelectMany(row => row.RowKeys).FirstOrDefault(candidate => candidate.Kind == key);
+    private static KeyBorder BuildKeyTile(KeyboardModel model, LayoutStandard standard, PhysicalKey key) {
+        KeyLayoutEntry? entry = KeyboardLayout.GetKeys(model, standard).SelectMany(row => row.RowKeys).FirstOrDefault(candidate => candidate.Kind == key);
         string text = string.IsNullOrEmpty(entry?.Label) ? PhysicalKeyNames.GetDisplayName(key) : entry.Label;
         KeyBorder tile = BuildKeyChip(key, text, ChipHeight + 8, 0);
         if (key == PhysicalKey.TouchId) {
@@ -332,7 +357,7 @@ public partial class KeysView : UserControl {
             return;
         }
 
-        IReadOnlyList<RowLayoutEntry> keysLayout = KeyboardLayout.GetKeys(model);
+        IReadOnlyList<RowLayoutEntry> keysLayout = KeyboardLayout.GetKeys(model, standard);
         DriverKeyRemapConfig remapConfig = editor.Config;
 
         // While a target is being picked, the current remaps are hidden and the keys that cannot
@@ -489,4 +514,8 @@ public partial class KeysView : UserControl {
     private static double CalcSizeInDIP(SizeUnit keyWidth) {
         return keyWidth.Value * UnitSizeInDIP;
     }
+}
+
+internal sealed record LayoutVariant(KeyboardModel Model, LayoutStandard Standard) {
+    public string DisplayName => $"{Model.DeviceDescription} \u2014 {Standard.ToString().ToUpperInvariant()}";
 }

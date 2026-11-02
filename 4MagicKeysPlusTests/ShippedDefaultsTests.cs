@@ -56,7 +56,7 @@ public sealed class ShippedDefaultsTests {
     [MemberData(nameof(Files))]
     public void EveryRule_StartsFromAKeyTheKeyboardHas(string name) {
         DefaultSettings defaults = DefaultSettingsFile.Load(Path.Combine(Folder, name));
-        HashSet<PhysicalKey> keys = [.. KeyboardLayout.GetKeys(KeyboardModel.From(defaults.Model)).SelectMany(row => row.RowKeys).Select(key => key.Kind)];
+        HashSet<PhysicalKey> keys = [.. Enum.GetValues<LayoutStandard>().SelectMany(standard => KeyboardLayout.GetKeys(KeyboardModel.From(defaults.Model), standard)).SelectMany(row => row.RowKeys).Select(key => key.Kind)];
         bool touchId = keys.Contains(PhysicalKey.TouchId);
 
         foreach (DefaultRule rule in defaults.Rules) {
