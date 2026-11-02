@@ -5,8 +5,7 @@ using _4MagicKeysPlus.Services;
 
 namespace _4MagicKeysPlus.ViewModels;
 
-// Theme and language. The theme is applied at once; the language is read once at start-up (the
-// strings of the screens are not rebuilt), so a change of it waits for a restart.
+// The language is read once at start-up (the strings of the screens are not rebuilt), so a change of it waits for a restart.
 public sealed class AppearanceViewModel : ObservableObject {
     private readonly IAppSettingsStore store;
     private readonly IThemeApplier themes;
@@ -15,7 +14,6 @@ public sealed class AppearanceViewModel : ObservableObject {
     private AppSettings settings;
     private string? problem;
 
-    // restart closes the app on success and answers what went wrong, or null.
     internal AppearanceViewModel(IAppSettingsStore store, IThemeApplier themes, IReadOnlyList<LanguageOption> available, AppSettings launched, Func<string?> restart) {
         this.store = store;
         this.themes = themes;

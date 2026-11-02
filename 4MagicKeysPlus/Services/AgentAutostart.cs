@@ -7,16 +7,14 @@ namespace _4MagicKeysPlus.Services;
 internal interface IAgentAutostart {
     bool IsEnabled();
 
-    // Answers what went wrong, or null.
+    // Null on success, else what went wrong.
     string? Enable();
 
     void Disable();
 }
 
-// The agent starts at logon through the Run key of the user. Switching it off does not delete
-// that value but sets the flag Task Manager keeps in StartupApproved, so it can be switched back
-// on without knowing where the agent is (it is often not next to this app, which runs from its
-// build folder while developing). An entry counts as on only while that flag is not set.
+// Switching it off does not delete the Run value but sets the flag Task Manager keeps in StartupApproved, so it can be switched back on without
+// knowing where the agent is (the app often runs from its build folder while developing). An entry counts as on only while that flag is not set.
 internal sealed class RegistryAgentAutostart : IAgentAutostart {
     internal const string RunPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     internal const string ApprovedPath = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
@@ -34,7 +32,6 @@ internal sealed class RegistryAgentAutostart : IAgentAutostart {
     public RegistryAgentAutostart() : this(Registry.CurrentUser, RunPath, ApprovedPath, AgentLauncher.AgentPath) {
     }
 
-    // The root and paths are parameters so that tests can use scratch keys of their own.
     public RegistryAgentAutostart(RegistryKey root, string runPath, string approvedPath, string agentPath) {
         this.root = root;
         this.runPath = runPath;
@@ -78,7 +75,6 @@ internal sealed class RegistryAgentAutostart : IAgentAutostart {
         approved.SetValue(ValueName, ApprovedDisabled, RegistryValueKind.Binary);
     }
 
-    // The program the Run value starts, or null when there is no value.
     public string? RegisteredPath() {
         using RegistryKey? run = root.OpenSubKey(runPath);
         if (run?.GetValue(ValueName) is not string command) {

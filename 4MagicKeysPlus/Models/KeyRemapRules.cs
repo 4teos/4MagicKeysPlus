@@ -47,9 +47,7 @@ public static class KeyRemapRules {
         return GetCandidates(source, fnLayer).Where(target => target != source).ToList();
     }
 
-    // The key the source is remapped to on the base layer (no Fn), or null when it is not remapped
-    // that way. A target that is not a single key (key + modifiers, several modifiers, a media
-    // usage) is not representable here.
+    // Null also when the target is not a single key (key + modifiers, several modifiers, a media usage).
     public static PhysicalKey? GetCurrentTarget(DriverKeyRemapConfig config, PhysicalKey source) {
         foreach (KeyRule rule in config.Rules) {
             if (rule.FnLayer || rule.Source.Count != 1 || !rule.Source.Contains(source)) {

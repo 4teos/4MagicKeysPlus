@@ -5,9 +5,9 @@ namespace _4MagicKeysPlus.Core;
 
 internal sealed record PnpKeyboard(KeyboardIdentity Identity, KeyboardProduct Product);
 
-// Only two shapes of instance ID carry a keyboard's identity, and they are the ones the driver is attached to or
-// right above: the USB device (USB\VID_05AC&PID_026C\<serial>, the parent of the interfaces the driver filters) and the
-// paired Bluetooth HID service (BTHENUM\{00001124-...}_VID&0001004C_PID&026C\<...>&<address>_C00000000, which it filters itself).
+// Only two instance IDs carry a keyboard's identity, the ones the driver is attached to or right above: the USB device
+// (USB\VID_05AC&PID_026C\<serial>, the parent of the filtered interfaces) and the paired Bluetooth HID service
+// (BTHENUM\{00001124-...}_VID&0001004C_PID&026C\<...>&<address>_C00000000, which it filters itself).
 internal static class KeyboardPnpIds {
     private const RegexOptions Options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 

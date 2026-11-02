@@ -8,7 +8,6 @@ using _4MagicKeysPlus.Services;
 
 namespace _4MagicKeysPlus.ViewModels;
 
-// The Quick launch screen: the cards, what the agent made of them, and the undo of a delete.
 internal sealed class HotkeyListViewModel : INotifyPropertyChanged {
     private readonly HotkeyEditor editor;
     private readonly Func<string, ImageSource?> loadIcon;
@@ -18,7 +17,6 @@ internal sealed class HotkeyListViewModel : INotifyPropertyChanged {
     private bool busy;
     private (HotkeyEntry Entry, int Index)? deleted;
 
-    // startAgent starts the agent and answers what went wrong, or null.
     public HotkeyListViewModel(HotkeyEditor editor, Func<string, ImageSource?> loadIcon, Func<string?> startAgent) {
         this.editor = editor;
         this.loadIcon = loadIcon;
@@ -51,8 +49,7 @@ internal sealed class HotkeyListViewModel : INotifyPropertyChanged {
         return card;
     }
 
-    // Asks the agent for a fresh start from what is saved, which also tells which hotkeys it
-    // could not register and whether it runs at all.
+    // A fresh start of the agent's hotkeys from what is saved: it also tells which could not be registered and whether the agent runs at all.
     public async Task RefreshAsync() {
         List<HotkeyCardViewModel> saved = SavedCards();
         Show(await editor.ApplyAsync([.. saved.Select(card => card.ToEntry())]), saved);
@@ -105,7 +102,6 @@ internal sealed class HotkeyListViewModel : INotifyPropertyChanged {
         }
     }
 
-    // Moves the card to the given place in the list without saving, as it is dragged along.
     public void MoveTo(HotkeyCardViewModel card, int index) {
         int from = Cards.IndexOf(card);
         if (from >= 0 && from != index && index >= 0 && index < Cards.Count) {
@@ -113,8 +109,7 @@ internal sealed class HotkeyListViewModel : INotifyPropertyChanged {
         }
     }
 
-    // Saves the order the cards are in now, once a drag has ended where it did not start. When
-    // that fails the card goes back to where it was.
+    // When saving fails the card goes back to where it was.
     public async Task SaveOrderAsync(HotkeyCardViewModel card, int startIndex) {
         if (card.IsNew || Cards.IndexOf(card) == startIndex) {
             return;
@@ -130,7 +125,6 @@ internal sealed class HotkeyListViewModel : INotifyPropertyChanged {
         Show(result, saved);
     }
 
-    // Leaves edit mode without saving; a card that was never saved goes away.
     public void Cancel(HotkeyCardViewModel card) {
         if (card.IsNew) {
             Cards.Remove(card);
@@ -139,7 +133,6 @@ internal sealed class HotkeyListViewModel : INotifyPropertyChanged {
         }
     }
 
-    // Shows whether another card already has the combination the card has captured.
     public void UpdateConflict(HotkeyCardViewModel card) {
         IEnumerable<HotkeyEntry> others = SavedCards().Where(other => other != card).Select(other => other.ToEntry());
         HotkeyEntry? conflict = card.DraftVirtualKey == 0 ? null : HotkeyEditor.FindConflict(others, card.DraftVirtualKey, card.DraftModifiers);
@@ -197,7 +190,6 @@ internal sealed class HotkeyListViewModel : INotifyPropertyChanged {
         Notify();
     }
 
-    // Starts the agent and waits for it to answer on its pipe.
     public async Task StartAgentAsync() {
         agentProblem = startAgent();
         Notify();

@@ -8,8 +8,7 @@ internal static class Strings {
     private static readonly ResourceManager ResourceManager =
         new("_4MagicKeysPlusAgent.Strings", typeof(Strings).Assembly);
 
-    // The language of the configuration app, read at each use: the agent keeps running when the
-    // language is changed, and the next notice has to follow it. Without a choice, Windows' own.
+    // Read at each use: the agent keeps running when the language is changed, and the next notice has to follow it.
     internal static Func<CultureInfo?> LanguageSource = AppSettingsRegistry.ReadLanguage;
 
     public static string LowBatteryMessage {

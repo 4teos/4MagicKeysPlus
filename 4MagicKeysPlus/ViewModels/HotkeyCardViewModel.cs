@@ -35,14 +35,12 @@ internal sealed class HotkeyCardViewModel : INotifyPropertyChanged {
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    // A card for an entry that is saved already, or was and is being put back.
     public static HotkeyCardViewModel FromEntry(HotkeyEntry entry, Func<string, ImageSource?> loadIcon) {
         HotkeyCardViewModel card = new(loadIcon);
         card.Accept(entry);
         return card;
     }
 
-    // A blank card, in edit mode, for the entry the user is about to add.
     public static HotkeyCardViewModel CreateNew(Func<string, ImageSource?> loadIcon) {
         HotkeyCardViewModel card = new(loadIcon) {
             IsNew = true
@@ -75,7 +73,6 @@ internal sealed class HotkeyCardViewModel : INotifyPropertyChanged {
 
     public bool IsCapturing => isCapturing;
 
-    // True while the card is being dragged: its place in the list stays as an empty slot.
     public bool IsDragging => isDragging;
 
     public string DraftName {
@@ -100,7 +97,6 @@ internal sealed class HotkeyCardViewModel : INotifyPropertyChanged {
 
     public bool IsComplete => !string.IsNullOrWhiteSpace(draftPath) && draftVirtualKey != 0;
 
-    // True while the card is a blank the user has not put anything into.
     public bool IsUntouched => IsNew && string.IsNullOrWhiteSpace(draftName) && string.IsNullOrWhiteSpace(draftPath) && draftVirtualKey == 0;
 
     public string? ErrorText => saveError ?? conflictText ?? (isEditing ? null : registrationError);
@@ -143,7 +139,6 @@ internal sealed class HotkeyCardViewModel : INotifyPropertyChanged {
         Notify();
     }
 
-    // Back to the saved values.
     public void Revert() {
         isEditing = false;
         isCapturing = false;
@@ -153,7 +148,6 @@ internal sealed class HotkeyCardViewModel : INotifyPropertyChanged {
         Notify();
     }
 
-    // The entry as saved, subkey name included.
     public void Accept(HotkeyEntry saved) {
         registryName = saved.RegistryName;
         name = saved.Name;

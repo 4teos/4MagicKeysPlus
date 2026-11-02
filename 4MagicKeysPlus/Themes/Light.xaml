@@ -3,19 +3,16 @@
     <!-- The same keys as Dark.xaml, which the tests check. Tooltips stay dark and the keyboard picture
          is the same in both themes: they stand for physical things. -->
 
-    <!-- Window and text -->
     <SolidColorBrush x:Key="WindowBackground" Color="#E3E8F0"/>
     <SolidColorBrush x:Key="TextPrimary" Color="#111827"/>
     <SolidColorBrush x:Key="TextSecondary" Color="#4B5563"/>
     <SolidColorBrush x:Key="TextDisabled" Color="#9CA3AF"/>
 
-    <!-- Buttons and navigation tabs -->
     <SolidColorBrush x:Key="ControlHoverBackground" Color="#D9DFE9"/>
     <SolidColorBrush x:Key="ControlCheckedBackground" Color="#CAD2DF"/>
     <SolidColorBrush x:Key="ControlBorder" Color="#8D9AB0"/>
     <SolidColorBrush x:Key="ControlActiveBorder" Color="#4B5563"/>
 
-    <!-- Status badge in the header -->
     <SolidColorBrush x:Key="BadgeBackground" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="BadgeBorder" Color="#8D9AB0"/>
     <SolidColorBrush x:Key="FnBadgeOnBackground" Color="#374151"/>
@@ -27,19 +24,16 @@
     <SolidColorBrush x:Key="BatteryGood" Color="#059669"/>
     <SolidColorBrush x:Key="BatteryUnknown" Color="#9CA3AF"/>
 
-    <!-- Result of applying a mapping -->
     <SolidColorBrush x:Key="ResultSuccess" Color="#059669"/>
     <SolidColorBrush x:Key="ResultWarning" Color="#D97706"/>
     <SolidColorBrush x:Key="ResultError" Color="#DC2626"/>
 
-    <!-- Tooltips and the key status panel -->
     <SolidColorBrush x:Key="TooltipBackground" Color="#1F2937"/>
     <SolidColorBrush x:Key="TooltipBorder" Color="#374151"/>
     <SolidColorBrush x:Key="TooltipForeground" Color="#FBFBFB"/>
     <SolidColorBrush x:Key="PanelBackground" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="PanelBorder" Color="#C9D1DE"/>
 
-    <!-- Check boxes -->
     <SolidColorBrush x:Key="CheckBoxBackground" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="CheckBoxBorder" Color="#6B7280"/>
     <SolidColorBrush x:Key="CheckBoxHoverBorder" Color="#111827"/>
@@ -50,7 +44,6 @@
     <SolidColorBrush x:Key="CheckBoxDisabledBorder" Color="#C9D1DE"/>
     <SolidColorBrush x:Key="CheckBoxDisabledMark" Color="#9CA3AF"/>
 
-    <!-- Keyboard picture -->
     <SolidColorBrush x:Key="KeyboardBodyBackground" Color="Silver"/>
     <SolidColorBrush x:Key="KeyBackground" Color="White"/>
     <SolidColorBrush x:Key="KeyBorder" Color="#9CA3AF"/>
@@ -62,7 +55,6 @@
     <SolidColorBrush x:Key="KeyDisabledBorder" Color="#6B7280"/>
     <SolidColorBrush x:Key="KeyDisabledForeground" Color="#4B5563"/>
 
-    <!-- Quick launch cards -->
     <SolidColorBrush x:Key="InputBackground" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="AccentBorder" Color="#059669"/>
 </ResourceDictionary>

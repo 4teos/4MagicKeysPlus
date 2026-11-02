@@ -1,7 +1,6 @@
 namespace _4MagicKeysPlusAgent;
 
-// Lists the hotkeys that could not be registered. Stays until clicked: unlike a battery
-// level, this needs reading and the user may not have the configuration app open to see it.
+// Stays until clicked: unlike a battery level it needs reading, and the configuration app may not be open to show it.
 internal sealed class HotkeyErrorsForm : NoticeForm {
     private const int MaxTextWidth = 560;
 
@@ -57,7 +56,6 @@ internal sealed class HotkeyErrorsForm : NoticeForm {
         CloseOnClick(this);
     }
 
-    // The bullet sits in a column of its own, so a failure that wraps lines up under its first line.
     private static Control FailureRow(string text) {
         TableLayoutPanel row = new TableLayoutPanel {
             AutoSize = true,

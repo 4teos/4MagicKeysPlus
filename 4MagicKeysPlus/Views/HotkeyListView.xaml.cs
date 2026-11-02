@@ -70,8 +70,6 @@ public partial class HotkeyListView : UserControl {
         }
     }
 
-    // A blank card the user did not touch just goes away; anything else is saved or, when it
-    // cannot be, stays open and says why.
     private async Task CommitOrDiscardAsync(HotkeyCardViewModel card) {
         if (capturingCard == card) {
             await EndCaptureAsync();
@@ -187,8 +185,6 @@ public partial class HotkeyListView : UserControl {
         }
     }
 
-    // A card is dragged by its grip: a translucent copy of it follows the pointer, its place in the
-    // list stays as an empty slot, and the other cards move aside as the copy passes them.
     private void Grip_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
         dragStart = e.GetPosition(null);
         dragCandidate = CardFrom(sender);
@@ -267,7 +263,6 @@ public partial class HotkeyListView : UserControl {
         }
     }
 
-    // Moves the copy with the pointer, and the card's slot to where the copy has got to.
     private void UpdateDrag() {
         if (drag is not { } state) {
             return;
@@ -283,7 +278,6 @@ public partial class HotkeyListView : UserControl {
         }
     }
 
-    // Near the top or bottom edge of the list, dragging scrolls it.
     private void AutoScroll() {
         if (drag is null) {
             return;
@@ -319,7 +313,6 @@ public partial class HotkeyListView : UserControl {
         }
     }
 
-    // Changes the order of the cards and lets each one slide from where it was to where it is now.
     private void AnimateReorder(Action reorder) {
         Dictionary<HotkeyCardViewModel, double> before = list.Cards.ToDictionary(card => card, card => SlotTop(card) + OffsetOf(card));
         reorder();
@@ -346,7 +339,6 @@ public partial class HotkeyListView : UserControl {
         return CardsHost.ItemContainerGenerator.ContainerFromItem(card) as FrameworkElement;
     }
 
-    // Where a card's slot is in the list, whatever it is sliding through at the moment.
     private double SlotTop(HotkeyCardViewModel card) {
         return ContainerOf(card) is { } container ? LayoutInformation.GetLayoutSlot(container).Top : 0;
     }
@@ -428,7 +420,6 @@ public partial class HotkeyListView : UserControl {
         return (HotkeyCardViewModel)((FrameworkElement)sender).DataContext;
     }
 
-    // The card whose part of the visual tree the element is in, if any.
     private static HotkeyCardViewModel? CardOf(DependencyObject? element) {
         while (element is not null) {
             if (element is FrameworkElement { DataContext: HotkeyCardViewModel card }) {

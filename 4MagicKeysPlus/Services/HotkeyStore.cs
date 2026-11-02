@@ -11,10 +11,8 @@ internal interface IHotkeyStore {
     IReadOnlyList<HotkeyEntry> Save(IReadOnlyList<HotkeyEntry> saved, IReadOnlyList<HotkeyEntry> wanted);
 }
 
-// What saving changes under Parameters\Hotkeys, worked out without touching the registry. An entry
-// keeps its subkey (whatever it is called) as long as its key combination stays the same, so a
-// new name or path is written in place. A new entry, or one whose combination changed, goes
-// under Hotkey_<modifiers>_<key>, and the subkey it left is released. The position in the
+// An entry keeps its subkey (whatever it is called) as long as its key combination stays the same, so a new name or path is written in place.
+// A new entry, or one whose combination changed, goes under Hotkey_<modifiers>_<key>, and the subkey it left is released. The position in the
 // wanted list is each entry's Order, so changing a combination does not move a card.
 internal sealed record HotkeysPlan(IReadOnlyList<string> Release, IReadOnlyList<HotkeyEntry> Write, IReadOnlyList<HotkeyEntry> Result) {
     public static HotkeysPlan Create(IReadOnlyList<HotkeyEntry> saved, IReadOnlyList<HotkeyEntry> wanted) {
@@ -87,7 +85,6 @@ internal sealed class RegistryHotkeyStore : IHotkeyStore {
     public RegistryHotkeyStore() : this(Registry.LocalMachine, DriverStatus.HotkeysKeyPath) {
     }
 
-    // The root and path are parameters so that tests can use a scratch key of their own.
     public RegistryHotkeyStore(RegistryKey root, string hotkeysPath) {
         this.root = root;
         this.hotkeysPath = hotkeysPath;

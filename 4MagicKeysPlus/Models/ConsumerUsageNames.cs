@@ -15,7 +15,6 @@ public static class ConsumerUsageNames {
 
     private static readonly IReadOnlyDictionary<int, string> Names = Known.ToDictionary(entry => entry.Usage, entry => entry.Name);
 
-    // The usages the editor offers as targets, in the order they are shown.
     public static IReadOnlyList<int> Usages { get; } = [.. Known.Select(entry => entry.Usage)];
 
     public static string Get(int usage) {

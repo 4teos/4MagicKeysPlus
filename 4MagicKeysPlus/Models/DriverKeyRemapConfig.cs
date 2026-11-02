@@ -1,9 +1,7 @@
 namespace _4MagicKeysPlus.Models;
 
-// One rule of the driver's Parameters\Rules list. Source is a single key, a single Fn/Eject/Lock, or
-// the modifiers of a modifier source; FnLayer is the "only with Fn" flag of a key source.
-// The target is a key (TargetKey, or only TargetCode when that has no PhysicalKey), modifiers,
-// or a consumer-control usage.
+// Source is a single key, a single Fn/Eject/Lock, or the modifiers of a modifier source; FnLayer is the "only with Fn" flag of a key source.
+// The target is a key (only TargetCode when that has no PhysicalKey), modifiers, or a consumer-control usage.
 public sealed record KeyRule(
     IReadOnlySet<PhysicalKey> Source,
     bool FnLayer,
@@ -13,8 +11,7 @@ public sealed record KeyRule(
     int? ConsumerUsage,
     bool FnLockAware) {
 
-    // The rule's subkey under Parameters\Rules, when it was read from the registry. Saving has to
-    // delete that very subkey, whatever it is called.
+    // The subkey the rule was read from: saving deletes that very subkey, whatever it is called.
     public string? RegistryName {
         get; init;
     }
@@ -42,7 +39,7 @@ public sealed record KeyRule(
         return string.Join(" + ", parts);
     }
 
-    // The whole rule as one line, the text saved as the Comment of its subkey: "Fn+F1 -> Brightness Down".
+    // Saved as the Comment of the rule's subkey: "Fn+F1 -> Brightness Down".
     public string Describe() {
         string source = string.Join(" + ", Source.Select(PhysicalKeyNames.GetDisplayName));
         return $"{(FnLayer ? "Fn+" : "")}{source} -> {DescribeTarget()}";
@@ -62,7 +59,6 @@ public sealed record DriverKeyRemapConfig(IReadOnlyList<KeyRule> Rules, bool FnL
         return Rules.Any(rule => rule.Source.Contains(key));
     }
 
-    // Replaces the rule of the same source and layer, leaving the key's rules of the other layer alone.
     public DriverKeyRemapConfig WithRule(KeyRule rule) {
         List<KeyRule> rules = [.. Rules.Where(existing => existing.FnLayer != rule.FnLayer || !existing.Source.SetEquals(rule.Source)), rule];
         return this with {
@@ -76,8 +72,7 @@ public sealed record DriverKeyRemapConfig(IReadOnlyList<KeyRule> Rules, bool FnL
         };
     }
 
-    // Gets tooltip text with the rule target for the key. A Fn-layer rule is marked "Fn: "
-    // only while it really needs Fn held - a FnLockAware rule needs no Fn once FnLock is off.
+    // A Fn-layer rule is marked "Fn: " only while it really needs Fn held: a FnLockAware rule needs none once FnLock is off.
     public IReadOnlyList<string> DescribeTargets(PhysicalKey key) {
         List<string> targets = [];
         foreach (KeyRule rule in Rules) {

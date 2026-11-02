@@ -1,7 +1,6 @@
 namespace _4MagicKeysPlusAgent;
 
-// Best-effort file logging - there is no console window (OutputType=WinExe),
-// so this is the only way to see why a hotkey didn't fire without attaching a debugger.
+// There is no console (WinExe), so this file is the only way to see why a hotkey did not fire.
 internal static class Logger {
     private static readonly string LogPath =
         Path.Combine(

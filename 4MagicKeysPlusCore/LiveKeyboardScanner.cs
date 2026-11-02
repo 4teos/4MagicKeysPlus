@@ -6,7 +6,6 @@ namespace _4MagicKeysPlus.Core;
 
 internal sealed record LiveKeyboardInterface(KeyboardProduct Product, KeyboardConnection Connection, string DevicePath, KeyboardIdentity? Identity);
 
-// The HID interfaces of the keyboards that are connected right now, one per keyboard and transport.
 internal static class LiveKeyboardScanner {
     public static IEnumerable<LiveKeyboardInterface> Scan() {
         foreach (string devicePath in HidDeviceEnumerator.EnumeratePaths()) {
@@ -20,11 +19,9 @@ internal static class LiveKeyboardScanner {
     private static LiveKeyboardInterface? Probe(string devicePath) {
         using SafeFileHandle handle = HidNativeMethods.OpenHidDevice(devicePath);
 
-        // A composite keyboard exposes several HID collections under the same VID/PID; the
-        // keyboard's own keyboard-usage collection is access-denied by Windows' anti-keylogger
-        // restriction (handle.IsInvalid here), so only the vendor collection actually opens
-        // and answers the TryRead probe below - that's what confirms "this is the real device"
-        // rather than just some unrelated sibling interface with a matching VID/PID.
+        // Of the HID collections of a composite keyboard the keyboard-usage one is access-denied (Windows' anti-keylogger restriction,
+        // handle.IsInvalid), so only the vendor collection opens and answers the TryRead probe: that confirms the real device
+        // and not an unrelated sibling interface with a matching VID/PID.
         if (handle.IsInvalid || !TryGetIds(handle, out ushort vendorId, out ushort productId)) {
             return null;
         }

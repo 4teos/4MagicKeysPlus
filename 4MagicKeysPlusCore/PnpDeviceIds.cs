@@ -2,7 +2,6 @@ using System.Runtime.InteropServices;
 
 namespace _4MagicKeysPlus.Core;
 
-// The instance IDs of the devices that are present now under one enumerator ("USB", "BTHENUM"), from the configuration manager.
 internal static class PnpDeviceIds {
     private const uint FilterEnumerator = 0x1;
     private const uint FilterPresent = 0x100;

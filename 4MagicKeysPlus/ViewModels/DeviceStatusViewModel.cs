@@ -16,9 +16,7 @@ public enum BatteryState {
     Good,
 }
 
-// Lives for the whole app session (owned by MainWindow), not per-navigation-visit like the old
-// per-screen view models - the header needs to show live status regardless of which page is open.
-// It shows the keyboard that is selected, and follows the selection.
+// Lives for the whole app session: the header shows live status whichever page is open.
 public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(5);
 
@@ -37,7 +35,6 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    // readFnLock tells the Fn Lock of a profile, readBattery the battery of the keyboard on the way it is connected.
     internal DeviceStatusViewModel(KeyboardSession session, Func<Guid, bool> readFnLock, Func<DetectedKeyboard?, KeyboardBatteryStatus?> readBattery) {
         this.session = session;
         this.readFnLock = readFnLock;
@@ -83,7 +80,6 @@ public sealed class DeviceStatusViewModel : INotifyPropertyChanged {
         private set => SetField(ref statusTooltip, value);
     }
 
-    // Looks at the keyboards every few seconds: the session tells of what it found, and the battery goes with it.
     public void Start() {
         timer = new DispatcherTimer { Interval = RefreshInterval };
         timer.Tick += async (_, _) => {

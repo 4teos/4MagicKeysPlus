@@ -2,7 +2,6 @@ using System.Diagnostics;
 
 namespace _4MagicKeysPlusAgent;
 
-// The configuration app, which is installed next to the agent.
 internal static class AppLauncher {
     private const string AppName = "4MagicKeysPlus";
 
@@ -16,8 +15,7 @@ internal static class AppLauncher {
         return running.Length > 0;
     }
 
-    // The app asks for administrator rights in its manifest, so Windows shows the consent prompt. Declining it is no error
-    // worth more than a line in the log.
+    // Declining the consent prompt (the manifest of the app asks for administrator rights) is no error worth more than a line in the log.
     public static void Open() {
         string path = AppPath;
         if (!File.Exists(path)) {

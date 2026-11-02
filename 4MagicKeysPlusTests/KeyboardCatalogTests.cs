@@ -24,7 +24,6 @@ internal static class KeyboardTestData {
         };
     }
 
-    // What a keyboard is shown by.
     public static string Shown(int index = 1, KeyboardProduct product = KeyboardProduct.A1843) {
         return KeyboardCatalog.ModelName(product, index);
     }

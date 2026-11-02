@@ -64,7 +64,6 @@ public partial class KeysView : UserControl {
         Refresh();
     }
 
-    // The strip of extra keys, the toolbar and the footer are as wide as the keyboard.
     private void KeyboardViewbox_SizeChanged(object sender, SizeChangedEventArgs e) {
         VirtualKeysHost.Width = e.NewSize.Width;
         Toolbar.Width = e.NewSize.Width;
@@ -166,7 +165,6 @@ public partial class KeysView : UserControl {
         }
     }
 
-    // The keyboard has its default settings again once the user agrees: the keys, the panel and the switch are shown afresh, nothing is selected.
     private void ResetButton_Click(object sender, RoutedEventArgs e) {
         if (!ConfirmDialog.Ask(Window.GetWindow(this), Strings.ResetDefaultsPrompt)) {
             return;
@@ -181,7 +179,6 @@ public partial class KeysView : UserControl {
         FnLockResult.Visibility = Visibility.Hidden;
         FnLockResult.ToolTip = null;
 
-        // As beside the Fn Lock switch, the glyph is for trouble only.
         if (result.Outcome == ApplyOutcome.Applied) {
             ResetResult.Visibility = Visibility.Hidden;
             ResetResult.ToolTip = null;
@@ -303,7 +300,6 @@ public partial class KeysView : UserControl {
         return chip;
     }
 
-    // A media target is drawn as its glyph; the name is in the tooltip.
     private static KeyBorder BuildTargetChip(RemapTarget target) {
         string? glyph = target.IsMedia ? Glyphs.ForConsumerUsage(target.ConsumerUsage) : null;
         KeyBorder chip = BuildKeyChip(target, glyph ?? target.DisplayName, ChipHeight, ChipMargin);

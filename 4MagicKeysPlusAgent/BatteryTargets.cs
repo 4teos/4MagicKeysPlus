@@ -2,14 +2,12 @@ using _4MagicKeysPlus.Core;
 
 namespace _4MagicKeysPlusAgent;
 
-// A keyboard whose battery is read. The key tells it from the others and is the same over USB and over Bluetooth: its profile,
-// or its identity while it has none. The name is what a notice says to tell the keyboards apart; there is none while there is
-// only one keyboard.
+// Key: the profile of the keyboard (its identity while it has none), the same over USB and over Bluetooth.
+// Name tells the notices apart; there is none while there is only one keyboard.
 internal sealed record BatteryTarget(string Key, string? Name, DetectedKeyboard Keyboard);
 
 internal static class BatteryTargets {
-    // One target for every keyboard that is connected, over the way that is best to read it (the cable, if both are live).
-    // The profiles come in their order, then the keyboards that have no profile yet.
+    // The cable is preferred when both ways of a keyboard are live.
     public static IReadOnlyList<BatteryTarget> Select(IReadOnlyList<KeyboardEndpoint> endpoints, IReadOnlyList<KeyboardProfile> profiles, Func<KeyboardProduct, string> modelName) {
         List<(string Key, KeyboardProfile? Profile, KeyboardEndpoint Endpoint)> connected = [];
         foreach (KeyboardProfile profile in profiles) {

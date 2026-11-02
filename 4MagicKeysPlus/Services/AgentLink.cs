@@ -8,8 +8,7 @@ internal interface IAgentPause : IDisposable {
     Task ResumeAsync();
 }
 
-// The configuration app's side of the agent's pipe. Every call answers null when the agent is
-// not running.
+// Every call answers null when the agent is not running.
 internal interface IAgentLink {
     Task<bool> IsRunningAsync();
 

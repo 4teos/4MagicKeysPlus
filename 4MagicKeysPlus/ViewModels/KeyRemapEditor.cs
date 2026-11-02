@@ -17,16 +17,12 @@ public enum ApplyOutcome {
 
 public sealed record ApplyResult(ApplyOutcome Outcome, string Message);
 
-// The rule list of one keyboard, being edited on the Keys screen. Lives for the whole app session (see
-// ProfileEditors), so the screens share it. Every change is saved to the registry and handed to the
-// driver at once.
 public sealed class KeyRemapEditor {
     private readonly IRulesStore store;
     private readonly IDriverControl driver;
     private readonly IFnLockStore fnLock;
     private IReadOnlyList<KeyRule> rules;
 
-    // fnLock is the Fn Lock of the same keyboard, which is only read here.
     internal KeyRemapEditor(IReadOnlyList<KeyRule> initialRules, IRulesStore store, IDriverControl driver, IFnLockStore fnLock) {
         rules = initialRules;
         this.store = store;
@@ -64,7 +60,6 @@ public sealed class KeyRemapEditor {
         return ReloadDriver(driver);
     }
 
-    // Tells the driver to read what has been saved, and what came of it.
     internal static ApplyResult ReloadDriver(IDriverControl driver) {
         try {
             DriverReloadResult? reload = driver.Reload();

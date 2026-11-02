@@ -3,8 +3,7 @@ using System.Text;
 
 namespace _4MagicKeysPlus.Core;
 
-// A client connection to the agent's pipe. Keep it open while the agent is paused: closing it
-// is what tells the agent that nobody is capturing a hotkey any more.
+// Keep it open while the agent is paused: closing it is what resumes the agent's hotkeys.
 public sealed class AgentConnection : IDisposable {
     private static readonly UTF8Encoding Utf8 = new(false);
 
@@ -18,7 +17,6 @@ public sealed class AgentConnection : IDisposable {
         writer = new StreamWriter(pipe, Utf8, 1024, leaveOpen: true) { AutoFlush = true };
     }
 
-    // Null when the agent does not answer in time, which means it is not running.
     public static async Task<AgentConnection?> ConnectAsync(TimeSpan timeout, string pipeName = AgentProtocol.PipeName) {
         NamedPipeClientStream pipe = new(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
         try {
@@ -39,7 +37,6 @@ public sealed class AgentConnection : IDisposable {
         return AgentProtocol.Deserialize(line) ?? throw new IOException("The agent sent an empty reply.");
     }
 
-    // The reader and writer own nothing but the pipe, and the writer flushes after every line.
     public void Dispose() {
         pipe.Dispose();
     }

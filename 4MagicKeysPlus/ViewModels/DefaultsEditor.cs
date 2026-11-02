@@ -7,8 +7,6 @@ using _4MagicKeysPlus.Services;
 
 namespace _4MagicKeysPlus.ViewModels;
 
-// "Reset to defaults" of one keyboard: its Fn Lock and its rules become a copy of the default settings of its model, and the
-// driver is told. Lives for the whole app session with the other editors of the keyboard (see ProfileEditors).
 public sealed class DefaultsEditor {
     private readonly Guid profileId;
     private readonly KeyboardProduct product;
@@ -17,7 +15,6 @@ public sealed class DefaultsEditor {
     private readonly Func<IReadOnlyList<KeyRule>> readRules;
     private readonly IDriverControl driver;
 
-    // readRules reads the rules of the profile from the registry, for the rule editor to go on with what is there now.
     internal DefaultsEditor(Guid profileId, KeyboardProduct product, IDefaultSettings defaults, KeyRemapEditor rules, Func<IReadOnlyList<KeyRule>> readRules, IDriverControl driver) {
         this.profileId = profileId;
         this.product = product;
@@ -27,10 +24,8 @@ public sealed class DefaultsEditor {
         this.driver = driver;
     }
 
-    // Raised once the keyboard has the defaults, for the header badge that shows the Fn Lock.
     public event Action? Changed;
 
-    // A model that has no defaults in the registry has nothing to be reset to.
     public bool IsAvailable => defaults.Has(product);
 
     public ApplyResult Reset() {

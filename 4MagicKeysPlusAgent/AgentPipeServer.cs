@@ -6,8 +6,7 @@ using _4MagicKeysPlus.Core;
 
 namespace _4MagicKeysPlusAgent;
 
-// Serves the agent's pipe (see AgentProtocol). A connection that pauses the hotkeys owns the
-// pause: when it drops, or sends nothing for PauseTimeout, the hotkeys come back.
+// A connection that pauses the hotkeys owns the pause: when it drops, or is silent for PauseTimeout, the hotkeys come back.
 internal sealed class AgentPipeServer : IDisposable {
     private static readonly UTF8Encoding Utf8 = new(false);
 

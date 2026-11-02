@@ -6,9 +6,8 @@ public static class KeyboardEnumerator {
         return Combine(present, LiveKeyboardScanner.Scan());
     }
 
-    // The devices Windows knows give the endpoints (a present USB device is a plugged-in keyboard, a pairing is present
-    // whether its link is up or not); the live interfaces say which of them are connected and where to read them, and add the
-    // ones the device IDs did not explain.
+    // Present devices give the endpoints (a pairing exists whether its link is up or not); the live interfaces mark which are connected
+    // and add the ones the device IDs did not explain.
     internal static IReadOnlyList<KeyboardEndpoint> Combine(IEnumerable<string> presentDeviceIds, IEnumerable<LiveKeyboardInterface> liveInterfaces) {
         Dictionary<KeyboardIdentity, KeyboardEndpoint> endpoints = [];
 

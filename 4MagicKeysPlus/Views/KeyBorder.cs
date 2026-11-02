@@ -29,7 +29,6 @@ public class KeyBorder : Border {
         get;
     }
 
-    // A key that is not interactive reacts neither to the mouse nor to clicks.
     public bool IsInteractive {
         get; set;
     } = true;

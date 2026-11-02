@@ -1,6 +1,5 @@
 namespace _4MagicKeysPlus.Models;
 
-// What a rule can send: a key (or modifier) or a media (consumer control) usage.
 public readonly record struct RemapTarget(PhysicalKey Key, int ConsumerUsage = 0) {
     public static implicit operator RemapTarget(PhysicalKey key) {
         return new RemapTarget(key);

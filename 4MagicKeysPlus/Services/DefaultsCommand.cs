@@ -4,10 +4,8 @@ using _4MagicKeysPlus.Core;
 
 namespace _4MagicKeysPlus.Services;
 
-// The command of the installer: "4MagicKeysPlus.exe --install-defaults [folder]" puts the default settings (the .json files of
-// the folder, by default the defaults folder next to the exe) into the registry as those of their models, with no window. The
-// exit code is 0 when they all went in and 1 when something did not; what happened is written to the console the app was
-// started from, or to the file it is redirected to.
+// "4MagicKeysPlus.exe --install-defaults [folder]" puts the default settings into the registry with no window. The exit code is 0 when they all
+// went in and 1 when something did not; what happened goes to the console the app was started from, or to the file it is redirected to.
 internal static class DefaultsCommand {
     public const string Switch = "--install-defaults";
 

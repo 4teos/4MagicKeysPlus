@@ -5,8 +5,6 @@ using _4MagicKeysPlus.ViewModels;
 
 namespace _4MagicKeysPlus.Services;
 
-// The editors of the Keys screen for one keyboard, over the key of its profile. They are made once per keyboard and
-// kept for the session, so that going to another keyboard and back leaves what was shown as it was.
 internal sealed class ProfileEditors {
     public ProfileEditors(KeyRemapEditor rules, FnLockEditor fnLock, DefaultsEditor defaults) {
         Rules = rules;

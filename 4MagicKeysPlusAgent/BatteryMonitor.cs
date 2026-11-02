@@ -2,8 +2,7 @@ using _4MagicKeysPlus.Core;
 
 namespace _4MagicKeysPlusAgent;
 
-// Polls the battery of every connected keyboard and shows a notice, a window of its own, for each one that runs low. The
-// first check comes one interval after start, so a freshly started session isn't greeted by a popup.
+// The first check comes one interval after start, so that a freshly started session is not greeted by a popup.
 internal sealed class BatteryMonitor : IDisposable {
     public static readonly TimeSpan DefaultInterval = TimeSpan.FromMinutes(15);
 
@@ -45,8 +44,7 @@ internal sealed class BatteryMonitor : IDisposable {
         }
     }
 
-    // The keyboards are looked for afresh each time: the paths found earlier go stale on sleep or a USB/Bluetooth switch,
-    // and a keyboard may have been connected or taken away since.
+    // Looked for afresh each time: the device paths found earlier go stale on sleep or a USB/Bluetooth switch, and keyboards come and go.
     private static IReadOnlyList<BatteryReading> ReadAll() {
         IReadOnlyList<BatteryTarget> targets = BatteryTargets.Select(KeyboardEnumerator.Enumerate(), new RegistryKeyboardProfileStore().Load(), Strings.ModelName);
         return [.. targets.Select(target => new BatteryReading(target, KeyboardBattery.ReadStatus(target.Keyboard)))];
@@ -63,7 +61,6 @@ internal sealed class BatteryMonitor : IDisposable {
         }
     }
 
-    // A keyboard that is warned about again (the next threshold) replaces its own notice; the notices of the other keyboards stay.
     private void Show(BatteryNotice notice) {
         if (forms.TryGetValue(notice.Key, out LowBatteryForm? previous)) {
             previous.Close();

@@ -116,8 +116,7 @@ namespace _4MagicKeysPlus.Models {
         F24 = 0x73,
         Menu = 0x76,
 
-        // These modifier key codes are not real. It is impossible to cast them directly from keyboard hid code mask.
-        // Check the real modifier codes in the PhysicalKeyHidMap class
+        // These modifier codes are not the real HID ones (those cannot be cast from the modifier mask): see PhysicalKeyHidMap.
         LeftShift = 0xE0,
         LeftControl = 0xE1,
         LeftOption = 0xE2,

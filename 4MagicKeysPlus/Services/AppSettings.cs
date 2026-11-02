@@ -9,8 +9,7 @@ public enum ThemeChoice {
     Light,
 }
 
-// Language is the language name ("en", "de"), or null to follow Windows. OpenAppForNewKeyboard is what the agent reads:
-// whether it opens the app for a keyboard that has no profile.
+// Language is a language name ("en", "de"), or null to follow Windows. The agent reads OpenAppForNewKeyboard.
 internal sealed record AppSettings(ThemeChoice Theme = ThemeChoice.System, string? Language = null, bool OpenAppForNewKeyboard = true);
 
 internal interface IAppSettingsStore {
@@ -19,7 +18,6 @@ internal interface IAppSettingsStore {
     void Write(AppSettings settings);
 }
 
-// The settings of the app itself (not of the driver) are per user, in a key the agent reads the language from.
 internal sealed class RegistryAppSettingsStore : IAppSettingsStore {
     internal const string KeyPath = AppSettingsRegistry.KeyPath;
     private const string ThemeValue = "Theme";
@@ -31,7 +29,6 @@ internal sealed class RegistryAppSettingsStore : IAppSettingsStore {
     public RegistryAppSettingsStore() : this(Registry.CurrentUser, KeyPath) {
     }
 
-    // The root and path are parameters so that tests can use a scratch key of their own.
     public RegistryAppSettingsStore(RegistryKey root, string keyPath) {
         this.root = root;
         this.keyPath = keyPath;

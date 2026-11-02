@@ -4,13 +4,8 @@ using System.Text.Json.Serialization;
 
 namespace _4MagicKeysPlus.Core;
 
-// The default settings of a model as they are shipped: a JSON file named by the model (A1843.json), the same layout as the
-// registry has. Source and Target are the raw values of the driver as hex texts ("0x0100003A"); comments and trailing commas
-// are allowed in the file.
-//
-//   { "model": "A1843", "fnLock": true, "rules": [ { "source": "0x0100003A", "target": "0x01000070", "fnLockAware": true, "comment": "Fn+F1 -> Brightness Down" } ] }
 public static class DefaultSettingsFile {
-    // The driver keeps no more rules than this; the rest would be dropped without a word.
+    // The driver's limit: it drops the rest without a word.
     public const int MaxRules = 128;
 
     private static readonly JsonSerializerOptions Options = new() {
@@ -20,7 +15,6 @@ public static class DefaultSettingsFile {
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     };
 
-    // A FormatException says what is wrong with the file, when it is not a file of default settings.
     public static DefaultSettings Load(string path) {
         try {
             return Parse(File.ReadAllText(path));
@@ -78,7 +72,6 @@ public static class DefaultSettingsFile {
         throw new FormatException($"'{text}' is not a value of {name}: expected 0x and up to eight hex digits.");
     }
 
-    // What the serializer fills in; a null is what a JSON null leaves.
     private sealed class FileModel {
         public required string? Model {
             get; init;

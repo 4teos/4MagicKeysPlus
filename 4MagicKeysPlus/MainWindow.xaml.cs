@@ -27,7 +27,6 @@ public partial class MainWindow : Window {
         : this(settings, launched, themes, driver, new KeyboardSession(new RegistryKeyboardProfileStore(), KeyboardEnumerator.Enumerate, driver, new RegistryDefaultSettings())) {
     }
 
-    // The driver and the keyboards are parameters so that tests can use fakes.
     internal MainWindow(IAppSettingsStore settings, AppSettings launched, IThemeApplier themes, IDriverControl driver, KeyboardSession keyboards) {
         InitializeComponent();
 
@@ -65,7 +64,6 @@ public partial class MainWindow : Window {
         return profileEditors;
     }
 
-    // The Keys screen belongs to the selected keyboard; with none connected there is nothing to show on it.
     private void ShowKeys() {
         KeyboardEntry? selected = keyboards.Selected;
         shownKeyboard = selected?.Profile.Id;
