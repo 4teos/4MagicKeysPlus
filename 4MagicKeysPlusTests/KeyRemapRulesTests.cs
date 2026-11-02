@@ -103,6 +103,22 @@ public class KeyRemapRulesTests {
     }
 
     [Fact]
+    public void TheApplicationKey_IsATargetOfTheExtendedKeysTheLockKeysAndTheFnLayer() {
+        RemapTarget application = PhysicalKey.Application;
+
+        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.Menu));
+        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.F13));
+        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.Eject));
+        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.TouchId));
+        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.A, fnLayer: true));
+    }
+
+    [Fact]
+    public void Encode_SendsTheApplicationKeyAsItsHidUsage() {
+        Assert.Equal((0x00000076u, 0x00000065u), DriverRuleEncoder.Encode(PhysicalKey.Menu, PhysicalKey.Application, fnLayer: false));
+    }
+
+    [Fact]
     public void FnLockAware_IsDroppedForAPlainRule() {
         KeyRule? plain = DriverRuleEncoder.CreateRule(PhysicalKey.F13, PhysicalKey.PrintScreen, fnLayer: false, fnLockAware: true);
         KeyRule? withFn = DriverRuleEncoder.CreateRule(PhysicalKey.F13, PhysicalKey.PrintScreen, fnLayer: true, fnLockAware: true);

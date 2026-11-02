@@ -101,6 +101,7 @@ namespace _4MagicKeysPlus.Models {
         NumPad0 = 0x62,
         NumPadDecimal = 0x63,
         Section = 0x64,
+        Application = 0x65,
         NumPadEquals = 0x67,
         F13 = 0x68,
         F14 = 0x69,

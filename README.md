@@ -96,7 +96,7 @@ The configuration app is almost never open, so the agent watches for the keyboar
 The configuration app asks for administrator rights when it starts: it writes the rules under `HKEY_LOCAL_MACHINE` and talks to the driver's control device, and both need them. (When debugging it from Visual Studio, start Visual Studio as administrator.)
 
 - Click a key on the picture to select it. The panel below shows the key and its current rules; click the empty space (or the key again) to unselect it. Keys with a rule are highlighted, and a tooltip shows what they do.
-- **Set mapping** switches to picking the target: the current rules are hidden, the keys that cannot be a target are dimmed, and the keys this keyboard does not have (F20-F24, Print Screen, Home/End on the keyboard without them, ...) and the media keys (play/pause, tracks, volume, brightness) appear in a row of extra keys under the picture. Click the target, or **Cancel** (or Esc) to leave the picking.
+- **Set mapping** switches to picking the target: the current rules are hidden, the keys that cannot be a target are dimmed, and the keys this keyboard does not have (F20-F24, Print Screen, Application, Home/End on the keyboard without them, ...) and the media keys (play/pause, tracks, volume, brightness) appear in a row of extra keys under the picture. Click the target, or **Cancel** (or Esc) to leave the picking.
 - **Only with Fn** makes it a rule of the Fn layer (and changes which targets are allowed; you can switch it while picking). **Follow Fn Lock** makes that rule `FnLockAware` and only applies to the Fn layer. When a key can be remapped in one layer only, the first option is fixed.
 - **Remove mapping** deletes every rule of the key, in both layers. Be careful with the F-row: removing the Fn+F8 rule also removes the media action (**Reset to defaults** below brings it back).
 - Setting a mapping replaces only the rule of the same key and layer; the key's rules of the other layer stay.
@@ -416,7 +416,7 @@ The older `KeyMap`, `ModMap` and `SpecialModMap` binary values are no longer rea
 49=Insert           4A=Home             4B=Page Up
 4C=Delete           4D=End              4E=Page Down
 4F=Right Arrow      50=Left Arrow       51=Down Arrow
-52=Up Arrow
+52=Up Arrow         65=Application (the context menu key of a Windows keyboard)
 ```
 
 #### Numeric Keypad

@@ -86,6 +86,14 @@ public class DriverConfigParserTests {
     }
 
     [Fact]
+    public void ParseRule_DecodesTheApplicationKeyAsATarget() {
+        KeyRule rule = DriverConfigParser.ParseRule(0x76, 0x65, false)!;
+
+        Assert.Equal([PhysicalKey.Menu], rule.Source);
+        Assert.Equal(PhysicalKey.Application, rule.TargetKey);
+    }
+
+    [Fact]
     public void ParseRule_DecodesLockAsASource() {
         KeyRule toKey = DriverConfigParser.ParseRule(0xF2, 0x49, false)!;
         KeyRule toModifier = DriverConfigParser.ParseRule(0xF2, 0x00010000, false)!;
