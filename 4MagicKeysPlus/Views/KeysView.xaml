@@ -16,6 +16,12 @@
         </Grid.RowDefinitions>
 
         <Grid x:Name="Toolbar" Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <ToggleButton x:Name="LayoutToggle" Style="{StaticResource LayoutSwitchStyle}" Click="LayoutToggle_Click"/>
+                <TextBlock x:Name="LayoutResult" FontFamily="Segoe MDL2 Assets" FontSize="18" Width="24" TextAlignment="Center"
+                           Margin="10,0,0,0" VerticalAlignment="Center" Visibility="Hidden"/>
+            </StackPanel>
+
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <TextBlock x:Name="FnLockResult" FontFamily="Segoe MDL2 Assets" FontSize="18" Width="24" TextAlignment="Center"
                            Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Hidden"/>
@@ -78,7 +84,7 @@
         <Grid Grid.Row="5">
             <StackPanel Orientation="Horizontal" Margin="16">
                 <TextBlock Text="{x:Static properties:Strings.KeysModelLabel}" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8"/>
-                <ComboBox x:Name="ModelSelector" Width="370" FontSize="11" SelectionChanged="ModelSelector_SelectionChanged" DisplayMemberPath="DeviceDescription" />
+                <ComboBox x:Name="ModelSelector" Width="370" FontSize="11" SelectionChanged="ModelSelector_SelectionChanged" DisplayMemberPath="DisplayName" />
             </StackPanel>
 
             <Grid x:Name="Footer" HorizontalAlignment="Center" VerticalAlignment="Center">

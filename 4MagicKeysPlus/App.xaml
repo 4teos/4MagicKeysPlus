@@ -171,6 +171,39 @@
                 </Setter>
             </Style>
 
+            <Style x:Key="LayoutSwitchStyle" TargetType="ToggleButton">
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <StackPanel Orientation="Horizontal" Background="Transparent">
+                                <TextBlock x:Name="AnsiLabel" Text="ANSI" VerticalAlignment="Center" Margin="0,0,10,0"
+                                           Foreground="{DynamicResource TextPrimary}"/>
+                                <Border x:Name="Track" Width="40" Height="22" CornerRadius="11" BorderThickness="1" VerticalAlignment="Center"
+                                        Background="{DynamicResource ControlCheckedBackground}" BorderBrush="{DynamicResource ControlBorder}">
+                                    <Ellipse x:Name="Knob" Width="14" Height="14" HorizontalAlignment="Left" Margin="3,0,0,0"
+                                             Fill="{DynamicResource TextSecondary}"/>
+                                </Border>
+                                <TextBlock x:Name="IsoLabel" Text="ISO" VerticalAlignment="Center" Margin="10,0,0,0"
+                                           Foreground="{DynamicResource TextSecondary}"/>
+                            </StackPanel>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource ControlActiveBorder}"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right"/>
+                                    <Setter TargetName="Knob" Property="Margin" Value="0,0,3,0"/>
+                                    <Setter TargetName="AnsiLabel" Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+                                    <Setter TargetName="IsoLabel" Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <Style x:Key="OptionItemStyle" TargetType="ComboBoxItem">
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
                 <Setter Property="Template">

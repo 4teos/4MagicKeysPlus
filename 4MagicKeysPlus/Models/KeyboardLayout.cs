@@ -11,8 +11,8 @@ public static class KeyboardLayout {
     private static readonly KeyLayoutEntry TouchIdKey = new(PhysicalKey.TouchId, "");
     private static readonly KeyLayoutEntry LockKey = new(PhysicalKey.Lock, "🔒");
 
-    public static IReadOnlyList<RowLayoutEntry> GetKeys(KeyboardModel model) {
-        return [BuildRow1(model), BuildRow2(model), BuildRow3(model), BuildRow4(model), BuildRow5(model), BuildRow6(model)];
+    public static IReadOnlyList<RowLayoutEntry> GetKeys(KeyboardModel model, LayoutStandard standard) {
+        return [BuildRow1(model), BuildRow2(model, standard), BuildRow3(model, standard), BuildRow4(model, standard), BuildRow5(model, standard), BuildRow6(model)];
     }
 
     private static RowLayoutEntry BuildRow1(KeyboardModel model) {
@@ -83,7 +83,7 @@ public static class KeyboardLayout {
         ];
     }
 
-    private static RowLayoutEntry BuildRow2(KeyboardModel model) {
+    private static RowLayoutEntry BuildRow2(KeyboardModel model, LayoutStandard standard) {
         KeyLayoutEntry[] navigationAndNumpad = [
             new KeyLayoutEntry(PhysicalKey.Home, "⤒"),
             new KeyLayoutEntry(PhysicalKey.PageUp, "↑") { GapAfter = SizeUnit.STANDARD_GAP * 2 },
@@ -110,7 +110,7 @@ public static class KeyboardLayout {
         }
 
         return new RowLayoutEntry([
-            new KeyLayoutEntry(PhysicalKey.Section, "§±"),
+            standard == LayoutStandard.Ansi ? new KeyLayoutEntry(PhysicalKey.Tilde, "`") : new KeyLayoutEntry(PhysicalKey.Section, "§±"),
             new KeyLayoutEntry(PhysicalKey.D1, "1"),
             new KeyLayoutEntry(PhysicalKey.D2, "2"),
             new KeyLayoutEntry(PhysicalKey.D3, "3"),
@@ -132,7 +132,7 @@ public static class KeyboardLayout {
             .. tail]);
     }
 
-    private static RowLayoutEntry BuildRow3(KeyboardModel model) {
+    private static RowLayoutEntry BuildRow3(KeyboardModel model, LayoutStandard standard) {
         SizeUnit gap;
         KeyLayoutEntry[] tail;
         switch (model.Product) {
@@ -154,6 +154,15 @@ public static class KeyboardLayout {
                 break;
         }
 
+        KeyLayoutEntry lastKey = standard == LayoutStandard.Ansi
+            ? new KeyLayoutEntry(PhysicalKey.Backslash, "\\") { GapAfter = gap }
+            : new KeyLayoutEntry(PhysicalKey.Enter, "↩") {
+                GapAfter = gap,
+                KeyRowPosition = KeyRowPosition.TWO_ROWS_UPPER_ROW,
+                LabelHAlignment = HorizontalAlignment.Right,
+                LabelVAlignment = VerticalAlignment.Bottom
+            };
+
         return new RowLayoutEntry([
             new KeyLayoutEntry(PhysicalKey.Tab, "⇥") {
                 Width = new SizeUnit(8),
@@ -172,16 +181,11 @@ public static class KeyboardLayout {
             new KeyLayoutEntry(PhysicalKey.P, "P"),
             new KeyLayoutEntry(PhysicalKey.OpeningBracket, "["),
             new KeyLayoutEntry(PhysicalKey.ClosingBracket, "]"),
-            new KeyLayoutEntry(PhysicalKey.Enter, "↩") {
-                GapAfter = gap,
-                KeyRowPosition = KeyRowPosition.TWO_ROWS_UPPER_ROW,
-                LabelHAlignment = HorizontalAlignment.Right,
-                LabelVAlignment = VerticalAlignment.Bottom
-            },
+            lastKey,
             .. tail]);
     }
 
-    private static RowLayoutEntry BuildRow4(KeyboardModel model) {
+    private static RowLayoutEntry BuildRow4(KeyboardModel model, LayoutStandard standard) {
         SizeUnit gap;
         KeyLayoutEntry[] tail;
         switch (model.Product) {
@@ -200,6 +204,24 @@ public static class KeyboardLayout {
                 break;
         }
 
+        KeyLayoutEntry[] lastKeys = standard == LayoutStandard.Ansi
+            ? [
+                new KeyLayoutEntry(PhysicalKey.Enter, "↩") {
+                    Width = new SizeUnit(9.5),
+                    GapAfter = gap,
+                    LabelHAlignment = HorizontalAlignment.Right,
+                    LabelVAlignment = VerticalAlignment.Bottom
+                }
+            ]
+            : [
+                new KeyLayoutEntry(PhysicalKey.Backslash, "\\"),
+                new KeyLayoutEntry(PhysicalKey.Enter, "") {
+                    Width = new SizeUnit(3.5),
+                    GapAfter = gap,
+                    KeyRowPosition = KeyRowPosition.TWO_ROWS_LOWER_ROW
+                }
+            ];
+
         return new RowLayoutEntry([
             new KeyLayoutEntry(PhysicalKey.CapsLock, "⇪") {
                 Width = new SizeUnit(9.5),
@@ -217,16 +239,11 @@ public static class KeyboardLayout {
             new KeyLayoutEntry(PhysicalKey.L, "L"),
             new KeyLayoutEntry(PhysicalKey.Semicolon, ";"),
             new KeyLayoutEntry(PhysicalKey.Quote, "'"),
-            new KeyLayoutEntry(PhysicalKey.Backslash, "\\"),
-            new KeyLayoutEntry(PhysicalKey.Enter, "") {
-                Width = new SizeUnit(3.5),
-                GapAfter = gap,
-                KeyRowPosition = KeyRowPosition.TWO_ROWS_LOWER_ROW
-            },
+            .. lastKeys,
             .. tail]);
     }
 
-    private static RowLayoutEntry BuildRow5(KeyboardModel model) {
+    private static RowLayoutEntry BuildRow5(KeyboardModel model, LayoutStandard standard) {
         SizeUnit gap;
         KeyLayoutEntry[] tail;
         switch (model.Product) {
@@ -249,13 +266,12 @@ public static class KeyboardLayout {
                 break;
         }
 
+        KeyLayoutEntry[] leftKeys = standard == LayoutStandard.Ansi
+            ? [LeftShiftKey(new SizeUnit(12.5))]
+            : [LeftShiftKey(new SizeUnit(6.5)), new KeyLayoutEntry(PhysicalKey.Tilde, "`")];
+
         return new RowLayoutEntry([
-            new KeyLayoutEntry(PhysicalKey.LeftShift, "⇧") {
-                Width = new SizeUnit(6.5),
-                LabelHAlignment = HorizontalAlignment.Left,
-                LabelVAlignment = VerticalAlignment.Bottom
-            },
-            new KeyLayoutEntry(PhysicalKey.Tilde, "`"),
+            .. leftKeys,
             new KeyLayoutEntry(PhysicalKey.Z, "Z"),
             new KeyLayoutEntry(PhysicalKey.X, "X"),
             new KeyLayoutEntry(PhysicalKey.C, "C"),
@@ -273,6 +289,14 @@ public static class KeyboardLayout {
                 LabelVAlignment = VerticalAlignment.Bottom
             },
             .. tail]);
+    }
+
+    private static KeyLayoutEntry LeftShiftKey(SizeUnit width) {
+        return new KeyLayoutEntry(PhysicalKey.LeftShift, "⇧") {
+            Width = width,
+            LabelHAlignment = HorizontalAlignment.Left,
+            LabelVAlignment = VerticalAlignment.Bottom
+        };
     }
 
     private static RowLayoutEntry BuildRow6(KeyboardModel model) {
@@ -428,6 +452,11 @@ public struct SizeUnit {
     public double Value {
         get; private set;
     }
+}
+
+public enum LayoutStandard {
+    Ansi,
+    Iso
 }
 
 public enum KeyRowSpan {

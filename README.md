@@ -100,6 +100,7 @@ The configuration app asks for administrator rights when it starts: it writes th
 - **Only with Fn** makes it a rule of the Fn layer (and changes which targets are allowed; you can switch it while picking). **Follow Fn Lock** makes that rule `FnLockAware` and only applies to the Fn layer. When a key can be remapped in one layer only, the first option is fixed.
 - **Remove mapping** deletes every rule of the key, in both layers. Be careful with the F-row: removing the Fn+F8 rule also removes the media action (**Reset to defaults** below brings it back).
 - Setting a mapping replaces only the rule of the same key and layer; the key's rules of the other layer stay.
+- The **ANSI / ISO** switch at the top left of the picture sets how the keys are drawn, and the choice is kept in the profile of the keyboard (`Layout`; ISO until it is chosen). It changes the picture only. In ANSI the key left of 1 is the grave accent, there is no key left of Z, the left Shift is as long as the right one, Enter is one row long and `\` is above it. A rule of a key that the picture does not have (the key Section in ANSI) stays and is not shown, and such a key is still offered among the extra keys when a target is picked.
 - The key at the top right of the picture is Eject, Lock or Touch ID, depending on the model. Lock and Touch ID are one key for the driver (`0xF2`); the app only draws and names it by the model.
 - A rule the app saves gets its text as the `Comment` of its subkey (`Fn+Left -> Home`, the names of the keys as on the picture); a rule that is changed gets a new one. The rules the app does not touch keep their `Comment`, or none.
 - Every change is saved to the `Rules` of the profile of the selected keyboard and the driver is told to reload at once. The glyph at the right of the panel shows how that went: a green check, a yellow triangle (saved, but the driver did not take the rules: no keyboard is connected, the driver is too old to reload, or it ignored some rules; they are loaded when the keyboard connects), or a red cross (nothing was saved). Hover it for the details.
@@ -136,6 +137,7 @@ The name of the subkey does not matter to the driver (the configuration app name
 | `Identities` | MULTI_SZ | how the driver recognizes the keyboard, see below |
 | `FnLock` | DWORD | optional, default `0`, see [FnLock](#fnlock-dword) |
 | `Rules` | subkey | the key rules of the keyboard, see [Key Rules](#key-rules) |
+| `Layout` | SZ | optional, `Ansi` or `Iso` (default), for the configuration app, ignored by the driver; how the picture of the keyboard is drawn |
 | `Index` | DWORD | optional, default `1`, for the configuration app, ignored by the driver; tells apart the keyboards of one model: the app shows a keyboard by its model, followed by the index in brackets from 2 up |
 | `Model` | DWORD | the USB product ID of the model (`0x0267` A1644, `0x026C` A1843, `0x029A` A2449, `0x029C` A2450, `0x029F` A2520, `0x0321` A3118, `0x0322` A3119, `0x0320` A3203), for the configuration app, ignored by the driver |
 
