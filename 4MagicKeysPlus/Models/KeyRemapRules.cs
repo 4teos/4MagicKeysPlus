@@ -26,7 +26,7 @@ public static class KeyRemapRules {
 
     private static readonly IReadOnlyList<PhysicalKey> ExtendedTargets = [
         .. KeysInRange(PhysicalKey.F13, PhysicalKey.F24),
-        PhysicalKey.PrintScreen, PhysicalKey.ScrollLock, PhysicalKey.PauseBreak, PhysicalKey.Insert
+        PhysicalKey.PrintScreen, PhysicalKey.ScrollLock, PhysicalKey.PauseBreak, PhysicalKey.Insert, PhysicalKey.Application
     ];
 
     private static readonly IReadOnlyList<PhysicalKey> ModifierTargets = [.. Modifiers, .. VirtualTargets];

@@ -17,6 +17,7 @@ public class PhysicalKeyNamesTests {
     [InlineData(PhysicalKey.Fn, "Fn")]
     [InlineData(PhysicalKey.Lock, "Lock")]
     [InlineData(PhysicalKey.Menu, "Menu")]
+    [InlineData(PhysicalKey.Application, "Application")]
     [InlineData(PhysicalKey.A, "A")]
     [InlineData(PhysicalKey.Home, "Home")]
     public void GetDisplayName_SplitsIdentifierIntoWords(PhysicalKey key, string expected) {
