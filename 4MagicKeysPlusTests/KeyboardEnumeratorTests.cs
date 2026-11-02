@@ -34,6 +34,34 @@ public class KeyboardPnpIdsTests {
         Assert.Equal(KeyboardProduct.A1843, keyboard.Product);
     }
 
+    [Fact]
+    public void TheBluetoothHidServiceOfTheA3118_IsKnown() {
+        PnpKeyboard? keyboard = KeyboardPnpIds.Parse(@"BTHENUM\{00001124-0000-1000-8000-00805F9B34FB}_VID&0001004C_PID&0321\D&15B70467&0&1C1DD38137D0_C00000000");
+
+        Assert.NotNull(keyboard);
+        Assert.Equal("bt:1C1DD38137D0", keyboard.Identity.ToString());
+        Assert.Equal(KeyboardProduct.A3118, keyboard.Product);
+    }
+
+    [Fact]
+    public void TheUsbDeviceOfTheA3118_IsKnown() {
+        PnpKeyboard? keyboard = KeyboardPnpIds.Parse(@"USB\VID_05AC&PID_0321\F0THCD0AG1A0000TXQ");
+
+        Assert.NotNull(keyboard);
+        Assert.Equal("usb:F0THCD0AG1A0000TXQ", keyboard.Identity.ToString());
+        Assert.Equal(KeyboardProduct.A3118, keyboard.Product);
+    }
+
+    [Fact]
+    public void EveryModel_IsKnownOverUsbAndBluetooth() {
+        foreach (KeyboardProduct product in Enum.GetValues<KeyboardProduct>()) {
+            string productId = KnownKeyboards.GetProductId(product).ToString("X4");
+
+            Assert.Equal(product, KeyboardPnpIds.Parse($@"USB\VID_05AC&PID_{productId}\F0T125100BWJKPGAS")?.Product);
+            Assert.Equal(product, KeyboardPnpIds.Parse($@"BTHENUM\{{00001124-0000-1000-8000-00805F9B34FB}}_VID&0001004C_PID&{productId}\D&15B70467&0&C4141104498E_C00000000")?.Product);
+        }
+    }
+
     [Theory]
     [InlineData(@"BTHENUM\{00001200-0000-1000-8000-00805F9B34FB}_VID&0001004C_PID&026C\D&15B70467&0&C4141104498E_C00000000")]
     [InlineData(@"BTHENUM\DEV_C4141104498E\D&15B70467&0&BLUETOOTHDEVICE_C4141104498E")]
@@ -62,6 +90,12 @@ public class KnownKeyboardsTests {
     public void TheProductIdsAreTheOnesOfTheInf() {
         Assert.Equal(0x0267, KnownKeyboards.GetProductId(KeyboardProduct.A1644));
         Assert.Equal(0x026C, KnownKeyboards.GetProductId(KeyboardProduct.A1843));
+        Assert.Equal(0x029A, KnownKeyboards.GetProductId(KeyboardProduct.A2449));
+        Assert.Equal(0x029C, KnownKeyboards.GetProductId(KeyboardProduct.A2450));
+        Assert.Equal(0x029F, KnownKeyboards.GetProductId(KeyboardProduct.A2520));
+        Assert.Equal(0x0321, KnownKeyboards.GetProductId(KeyboardProduct.A3118));
+        Assert.Equal(0x0322, KnownKeyboards.GetProductId(KeyboardProduct.A3119));
+        Assert.Equal(0x0320, KnownKeyboards.GetProductId(KeyboardProduct.A3203));
     }
 
     [Fact]

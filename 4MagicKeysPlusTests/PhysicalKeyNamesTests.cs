@@ -15,6 +15,8 @@ public class PhysicalKeyNamesTests {
     [InlineData(PhysicalKey.NumPad1, "Num Pad 1")]
     [InlineData(PhysicalKey.F13, "F13")]
     [InlineData(PhysicalKey.Fn, "Fn")]
+    [InlineData(PhysicalKey.Lock, "Lock")]
+    [InlineData(PhysicalKey.Menu, "Menu")]
     [InlineData(PhysicalKey.A, "A")]
     [InlineData(PhysicalKey.Home, "Home")]
     public void GetDisplayName_SplitsIdentifierIntoWords(PhysicalKey key, string expected) {
@@ -25,6 +27,7 @@ public class PhysicalKeyNamesTests {
     [InlineData(PhysicalKey.D1, "1")]
     [InlineData(PhysicalKey.D0, "0")]
     [InlineData(PhysicalKey.EqualsKey, "Equals")]
+    [InlineData(PhysicalKey.TouchId, "Touch ID")]
     public void GetDisplayName_UsesOverridesForIdentifiersThatDoNotReadAsWords(PhysicalKey key, string expected) {
         Assert.Equal(expected, PhysicalKeyNames.GetDisplayName(key));
     }

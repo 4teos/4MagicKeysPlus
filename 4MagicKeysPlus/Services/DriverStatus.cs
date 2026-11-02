@@ -21,7 +21,7 @@ internal static class DriverStatus {
     }
 
     // Subkeys without both Source and Target as DWORDs are not driver rules.
-    public static List<KeyRule> ReadRules(RegistryKey root, string rulesKeyPath) {
+    public static List<KeyRule> ReadRules(RegistryKey root, string rulesKeyPath, bool touchId = false) {
         List<KeyRule> rules = [];
 
         using RegistryKey? rulesKey = root.OpenSubKey(rulesKeyPath);
@@ -36,7 +36,7 @@ internal static class DriverStatus {
             }
 
             bool fnLockAware = ruleKey.GetValue("FnLockAware") is int aware && aware != 0;
-            KeyRule? rule = DriverConfigParser.ParseRule(unchecked((uint)source), unchecked((uint)target), fnLockAware);
+            KeyRule? rule = DriverConfigParser.ParseRule(unchecked((uint)source), unchecked((uint)target), fnLockAware, touchId);
             if (rule is not null) {
                 rules.Add(rule with {
                     RegistryName = name

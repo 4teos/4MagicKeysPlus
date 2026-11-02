@@ -50,8 +50,9 @@ public partial class KeysView : UserControl {
             hostWindow = null;
         };
 
-        ModelSelector.Items.Add(KeyboardModel.A1644);
-        ModelSelector.Items.Add(KeyboardModel.A1843);
+        foreach (KeyboardProduct known in Enum.GetValues<KeyboardProduct>()) {
+            ModelSelector.Items.Add(KeyboardModel.From(known));
+        }
 
         ModelSelector.SelectedValue = KeyboardModel.From(product);
     }
@@ -276,6 +277,9 @@ public partial class KeysView : UserControl {
         KeyLayoutEntry? entry = KeyboardLayout.GetKeys(model).SelectMany(row => row.RowKeys).FirstOrDefault(candidate => candidate.Kind == key);
         string text = string.IsNullOrEmpty(entry?.Label) ? PhysicalKeyNames.GetDisplayName(key) : entry.Label;
         KeyBorder tile = BuildKeyChip(key, text, ChipHeight + 8, 0);
+        if (key == PhysicalKey.TouchId) {
+            tile.Child = BuildTouchIdGlyph(26, isRemapped: false);
+        }
         tile.IsInteractive = false;
         return tile;
     }
@@ -399,7 +403,10 @@ public partial class KeysView : UserControl {
         VirtualKeysHost.Visibility = VirtualKeysPanel.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private static TextBlock? BuildKeyLabel(KeyLayoutEntry key, bool isRemapped) {
+    private static UIElement? BuildKeyLabel(KeyLayoutEntry key, bool isRemapped) {
+        if (key.Kind == PhysicalKey.TouchId) {
+            return BuildTouchIdGlyph(30, isRemapped);
+        }
         if (string.IsNullOrEmpty(key.Label)) {
             return null;
         }
@@ -417,6 +424,29 @@ public partial class KeysView : UserControl {
             label.SetResourceReference(TextBlock.ForegroundProperty, ThemeKeys.KeyRemappedForeground);
         }
         return label;
+    }
+
+    private static Grid BuildTouchIdGlyph(double ringSize, bool isRemapped) {
+        Grid glyph = new() {
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            IsHitTestVisible = false,
+        };
+        foreach ((string text, double size, double opacity) in new[] { (Glyphs.Ring, ringSize, 0.45), (Glyphs.Fingerprint, ringSize * 0.6, 1.0) }) {
+            TextBlock layer = new() {
+                Text = text,
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                FontSize = size,
+                Opacity = opacity,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            if (isRemapped) {
+                layer.SetResourceReference(TextBlock.ForegroundProperty, ThemeKeys.KeyRemappedForeground);
+            }
+            glyph.Children.Add(layer);
+        }
+        return glyph;
     }
 
     private static ToolTip BuildKeyToolTip(DriverKeyRemapConfig remapConfig, PhysicalKey key) {

@@ -23,7 +23,7 @@ internal static class DriverRuleEncoder {
     // for a rule of the Fn layer.
     public static KeyRule? CreateRule(PhysicalKey source, RemapTarget target, bool fnLayer, bool fnLockAware) {
         (uint encodedSource, uint encodedTarget) = Encode(source, target, fnLayer);
-        return DriverConfigParser.ParseRule(encodedSource, encodedTarget, fnLayer && fnLockAware);
+        return DriverConfigParser.ParseRule(encodedSource, encodedTarget, fnLayer && fnLockAware, source == PhysicalKey.TouchId);
     }
 
     private static uint EncodeKey(PhysicalKey key) {

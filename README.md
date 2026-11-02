@@ -10,10 +10,16 @@ Originally forked from the [samartzidis/winAppleKey](https://github.com/samartzi
 |-------|------|------------|
 | A1644 | Apple Magic Keyboard | USB / Bluetooth |
 | A1843 | Apple Magic Keyboard with Numeric Keypad | USB / Bluetooth |
+| A2449 | Apple Magic Keyboard with Touch ID | USB / Bluetooth |
+| A2450 | Apple Magic Keyboard with Lock Key | USB / Bluetooth |
+| A2520 | Apple Magic Keyboard with Touch ID and Numeric Keypad | USB / Bluetooth |
+| A3118 | Apple Magic Keyboard with Touch ID | USB / Bluetooth |
+| A3119 | Apple Magic Keyboard with Touch ID and Numeric Keypad | USB / Bluetooth |
+| A3203 | Apple Magic Keyboard with Lock Key | USB / Bluetooth |
 
 ### Features
 
-- One list of key rules in the registry (per keyboard, see [Keyboard Profiles](#keyboard-profiles)) replaces all the old remap tables: remap any key to another key, swap modifiers, map Fn/Eject to a modifier or a key (and back), turn a key into a modifier combination, or into a media/brightness/volume action
+- One list of key rules in the registry (per keyboard, see [Keyboard Profiles](#keyboard-profiles)) replaces all the old remap tables: remap any key to another key, swap modifiers, map Fn/Eject/Lock to a modifier or a key (Fn and Eject also the other way round), turn a key into a modifier combination, or into a media/brightness/volume action
 - Fn layer: any key can have a separate "with Fn" rule (Home/End/Page Up/Down, Insert, Print Screen, etc. are ordinary rules now, nothing is hardcoded)
 - `FnLock`-aware rules, so the F-row media keys can behave as media keys by default or as regular function keys, with Fn flipping them
 - Default settings for each keyboard model, a JSON file per model (see [Default Settings](#default-settings)): a keyboard that has no profile yet works with them at once, and a new profile begins as a copy of them
@@ -94,6 +100,7 @@ The configuration app asks for administrator rights when it starts: it writes th
 - **Only with Fn** makes it a rule of the Fn layer (and changes which targets are allowed; you can switch it while picking). **Follow Fn Lock** makes that rule `FnLockAware` and only applies to the Fn layer. When a key can be remapped in one layer only, the first option is fixed.
 - **Remove mapping** deletes every rule of the key, in both layers. Be careful with the F-row: removing the Fn+F8 rule also removes the media action (**Reset to defaults** below brings it back).
 - Setting a mapping replaces only the rule of the same key and layer; the key's rules of the other layer stay.
+- The key at the top right of the picture is Eject, Lock or Touch ID, depending on the model. Lock and Touch ID are one key for the driver (`0xF2`); the app only draws and names it by the model.
 - A rule the app saves gets its text as the `Comment` of its subkey (`Fn+Left -> Home`, the names of the keys as on the picture); a rule that is changed gets a new one. The rules the app does not touch keep their `Comment`, or none.
 - Every change is saved to the `Rules` of the profile of the selected keyboard and the driver is told to reload at once. The glyph at the right of the panel shows how that went: a green check, a yellow triangle (saved, but the driver did not take the rules: no keyboard is connected, the driver is too old to reload, or it ignored some rules; they are loaded when the keyboard connects), or a red cross (nothing was saved). Hover it for the details.
 
@@ -130,7 +137,7 @@ The name of the subkey does not matter to the driver (the configuration app name
 | `FnLock` | DWORD | optional, default `0`, see [FnLock](#fnlock-dword) |
 | `Rules` | subkey | the key rules of the keyboard, see [Key Rules](#key-rules) |
 | `Index` | DWORD | optional, default `1`, for the configuration app, ignored by the driver; tells apart the keyboards of one model: the app shows a keyboard by its model, followed by the index in brackets from 2 up |
-| `Model` | DWORD | the USB product ID of the model (`0x0267` A1644, `0x026C` A1843), for the configuration app, ignored by the driver |
+| `Model` | DWORD | the USB product ID of the model (`0x0267` A1644, `0x026C` A1843, `0x029A` A2449, `0x029C` A2450, `0x029F` A2520, `0x0321` A3118, `0x0322` A3119, `0x0320` A3203), for the configuration app, ignored by the driver |
 
 An identity is a text in upper case: `bt:` and the 12 hex digits of the Bluetooth address of the keyboard (`bt:C4141104498E`), or `usb:` and its serial number (`usb:F0T125100BWJKPGAS`). One keyboard has both: Windows sees its cable and its Bluetooth pairing as unrelated devices, so a profile lists both, and then the keyboard has the same settings whichever way it is connected.
 
@@ -209,7 +216,7 @@ A subkey without both `Source` and `Target` is not a key rule and is ignored. Ru
 Both are the same 32-bit value:
 
 ```
-bits  0-15   code: a HID key code (see the reference below), F0 = Eject, F1 = Fn,
+bits  0-15   code: a HID key code (see the reference below), F0 = Eject, F1 = Fn, F2 = Lock (Source only),
              or, in a Target with the consumer flag, a Consumer Control usage
 bits 16-23   modifier mask (see Modifier Bits below)
 bit  24      Source: "only while Fn is held" (Fn layer)
@@ -226,11 +233,11 @@ Supported rule shapes:
 | key | consumer usage | `Source=0x01000041`, `Target=0x010000CD` (Fn+F8 -> Play/Pause) |
 | modifier(s) | modifier(s) | `Source=0x00040000`, `Target=0x00080000` (Left Alt -> Left Cmd) |
 | modifier(s) | Fn / Eject | `Source=0x00010000`, `Target=0xF1` (Left Ctrl -> Fn) |
-| Fn / Eject | modifier(s) | `Source=0xF1`, `Target=0x00010000` (Fn -> Left Ctrl) |
-| Fn / Eject | Fn / Eject | `Source=0xF0`, `Target=0xF1` (Eject -> Fn) |
-| Fn / Eject | key | `Source=0xF1`, `Target=0x49` (Fn -> Insert) |
+| Fn / Eject / Lock | modifier(s) | `Source=0xF1`, `Target=0x00010000` (Fn -> Left Ctrl) |
+| Fn / Eject / Lock | Fn / Eject | `Source=0xF0`, `Target=0xF1` (Eject -> Fn) |
+| Fn / Eject / Lock | key | `Source=0xF1`, `Target=0x49` (Fn -> Insert) |
 
-Not supported: a key as the source together with modifiers (e.g. Cmd+L -> F12), a key mapped to Fn/Eject, and a modifier mapped to a key. Windows receives a modifier before the key that follows it, so a replaced combination would leak the modifier (the Start menu opening on a Win tap, Alt activating menus).
+Not supported: a key as the source together with modifiers (e.g. Cmd+L -> F12), a key mapped to Fn/Eject, anything mapped to Lock, and a modifier mapped to a key. Windows receives a modifier before the key that follows it, so a replaced combination would leak the modifier (the Start menu opening on a Win tap, Alt activating menus).
 
 #### How the rules are applied
 
@@ -239,7 +246,7 @@ Not supported: a key as the source together with modifiers (e.g. Cmd+L -> F12), 
 - A Fn-layer rule (bit 24 in the source) applies while Fn is held and wins over the plain rule of the same key. Otherwise the plain rule applies, so e.g. a plain `F13 -> Print Screen` keeps working while Fn is held.
 - `FnLockAware` flips the Fn requirement of a Fn-layer rule while `FnLock` is `0`. With `FnLock=1`, F8 is F8 and Fn+F8 is Play/Pause; with `FnLock=0` it is the other way round. One `Fn+F8 -> Play/Pause` rule with `FnLockAware=1` covers both. Rules without `FnLockAware` ignore `FnLock`.
 - If several rules have the same source, the first one found wins. If two media keys are pressed at once, the first one wins and the other one is swallowed.
-- Keys produced by Fn/Eject -> key rules are added after the key pass and are not remapped again.
+- Keys produced by Fn/Eject/Lock -> key rules are added after the key pass and are not remapped again.
 
 Rules are read when a keyboard connects and when the driver is told to reload them; see [Applying Changes](#applying-changes).
 
@@ -277,7 +284,7 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboa
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Keyboards\{6F1D2C3A-8B4E-4F70-9A21-5C3E7D8B0A11}\Rules\01000041" /v FnLockAware /t REG_DWORD /d 1 /f
 ```
 
-Other examples: swap Left Alt and Left Cmd needs two rules (`0x00040000 -> 0x00080000` and `0x00080000 -> 0x00040000`); Eject as Fn is `0xF0 -> 0xF1`; Fn typing Insert is `0xF1 -> 0x49`.
+Other examples: swap Left Alt and Left Cmd needs two rules (`0x00040000 -> 0x00080000` and `0x00080000 -> 0x00040000`); Eject as Fn is `0xF0 -> 0xF1`; Fn typing Insert is `0xF1 -> 0x49`; Lock typing Insert is `0xF2 -> 0x49`.
 
 The configuration app edits the rules of the selected keyboard, so hand editing is meant for development and for advanced users.
 
@@ -426,7 +433,7 @@ The older `KeyMap`, `ModMap` and `SpecialModMap` binary values are no longer rea
 #### Virtual Codes (Apple-specific keys)
 
 ```
-F0=Eject    F1=Fn   (as the code of a rule value)
+F0=Eject    F1=Fn    F2=Lock (the Touch ID key on the models that have the sensor; as a Source only)   (as the code of a rule value)
 ```
 
 #### Modifier Bits (bits 16-23 of a rule value)

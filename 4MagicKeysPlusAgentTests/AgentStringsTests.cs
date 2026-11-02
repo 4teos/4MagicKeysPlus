@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reflection;
+using _4MagicKeysPlus.Core;
 using _4MagicKeysPlusAgent;
 
 namespace _4MagicKeysPlusAgentTests;
@@ -29,6 +30,13 @@ public class AgentStringsTests {
 
     private static string Read(PropertyInfo property) {
         return (string)property.GetValue(null)!;
+    }
+
+    [Fact]
+    public void EveryKeyboardProduct_HasALocalizedModelName() {
+        foreach (KeyboardProduct product in Enum.GetValues<KeyboardProduct>()) {
+            Assert.NotEqual(product.ToString(), Strings.ModelName(product));
+        }
     }
 
     [Fact]

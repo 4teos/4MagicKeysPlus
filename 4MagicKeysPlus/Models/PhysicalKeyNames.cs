@@ -17,6 +17,7 @@ public static class PhysicalKeyNames {
         [PhysicalKey.D9] = "9",
         [PhysicalKey.D0] = "0",
         [PhysicalKey.EqualsKey] = "Equals",
+        [PhysicalKey.TouchId] = "Touch ID",
     };
 
     public static string GetDisplayName(PhysicalKey key) {

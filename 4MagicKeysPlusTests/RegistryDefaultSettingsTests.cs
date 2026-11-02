@@ -51,6 +51,7 @@ public sealed class RegistryDefaultSettingsTests : IDisposable {
     public void TheDefaultsOfAModel_AreKeyedByItsUsbProductId() {
         Assert.Equal("026C", RegistryDefaultSettings.ModelKeyName(KeyboardProduct.A1843));
         Assert.Equal("0267", RegistryDefaultSettings.ModelKeyName(KeyboardProduct.A1644));
+        Assert.Equal("0321", RegistryDefaultSettings.ModelKeyName(KeyboardProduct.A3118));
     }
 
     [Fact]

@@ -30,4 +30,22 @@
   <data name="KeyboardModelA1843" xml:space="preserve">
     <value>Magic Keyboard с цифровым блоком (A1843)</value>
   </data>
+  <data name="KeyboardModelA2449" xml:space="preserve">
+    <value>Magic Keyboard с Touch ID (A2449)</value>
+  </data>
+  <data name="KeyboardModelA2450" xml:space="preserve">
+    <value>Magic Keyboard с клавишей Lock (A2450)</value>
+  </data>
+  <data name="KeyboardModelA2520" xml:space="preserve">
+    <value>Magic Keyboard с Touch ID и цифровым блоком (A2520)</value>
+  </data>
+  <data name="KeyboardModelA3118" xml:space="preserve">
+    <value>Magic Keyboard с Touch ID (A3118)</value>
+  </data>
+  <data name="KeyboardModelA3119" xml:space="preserve">
+    <value>Magic Keyboard с Touch ID и цифровым блоком (A3119)</value>
+  </data>
+  <data name="KeyboardModelA3203" xml:space="preserve">
+    <value>Magic Keyboard с клавишей Lock (A3203)</value>
+  </data>
 </root>

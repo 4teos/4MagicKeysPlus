@@ -214,4 +214,16 @@ public sealed class DriverStatusTests : IDisposable {
 
         Assert.Empty(DriverStatus.ReadRules(Registry.CurrentUser, rulesPath));
     }
+
+    [Fact]
+    public void TheLockCodeOfARule_IsTheLockKeyUnlessTheKeyboardHasTouchId() {
+        string rulesPath = scratch.Path("Rules");
+        using (RegistryKey rule = Registry.CurrentUser.CreateSubKey($@"{rulesPath}\000000F2")) {
+            rule.SetValue("Source", 0xF2, RegistryValueKind.DWord);
+            rule.SetValue("Target", 0x49, RegistryValueKind.DWord);
+        }
+
+        Assert.Equal([PhysicalKey.Lock], Assert.Single(DriverStatus.ReadRules(Registry.CurrentUser, rulesPath)).Source);
+        Assert.Equal([PhysicalKey.TouchId], Assert.Single(DriverStatus.ReadRules(Registry.CurrentUser, rulesPath, touchId: true)).Source);
+    }
 }
