@@ -2,12 +2,9 @@ using System.Security;
 
 namespace _4MagicKeysPlus.Core;
 
-// Problems is empty when every file was written (the models are those of the files).
 public sealed record DefaultsInstallResult(IReadOnlyList<KeyboardProduct> Installed, IReadOnlyList<string> Problems);
 
-// Puts the shipped files of default settings (the .json files of a folder) into the registry as the defaults of their models.
-// Nothing is written unless every file is good, so that a damaged file does not leave a mix of old and new defaults; the
-// profiles of the keyboards are never touched.
+// All or nothing, so that a damaged file does not leave a mix of old and new defaults; the profiles of the keyboards are never touched.
 public static class DefaultSettingsInstaller {
     public static DefaultsInstallResult Install(string folder, RegistryDefaultSettings target) {
         List<string> problems = [];

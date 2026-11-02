@@ -7,8 +7,7 @@ using _4MagicKeysPlus.Views;
 
 namespace _4MagicKeysPlus.ViewModels;
 
-// A keyboard in the tabs of the title bar. The object of a keyboard stays the same for as long as the keyboard is
-// known, whatever is refreshed, so that what is bound to it (the selection) is not replaced every few seconds.
+// The object of a keyboard stays the same for as long as the keyboard is known, so that what is bound to it (the selection) is not replaced every few seconds.
 public sealed class KeyboardItem : ObservableObject {
     private string name = "";
     private string connectionGlyph = "";
@@ -36,7 +35,6 @@ public sealed class KeyboardItem : ObservableObject {
         private set => SetField(ref connectionGlyph, value);
     }
 
-    // A keyboard that is not connected is listed but its settings cannot be opened.
     public bool IsConnected {
         get => isConnected;
         private set {
@@ -46,7 +44,6 @@ public sealed class KeyboardItem : ObservableObject {
         }
     }
 
-    // What the tab of the keyboard says on hover: its name, and that it is not connected when it is not.
     public string Tooltip => isConnected ? name : $"{name} ({Strings.KeyboardNotConnected})";
 
     internal void Update(KeyboardEntry entry) {
@@ -60,7 +57,6 @@ public sealed class KeyboardItem : ObservableObject {
     }
 }
 
-// A profile that the keyboard being asked about may be the same keyboard as.
 public sealed class LinkCandidate {
     internal LinkCandidate(Guid id, string name) {
         Id = id;
@@ -76,8 +72,6 @@ public sealed class LinkCandidate {
     }
 }
 
-// The tabs of the keyboards in the title bar, and the question that sits under the header when a keyboard that has just
-// been connected may be one of those that are known ("is it the same keyboard?"). Lives for the whole app session.
 public sealed class KeyboardSelectorViewModel : ObservableObject {
     private readonly KeyboardSession session;
     private readonly Dictionary<Guid, KeyboardItem> known = [];
@@ -96,7 +90,6 @@ public sealed class KeyboardSelectorViewModel : ObservableObject {
 
     public ObservableCollection<KeyboardItem> Items { get; } = [];
 
-    // The tabs are there to choose from, so they are shown once there are two keyboards or more.
     public bool HasSeveralKeyboards => Items.Count > 1;
 
     // Choosing a keyboard that is not connected does nothing: the box goes on showing the one that is selected.
@@ -132,7 +125,6 @@ public sealed class KeyboardSelectorViewModel : ObservableObject {
 
     public bool HasProblem => problem is not null;
 
-    // The keyboard that was connected is the one of the chosen profile.
     public void LinkToCandidate() {
         if (prompt is null || SelectedCandidate is null) {
             return;

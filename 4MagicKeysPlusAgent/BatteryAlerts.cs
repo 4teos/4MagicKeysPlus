@@ -4,12 +4,10 @@ namespace _4MagicKeysPlusAgent;
 
 internal sealed record BatteryReading(BatteryTarget Target, KeyboardBatteryStatus? Status);
 
-// A notice that is due: for the keyboard of the key, with the charge it has now.
 internal sealed record BatteryNotice(string Key, string? KeyboardName, int Percent);
 
-// The low-battery policy of every keyboard. The thresholds are the same for all (the constants of BatteryAlertPolicy), but
-// each keyboard has its own record of what it has been warned about, so that a keyboard that was warned about does not
-// silence another one, and charging one re-arms that one only.
+// The thresholds are shared (BatteryAlertPolicy), but every keyboard has its own record of what it was warned about: warning one
+// does not silence another, and charging one re-arms that one only.
 internal sealed class BatteryAlerts {
     private readonly Dictionary<string, BatteryAlertPolicy> policies = [];
 

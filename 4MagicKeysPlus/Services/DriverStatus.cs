@@ -11,7 +11,6 @@ internal static class DriverStatus {
 
     public const string HotkeysKeyPath = $@"{ParametersKeyPath}\{HotkeysKeyName}";
 
-    // The key of a keyboard profile, which holds its FnLock and its Rules.
     public static string ProfileKeyPath(Guid profileId) {
         return $@"{RegistryKeyboardProfileStore.KeyboardsKeyPath}\{RegistryKeyboardProfileStore.ProfileKeyName(profileId)}";
     }

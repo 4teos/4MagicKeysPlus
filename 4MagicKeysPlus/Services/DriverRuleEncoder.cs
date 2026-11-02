@@ -2,9 +2,7 @@ using _4MagicKeysPlus.Models;
 
 namespace _4MagicKeysPlus.Services;
 
-// The reverse of DriverConfigParser: the Source/Target values the driver reads for a rule.
-// Modifiers go to the mask in bits 16-23 (HID order), everything else is a HID code - never the
-// raw PhysicalKey value of a modifier, which is fake.
+// Modifiers go to the mask in bits 16-23 (HID order), everything else is a HID code - never the raw PhysicalKey value of a modifier, which is fake.
 internal static class DriverRuleEncoder {
     private const int ModsShift = 16;
     private const uint SourceFnFlag = 0x01000000;

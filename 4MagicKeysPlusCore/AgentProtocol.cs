@@ -3,7 +3,6 @@ using System.Text.Json.Serialization;
 
 namespace _4MagicKeysPlus.Core;
 
-// What the agent made of one hotkey entry when it registered it. Win32Error is 0 on success.
 public sealed record HotkeyRegistration(string RegistryName, int Win32Error) {
     [JsonIgnore]
     public bool Succeeded => Win32Error == 0;
@@ -19,10 +18,8 @@ public sealed record AgentResponse(bool Ok, IReadOnlyList<HotkeyRegistration>? H
     }
 }
 
-// The agent's named pipe: one command per line from the configuration app, one JSON reply per
-// line back. "pause" releases the agent's hotkeys so a key being captured reaches the app,
-// "resume" takes them back, "reload" re-reads the configuration and registers it from scratch
-// (it ends a pause too). The agent also resumes by itself when the connection that paused it drops.
+// One command per line, one JSON reply per line back. "pause" releases the hotkeys so that a key being captured reaches the app;
+// it ends with "resume", with "reload" (which also re-reads the configuration) or when the connection that paused it drops.
 public static class AgentProtocol {
     public const string PipeName = "4MagicKeysPlus.Agent";
     public const string PauseCommand = "pause";

@@ -13,7 +13,6 @@ public enum DriverState {
 internal interface IDriverProbe {
     DriverState Probe();
 
-    // The version of the installed driver package (the DriverVer of its .inf), or null.
     string? InstalledVersion();
 }
 
@@ -27,7 +26,6 @@ internal sealed partial class DriverProbe : IDriverProbe {
     public DriverProbe() : this(Registry.LocalMachine, DriverStatus.ServiceKeyPath, HidClassKeyPath) {
     }
 
-    // The root and paths are parameters so that tests can use a scratch key of their own.
     public DriverProbe(RegistryKey root, string serviceKeyPath, string classKeyPath) {
         this.root = root;
         this.serviceKeyPath = serviceKeyPath;

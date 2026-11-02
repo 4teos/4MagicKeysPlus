@@ -4,8 +4,6 @@ using _4MagicKeysPlus.Services;
 
 namespace _4MagicKeysPlus.ViewModels;
 
-// The Fn Lock switch above the keyboard, of one keyboard. Lives for the whole app session (see
-// ProfileEditors); a change is saved to the registry and handed to the driver at once, like a rule.
 public sealed class FnLockEditor {
     private readonly IFnLockStore store;
     private readonly IDriverControl driver;
@@ -15,7 +13,6 @@ public sealed class FnLockEditor {
         this.driver = driver;
     }
 
-    // Raised once the new state is saved, for the header badge that shows it.
     public event Action? Changed;
 
     public bool IsEnabled => store.Read();

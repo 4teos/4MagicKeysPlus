@@ -4,8 +4,6 @@ using System.Text;
 
 namespace _4MagicKeysPlusAgent;
 
-// Debug-only: writes to the log which visible top-level windows sit above the popup in the
-// z-order, to find out who covers it (e.g. a fullscreen browser).
 internal static class ZOrderDiagnostics {
     private const int GWL_EXSTYLE = -20;
     private const long WS_EX_TOPMOST = 0x8;

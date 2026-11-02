@@ -1,6 +1,5 @@
 namespace _4MagicKeysPlus.Models;
 
-// Bridges the driver's raw HID bytes to this app's PhysicalKey identity.
 public static class PhysicalKeyHidMap {
     private static readonly IReadOnlyDictionary<byte, PhysicalKey> ModifiersByByte =
         new Dictionary<byte, PhysicalKey> {

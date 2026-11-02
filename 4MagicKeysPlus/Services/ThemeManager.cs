@@ -7,8 +7,7 @@ internal interface IThemeApplier {
     void Apply(ThemeChoice choice);
 }
 
-// Swaps the theme dictionary of the application (the first of its merged dictionaries, see App.xaml).
-// Every color is a DynamicResource, so the open windows follow at once.
+// Replaces the first merged dictionary of the application (see App.xaml). Every color is a DynamicResource, so the open windows follow at once.
 internal sealed class ThemeManager : IThemeApplier, IDisposable {
     private const string PersonalizeKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
 

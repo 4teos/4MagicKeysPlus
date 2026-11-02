@@ -10,7 +10,6 @@ internal sealed class FakeDefaultSettings : IDefaultSettings {
         get; set;
     }
 
-    // Whether the models have defaults at all.
     public bool Available { get; set; } = true;
 
     public bool Has(KeyboardProduct model) {

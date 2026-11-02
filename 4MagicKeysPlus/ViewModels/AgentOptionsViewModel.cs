@@ -5,7 +5,6 @@ using _4MagicKeysPlus.Services;
 
 namespace _4MagicKeysPlus.ViewModels;
 
-// Whether the agent runs, starting it, starting it at logon, and whether it opens this app for a new keyboard.
 public sealed class AgentOptionsViewModel : ObservableObject {
     private readonly IAgentLink link;
     private readonly IAgentAutostart autostart;
@@ -20,7 +19,6 @@ public sealed class AgentOptionsViewModel : ObservableObject {
     private string? autostartProblem;
     private string? openAppProblem;
 
-    // startAgent starts the agent and answers what went wrong, or null.
     internal AgentOptionsViewModel(IAgentLink link, IAgentAutostart autostart, IAppSettingsStore settings, Func<string?> startAgent) {
         this.link = link;
         this.autostart = autostart;
@@ -125,7 +123,6 @@ public sealed class AgentOptionsViewModel : ObservableObject {
         Notify(nameof(OpenAppForNewKeyboard), nameof(OpenAppProblem), nameof(HasOpenAppProblem));
     }
 
-    // On is the default, so it is what a setting that cannot be read counts as.
     private bool ReadOpenApp() {
         try {
             return settings.Read().OpenAppForNewKeyboard;

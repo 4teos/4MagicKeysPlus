@@ -16,7 +16,6 @@ public static class Glyphs {
     private static readonly string[] BatteryLevels = ["\uE850", "\uE851", "\uE852", "\uE853", "\uE854", "\uE855", "\uE856", "\uE857", "\uE858", "\uE859", "\uE83F"];
     private static readonly string[] BatteryChargingLevels = ["\uE85A", "\uE85B", "\uE85C", "\uE85D", "\uE85E", "\uE85F", "\uE860", "\uE861", "\uE862", "\uE83E", "\uEA93"];
 
-    // The level is rounded down to a step of 10.
     public static string BatteryLevel(int percent, bool charging = false) {
         string[] levels = charging ? BatteryChargingLevels : BatteryLevels;
         return levels[Math.Clamp(percent / 10, 0, levels.Length - 1)];

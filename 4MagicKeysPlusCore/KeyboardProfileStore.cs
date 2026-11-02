@@ -2,14 +2,12 @@ using Microsoft.Win32;
 
 namespace _4MagicKeysPlus.Core;
 
-// Where the profiles of the keyboards are kept: a subkey of Parameters\Keyboards for each, named by its GUID. The
-// values of the profile itself are Model (DWORD, the USB product ID), Index (DWORD; none while it is 1, it tells the keyboards
-// of one model apart) and Identities (MULTI_SZ of the
-// bt:/usb: texts); the settings of the keyboard sit beside them (FnLock and the Rules subkey) and are not touched here.
+// Values of a profile key: Model (the USB product ID), Index (none while it is 1), Identities (MULTI_SZ of bt:/usb: texts).
+// The settings beside them (FnLock, the Rules subkey) are not touched here.
 public interface IKeyboardProfileStore {
     IReadOnlyList<KeyboardProfile> Load();
 
-    // Creates the profile or rewrites its own values. An identity that another profile owns is refused.
+    // Rewrites the values of the profile; an identity that another profile owns is refused.
     void Save(KeyboardProfile profile);
 }
 
@@ -23,18 +21,15 @@ public sealed class RegistryKeyboardProfileStore : IKeyboardProfileStore {
     public RegistryKeyboardProfileStore() : this(Registry.LocalMachine, KeyboardsKeyPath) {
     }
 
-    // The root and path are parameters so that tests can use a scratch key of their own.
     public RegistryKeyboardProfileStore(RegistryKey root, string keyboardsPath) {
         this.root = root;
         this.keyboardsPath = keyboardsPath;
     }
 
-    // The subkey of a keyboard profile under Keyboards: its GUID in braces, upper case.
     public static string ProfileKeyName(Guid profileId) {
         return profileId.ToString("B").ToUpperInvariant();
     }
 
-    // A subkey that is not named by a GUID, or has no model this app knows, is not a profile it can show.
     public IReadOnlyList<KeyboardProfile> Load() {
         List<KeyboardProfile> profiles = [];
         using RegistryKey? keyboardsKey = root.OpenSubKey(keyboardsPath);

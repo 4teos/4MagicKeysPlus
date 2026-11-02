@@ -1,6 +1,5 @@
 namespace _4MagicKeysPlusAgent;
 
-// Closes by itself or on a click anywhere.
 internal sealed class LowBatteryForm : NoticeForm {
     private const int DismissDelayMs = 8000;
 
@@ -8,7 +7,6 @@ internal sealed class LowBatteryForm : NoticeForm {
 
     private readonly System.Windows.Forms.Timer dismissTimer = new();
 
-    // keyboardName is given when there are several keyboards, to tell the notices apart.
     public LowBatteryForm(int percent, string? keyboardName = null) {
         Color accent = percent <= BatteryAlertPolicy.CriticalPercent ? CriticalColor : WarningColor;
 
@@ -89,8 +87,7 @@ internal sealed class LowBatteryForm : NoticeForm {
         base.Dispose(disposing);
     }
 
-    // Segoe MDL2 Assets Battery0 (U+E850, empty) .. Battery9 (U+E859) are contiguous; a notice is only
-    // due for a low charge, so the levels above, where the range does not go on, are never asked for.
+    // Battery0 (U+E850, empty) .. Battery9 (U+E859) are contiguous; the levels above are never asked for, a notice is only due for a low charge.
     private static string BatteryGlyph(int percent) {
         return ((char)(0xE850 + Math.Clamp(percent / 10, 0, 10))).ToString();
     }

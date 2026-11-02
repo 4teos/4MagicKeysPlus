@@ -3,18 +3,13 @@ using Microsoft.Win32.SafeHandles;
 namespace _4MagicKeysPlus.Core;
 
 public static class KeyboardBattery {
-    // The keyboard's vendor-defined HID collection (usage page 0xFF00) reports battery as a
-    // 3-byte INPUT report: {0x90, status flags, percentage}. Confirmed on real hardware that
-    // HidD_GetFeature does not work here - HidP_GetCaps shows this collection declares zero
-    // feature reports; only HidD_GetInputReport reaches it.
-    // Status byte layout confirmed against the equivalent Linux HID driver for Apple Magic
-    // accessories (same report on Magic Mouse/Trackpad): bit 0x02 = external power connected.
+    // The vendor collection (usage page 0xFF00) reports the battery as a 3-byte INPUT report {0x90, flags, percent}. On real hardware
+    // HidD_GetFeature does not work (the collection declares no feature reports), only HidD_GetInputReport does.
+    // Flags bit 0x02 = external power connected (as in the Linux HID driver for Apple accessories).
     private const byte BatteryReportId = 0x90;
     private const int BatteryReportLength = 3;
     private const byte ExternalPowerFlag = 0x02;
 
-    // Re-opens the exact device KeyboardDetector already confirmed works, instead of
-    // re-scanning every HID interface on the system again.
     public static KeyboardBatteryStatus? ReadStatus(DetectedKeyboard? detectedKeyboard) {
         if (detectedKeyboard == null) {
             return null;
@@ -28,8 +23,7 @@ public static class KeyboardBattery {
         return TryRead(handle, out KeyboardBatteryStatus status) ? status : null;
     }
 
-    // Also used by KeyboardDetector as its liveness probe: among the several HID collections a
-    // composite keyboard exposes under the same VID/PID, only this vendor one actually answers.
+    // Also the liveness probe of KeyboardDetector: of the HID collections of a composite keyboard only this vendor one answers.
     internal static bool TryRead(SafeFileHandle handle, out KeyboardBatteryStatus status) {
         byte[] report = new byte[BatteryReportLength];
         report[0] = BatteryReportId;

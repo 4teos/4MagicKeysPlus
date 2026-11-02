@@ -2,8 +2,6 @@ using System.Runtime.InteropServices;
 
 namespace _4MagicKeysPlusAgent;
 
-// A hidden, message-only window (HWND_MESSAGE parent) - just enough to receive WM_HOTKEY,
-// never actually shown on screen.
 internal sealed class HotkeyWindow : NativeWindow, IHotkeyRegistrar, IDisposable {
     private readonly List<int> _registeredIds = [];
 

@@ -3,18 +3,15 @@ using _4MagicKeysPlus.Models;
 
 namespace _4MagicKeysPlus.Services;
 
-// A profile and the endpoint it is connected over right now, null when it is not connected.
 internal sealed record KeyboardEntry(KeyboardProfile Profile, KeyboardEndpoint? Live) {
     public bool IsConnected => Live is not null;
 
     public string DisplayName => KeyboardCatalog.DisplayName(Profile);
 }
 
-// A keyboard that is connected but that no profile lists. Candidates are the profiles it may be the same keyboard as.
+// Candidates are the profiles it may be the same keyboard as.
 internal sealed record UnownedKeyboard(KeyboardEndpoint Endpoint, IReadOnlyList<KeyboardProfile> Candidates);
 
-// The keyboards the app knows (the profiles, in the order the store gives them) and the ones that still need a profile,
-// worked out from what is stored and what is connected, without touching either.
 internal sealed class KeyboardCatalog {
     public static readonly KeyboardCatalog Empty = new([], []);
 
@@ -37,8 +34,7 @@ internal sealed class KeyboardCatalog {
             [.. KeyboardOwnership.UnownedLiveEndpoints(endpoints, profiles).Select(endpoint => new UnownedKeyboard(endpoint, Candidates(endpoint, profiles)))]);
     }
 
-    // A keyboard is shown by its model, in the language of the app, and by its index when that is above 1: nothing of that is
-    // stored but the index.
+    // Nothing of the name is stored but the index (shown when above 1): the model is named in the language of the app.
     public static string DisplayName(KeyboardProfile profile) {
         return ModelName(profile.Product, profile.Index);
     }
@@ -48,7 +44,6 @@ internal sealed class KeyboardCatalog {
         return index > 1 ? $"{model} ({index})" : model;
     }
 
-    // The index of a new profile of a model: the first one that no profile of the model has.
     public static int NewIndex(KeyboardProduct product, IEnumerable<KeyboardProfile> profiles) {
         HashSet<int> taken = [.. profiles.Where(profile => profile.Product == product).Select(profile => profile.Index)];
         int index = 1;
@@ -67,9 +62,8 @@ internal sealed class KeyboardCatalog {
             .FirstOrDefault();
     }
 
-    // A profile of the same model that has no way over this kind of connection yet could be this keyboard on its other one. Whether
-    // the profile is connected right now is no matter: Windows drops the Bluetooth link of a keyboard a moment after its cable
-    // goes in.
+    // A profile of the same model with no way over this kind of connection yet could be this keyboard on its other one, whether or not it is
+    // connected right now: Windows drops the Bluetooth link of a keyboard a moment after its cable goes in.
     private static IReadOnlyList<KeyboardProfile> Candidates(KeyboardEndpoint endpoint, IReadOnlyList<KeyboardProfile> profiles) {
         return [.. profiles.Where(profile => profile.Product == endpoint.Product && profile.Identities.All(identity => identity.Connection != endpoint.Identity.Connection))];
     }

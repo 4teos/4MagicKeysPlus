@@ -7,8 +7,6 @@ using System.Windows.Media.Imaging;
 namespace _4MagicKeysPlus.Services;
 
 internal static class AppIcons {
-    // The icon Explorer shows for the file; null when there is none (the file is missing, or
-    // Path is not a file at all).
     public static ImageSource? Load(string path) {
         try {
             if (!File.Exists(path)) {

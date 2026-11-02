@@ -7,10 +7,8 @@ namespace _4MagicKeysPlus.Services;
 public sealed record LanguageOption(string? CultureName, string DisplayName);
 
 internal static class Languages {
-    // The neutral resources are English; every other language is a satellite assembly in a folder
-    // named after it, so a new Strings.<language>.resx shows up here without any code. Only the
-    // languages themselves count ("ru", "de"): a folder of a regional variant ("ru-RU") is not
-    // offered. English comes first, the rest in the order of their names.
+    // The neutral resources are English; every other language is a satellite assembly in a folder named after it, so a new Strings.<language>.resx
+    // shows up here without any code. Only the languages themselves count ("ru", "de"): a folder of a regional variant ("ru-RU") is not offered.
     private const string NeutralCulture = "en";
 
     public static IReadOnlyList<LanguageOption> Available(string directory) {

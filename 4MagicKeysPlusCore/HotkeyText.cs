@@ -2,7 +2,6 @@ using System.Text;
 
 namespace _4MagicKeysPlus.Core;
 
-// Win32 virtual-key code and MOD_* bits as a person reads them: "Ctrl+Alt+F16".
 public static class HotkeyText {
     private const uint ModAlt = 0x0001;
     private const uint ModControl = 0x0002;

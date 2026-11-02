@@ -11,9 +11,6 @@ internal static class Program {
         ApplicationConfiguration.Initialize();
 
 #if DEBUG
-        // Test switches, Debug builds only: --demo-battery <percent> [delay seconds] shows the
-        // notice once, after the delay, and exits; --demo-hotkey-errors shows the registration
-        // errors notice with sample lines until it is clicked.
         if (args.Contains("--demo-hotkey-errors")) {
             using HotkeyErrorsForm errorsDemo = new HotkeyErrorsForm([
                 "Windows Terminal (Ctrl+Alt+T): Hot key is already registered.",
@@ -24,7 +21,6 @@ internal static class Program {
             return;
         }
 
-        // --demo-batteries: the notices of three keyboards at once, to see that they do not overlap.
         if (args.Contains("--demo-batteries")) {
             ApplicationContext demoContext = new ApplicationContext();
             int shown = 0;
@@ -68,7 +64,6 @@ internal static class Program {
         }
 
         using HotkeyWindow window = new HotkeyWindow();
-        // Hands work from the pipe's threads to this one, which owns the hotkey window.
         using Control uiThread = new Control();
         _ = uiThread.Handle;
 
@@ -112,7 +107,6 @@ internal static class Program {
 
     private static BatteryMonitor CreateBatteryMonitor(string[] args) {
 #if DEBUG
-        // --battery-interval <seconds>: check that often instead, each reading logged.
         int? intervalSeconds = IntArgument(args, "--battery-interval");
         if (intervalSeconds is not null) {
             return new BatteryMonitor(TimeSpan.FromSeconds(intervalSeconds.Value), verbose: true);

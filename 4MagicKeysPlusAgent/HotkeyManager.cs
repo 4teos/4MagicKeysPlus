@@ -8,8 +8,7 @@ internal interface IHotkeyRegistrar {
     void UnregisterAll();
 }
 
-// Owns the registered hotkeys. The registrar's window belongs to the UI thread, so everything
-// here has to be called from it.
+// The window of the registrar belongs to the UI thread: call everything here from it.
 internal sealed class HotkeyManager {
     private const int ErrorHotkeyAlreadyRegistered = 1409;
 
@@ -25,8 +24,7 @@ internal sealed class HotkeyManager {
 
     public IReadOnlyList<HotkeyEntry> Entries => entries;
 
-    // Reads the configuration again and registers it from scratch, which also ends a pause.
-    // A hotkey that fails to register does not stop the others.
+    // Registers from scratch, which also ends a pause; a hotkey that fails to register does not stop the others.
     public IReadOnlyList<HotkeyRegistration> Reload() {
         entries = load();
         pathById = entries.ToDictionary(entry => entry.HotkeyId, entry => entry.ExecutablePath);
@@ -45,7 +43,6 @@ internal sealed class HotkeyManager {
         return pathById.GetValueOrDefault(hotkeyId);
     }
 
-    // One line per failed registration, for the notice shown when the agent starts.
     public IReadOnlyList<string> DescribeFailures(IEnumerable<HotkeyRegistration> registrations) {
         List<string> lines = [];
         foreach (HotkeyRegistration registration in registrations.Where(r => !r.Succeeded)) {

@@ -2,8 +2,7 @@ using _4MagicKeysPlus.Core;
 
 namespace _4MagicKeysPlusAgent;
 
-// Turns a command from the pipe into a call on the hotkeys. The pipe is served from thread-pool
-// threads, so runOnUiThread must hand the work to the thread that owns the hotkey window.
+// The pipe is served from thread-pool threads: runOnUiThread must hand the work to the thread that owns the hotkey window.
 internal sealed class AgentCommandHandler {
     private readonly HotkeyManager hotkeys;
     private readonly Func<Func<AgentResponse>, AgentResponse> runOnUiThread;

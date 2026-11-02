@@ -7,11 +7,9 @@ internal static class TopmostWindow {
         Denied,
     }
 
-    // WS_EX_TOPMOST given at creation is silently dropped when the process has no foreground
-    // rights - which is exactly the agent's situation when the notice is due minutes after
-    // logon while some other window (often a fullscreen one) is in front. Windows then leaves
-    // the popup in the normal band, under that window. Re-asserting the position after sharing
-    // the foreground thread's input state is the known way past this.
+    // WS_EX_TOPMOST given at creation is silently dropped when the process has no foreground rights, which is the agent's situation when a notice is
+    // due minutes after logon while some other (often fullscreen) window is in front: Windows leaves the popup under it. Re-asserting the
+    // position after sharing the foreground thread's input state is the known way past this.
     public static Result Ensure(IntPtr hWnd) {
         if (Apply(hWnd)) {
             return Result.Direct;

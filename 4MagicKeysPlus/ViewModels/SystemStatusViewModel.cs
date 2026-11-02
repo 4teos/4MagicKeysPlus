@@ -3,7 +3,6 @@ using _4MagicKeysPlus.Services;
 
 namespace _4MagicKeysPlus.ViewModels;
 
-// What the app sees of the driver and the keyboard.
 public sealed class SystemStatusViewModel : ObservableObject {
     private const string Unknown = "—";
 
@@ -15,7 +14,6 @@ public sealed class SystemStatusViewModel : ObservableObject {
     private string keyboardText = "";
     private StatusLevel keyboardLevel;
 
-    // keyboard describes the connected keyboard, or answers null when there is none.
     internal SystemStatusViewModel(IDriverProbe driver, Func<string?> keyboard) {
         this.driver = driver;
         this.keyboard = keyboard;

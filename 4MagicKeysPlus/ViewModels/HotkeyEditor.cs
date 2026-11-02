@@ -10,8 +10,6 @@ namespace _4MagicKeysPlus.ViewModels;
 // made of them; empty when it did not answer.
 public sealed record HotkeyApplyResult(ApplyOutcome Outcome, string Message, IReadOnlyList<HotkeyEntry> Entries, IReadOnlyList<HotkeyRegistration> Registrations, bool AgentRunning);
 
-// The hotkey list on the Quick launch screen. Lives for the whole app session (owned by
-// MainWindow). Every change is saved to the registry and the agent is told at once.
 public sealed class HotkeyEditor {
     private readonly IHotkeyStore store;
     private readonly IAgentLink agent;
@@ -32,12 +30,10 @@ public sealed class HotkeyEditor {
         return agent.IsRunningAsync();
     }
 
-    // Releases the agent's hotkeys while a key is being captured; null when the agent is not running.
     internal Task<IAgentPause?> PauseAgentAsync() {
         return agent.PauseAsync();
     }
 
-    // The entry that already has this combination among those, if any.
     public static HotkeyEntry? FindConflict(IEnumerable<HotkeyEntry> others, uint virtualKey, uint modifiers) {
         return others.FirstOrDefault(entry => entry.SameCombination(virtualKey, modifiers));
     }

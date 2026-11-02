@@ -8,7 +8,7 @@ internal abstract class NoticeForm : Form {
 
     private const int GapDip = 8;
 
-    // The notices that are on the screen, so that a new one is not put over them (all of them live on the UI thread).
+    // Only the UI thread touches it.
     private static readonly List<NoticeForm> OpenNotices = [];
 
     protected static readonly Color Background = Color.FromArgb(0x2B, 0x2B, 0x2B);
@@ -35,8 +35,7 @@ internal abstract class NoticeForm : Form {
         }
     }
 
-    // Zero: as wide as the content is. Notices that can be on the screen together are better of one width, so that they
-    // make a column. The form grows to its content, so the width is that of the content, the one control the form holds.
+    // Zero: as wide as the content. Notices that can be on the screen together are better of one width, so that they make a column.
     protected virtual int FixedWidthDip => 0;
 
     protected override void OnLoad(EventArgs e) {

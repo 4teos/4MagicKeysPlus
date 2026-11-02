@@ -11,12 +11,9 @@ internal interface IRulesStore {
 
 internal sealed record RuleWrite(string Name, uint Source, uint Target, bool FnLockAware, string Comment);
 
-// What saving changes under Parameters\Rules, worked out without touching the registry. A rule
-// that has no subkey yet (RegistryName is null) is written under the hex of its Source, the
-// convention the driver's registry layout follows, with its text as the Comment. Rules are never
-// edited in place: a changed rule is a new one, so the subkey of the old one goes unless the new
-// one takes its name, and then its Comment is replaced as well. The rules that are kept as they
-// are keep whatever they have, a Comment written by hand too.
+// A rule that has no subkey yet is written under the hex of its Source (the convention of the driver's registry layout), with its text as the Comment.
+// Rules are never edited in place: a changed rule is a new one, so the subkey of the old one goes unless the new one takes its name, and then its
+// Comment is replaced as well. The rules that are kept as they are keep whatever they have, a Comment written by hand too.
 internal sealed record RulesPlan(IReadOnlyList<string> Delete, IReadOnlyList<RuleWrite> Write, IReadOnlyList<KeyRule> Result) {
     public static RulesPlan Create(IReadOnlyList<KeyRule> saved, IReadOnlyList<KeyRule> wanted) {
         List<KeyRule> result = [];
@@ -49,7 +46,6 @@ internal sealed class RegistryRulesStore : IRulesStore {
     private readonly RegistryKey root;
     private readonly string rulesPath;
 
-    // The root and path are parameters so that tests can use a scratch key of their own.
     public RegistryRulesStore(RegistryKey root, string rulesPath) {
         this.root = root;
         this.rulesPath = rulesPath;

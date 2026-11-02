@@ -4,17 +4,7 @@ namespace _4MagicKeysPlusAgent;
 
 internal sealed record HotkeyEntry(int HotkeyId, string RegistryName, string Name, uint VirtualKey, uint Modifiers, string ExecutablePath);
 
-// Reads the hotkey entries from HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Hotkeys.
-// A subkey is a hotkey entry only if it has both
-//   VkKey      REG_DWORD  Win32 virtual-key code
-//   Path       REG_SZ     what to launch (executable, shortcut, ...)
-// plus the optional
-//   VkModifier REG_DWORD  Win32 MOD_ALT/MOD_CONTROL/MOD_SHIFT/MOD_WIN bits (default 0)
-//   Comment    REG_SZ     label used in logs, the subkey name when absent
-// This app has no notion of the driver's HID key codes - by the time a keypress
-// reaches here it's already an ordinary Windows keystroke, so the config speaks
-// plain Win32 VK codes too. No restriction on which VK/modifier combos are allowed here -
-// that's a UI-level concern, not this loader's.
+// Hotkeys speak plain Win32 VK codes, not the driver's HID codes: by the time a keypress reaches the agent it is an ordinary Windows keystroke.
 internal static class HotkeyConfig {
     private const string RegistryKeyPath = @"SYSTEM\CurrentControlSet\Services\4MagicKeysPlus\Parameters\Hotkeys";
 
@@ -26,8 +16,6 @@ internal static class HotkeyConfig {
         return Load(reader);
     }
 
-    // The actual parsing/validation logic, decoupled from the real registry so it can be
-    // unit-tested against a fake IRegistryKeyReader instead of touching HKLM.
     internal static List<HotkeyEntry> Load(IRegistryKeyReader? rootKey) {
         List<HotkeyEntry> entries = new List<HotkeyEntry>();
         if (rootKey is null) {

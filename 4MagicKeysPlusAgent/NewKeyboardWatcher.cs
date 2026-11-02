@@ -2,10 +2,7 @@ using _4MagicKeysPlus.Core;
 
 namespace _4MagicKeysPlusAgent;
 
-// Opens the configuration app when a keyboard is connected that no profile has: the driver gives such a keyboard no
-// rules, so somebody has to give it a profile (the app does, or asks whether it is the same keyboard as one it knows).
-// The app is almost never running, so the agent is the one that notices. Every keyboard is brought up once per agent
-// session: a prompt that was dismissed is not repeated until the agent starts again.
+// Every keyboard is brought up once per agent session: a prompt that was dismissed is not repeated until the agent starts again.
 internal sealed class NewKeyboardWatcher : IDisposable {
     public static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(10);
 
