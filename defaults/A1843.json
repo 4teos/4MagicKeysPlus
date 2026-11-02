@@ -6,7 +6,6 @@
     { "source": "0x00000068", "target": "0x00000046", "comment": "F13 -> Print Screen" },
     { "source": "0x00000069", "target": "0x00000047", "comment": "F14 -> Scroll Lock" },
     { "source": "0x0000006A", "target": "0x00000048", "comment": "F15 -> Pause Break" },
-    { "source": "0x000000F0", "target": "0x000000F1", "comment": "Eject -> Fn" },
     { "source": "0x0100003A", "target": "0x01000070", "fnLockAware": true, "comment": "Fn+F1 -> Brightness Down" },
     { "source": "0x0100003B", "target": "0x0100006F", "fnLockAware": true, "comment": "Fn+F2 -> Brightness Up" },
     { "source": "0x01000040", "target": "0x010000B6", "fnLockAware": true, "comment": "Fn+F7 -> Previous Track" },

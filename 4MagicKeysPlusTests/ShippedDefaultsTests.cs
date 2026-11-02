@@ -1,4 +1,5 @@
 using _4MagicKeysPlus.Core;
+using _4MagicKeysPlus.Models;
 using _4MagicKeysPlus.Services;
 
 namespace _4MagicKeysPlusTests;
@@ -25,8 +26,10 @@ public sealed class ShippedDefaultsTests {
     }
 
     [Fact]
-    public void TheA1843_HasDefaults() {
-        Assert.True(File.Exists(Path.Combine(Folder, "A1843.json")));
+    public void EveryModel_HasDefaults() {
+        foreach (KeyboardProduct product in Enum.GetValues<KeyboardProduct>()) {
+            Assert.True(File.Exists(Path.Combine(Folder, $"{product}.json")), $"{product} has no defaults.");
+        }
     }
 
     [Theory]
@@ -46,6 +49,20 @@ public sealed class ShippedDefaultsTests {
             Assert.True(
                 DriverConfigParser.ParseRule(rule.Source, rule.Target, rule.FnLockAware) is not null,
                 $"{name}: the driver would drop the rule 0x{rule.Source:X8} -> 0x{rule.Target:X8} ({rule.Comment}).");
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Files))]
+    public void EveryRule_StartsFromAKeyTheKeyboardHas(string name) {
+        DefaultSettings defaults = DefaultSettingsFile.Load(Path.Combine(Folder, name));
+        HashSet<PhysicalKey> keys = [.. KeyboardLayout.GetKeys(KeyboardModel.From(defaults.Model)).SelectMany(row => row.RowKeys).Select(key => key.Kind)];
+        bool touchId = keys.Contains(PhysicalKey.TouchId);
+
+        foreach (DefaultRule rule in defaults.Rules) {
+            KeyRule parsed = DriverConfigParser.ParseRule(rule.Source, rule.Target, rule.FnLockAware, touchId)!;
+
+            Assert.True(parsed.Source.IsSubsetOf(keys), $"{name}: the rule '{rule.Comment}' starts from a key that {defaults.Model} does not have.");
         }
     }
 
