@@ -156,11 +156,29 @@
   <data name="KeysModelLabel" xml:space="preserve">
     <value>Модель клавиатуры:</value>
   </data>
-  <data name="KeysModel_MagicKeyboard" xml:space="preserve">
+  <data name="KeysModel_A1644" xml:space="preserve">
     <value>Magic Keyboard (без цифрового блока, A1644)</value>
   </data>
-  <data name="KeysModel_MagicKeyboardWithNumpad" xml:space="preserve">
+  <data name="KeysModel_A1843" xml:space="preserve">
     <value>Magic Keyboard с цифровым блоком (A1843)</value>
+  </data>
+  <data name="KeysModel_A2449" xml:space="preserve">
+    <value>Magic Keyboard с Touch ID (A2449)</value>
+  </data>
+  <data name="KeysModel_A2450" xml:space="preserve">
+    <value>Magic Keyboard с клавишей Lock (A2450)</value>
+  </data>
+  <data name="KeysModel_A2520" xml:space="preserve">
+    <value>Magic Keyboard с Touch ID и цифровым блоком (A2520)</value>
+  </data>
+  <data name="KeysModel_A3118" xml:space="preserve">
+    <value>Magic Keyboard с Touch ID (A3118)</value>
+  </data>
+  <data name="KeysModel_A3119" xml:space="preserve">
+    <value>Magic Keyboard с Touch ID и цифровым блоком (A3119)</value>
+  </data>
+  <data name="KeysModel_A3203" xml:space="preserve">
+    <value>Magic Keyboard с клавишей Lock (A3203)</value>
   </data>
   <data name="KeyActionSetMapping" xml:space="preserve">
     <value>Задать маппинг</value>

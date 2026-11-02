@@ -114,6 +114,7 @@ namespace _4MagicKeysPlus.Models {
         F22 = 0x71,
         F23 = 0x72,
         F24 = 0x73,
+        Menu = 0x76,
 
         // These modifier key codes are not real. It is impossible to cast them directly from keyboard hid code mask.
         // Check the real modifier codes in the PhysicalKeyHidMap class
@@ -126,8 +127,10 @@ namespace _4MagicKeysPlus.Models {
         RightOption = 0xE6,
         RightControl = 0xE7,
 
-        // Artificial codes for these keys. The driver can work with them.
+        // Artificial codes for these keys. The driver can work with them, except TouchId: for the driver it is Lock.
         Eject = 0xF0,
         Fn = 0xF1,
+        Lock = 0xF2,
+        TouchId = 0xF3,
     }
 }

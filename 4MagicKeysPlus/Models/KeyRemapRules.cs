@@ -6,7 +6,9 @@ public static class KeyRemapRules {
         PhysicalKey.RightShift, PhysicalKey.RightCommand, PhysicalKey.RightOption, PhysicalKey.RightControl
     ];
 
-    private static readonly IReadOnlyList<PhysicalKey> VirtualKeys = [PhysicalKey.Eject, PhysicalKey.Fn];
+    private static readonly IReadOnlyList<PhysicalKey> VirtualTargets = [PhysicalKey.Eject, PhysicalKey.Fn];
+
+    private static readonly IReadOnlyList<PhysicalKey> VirtualSources = [.. VirtualTargets, PhysicalKey.Lock, PhysicalKey.TouchId];
 
     private static readonly IReadOnlyList<PhysicalKey> Typing = [
         .. KeysInRange(PhysicalKey.A, PhysicalKey.D0),
@@ -20,21 +22,21 @@ public static class KeyRemapRules {
         PhysicalKey.Right, PhysicalKey.Left, PhysicalKey.Down, PhysicalKey.Up
     ];
 
-    private static readonly IReadOnlyList<PhysicalKey> ExtendedSources = KeysInRange(PhysicalKey.F13, PhysicalKey.F19);
+    private static readonly IReadOnlyList<PhysicalKey> ExtendedSources = [.. KeysInRange(PhysicalKey.F13, PhysicalKey.F19), PhysicalKey.Menu];
 
     private static readonly IReadOnlyList<PhysicalKey> ExtendedTargets = [
         .. KeysInRange(PhysicalKey.F13, PhysicalKey.F24),
         PhysicalKey.PrintScreen, PhysicalKey.ScrollLock, PhysicalKey.PauseBreak, PhysicalKey.Insert
     ];
 
-    private static readonly IReadOnlyList<PhysicalKey> ModifierTargets = [.. Modifiers, .. VirtualKeys];
+    private static readonly IReadOnlyList<PhysicalKey> ModifierTargets = [.. Modifiers, .. VirtualTargets];
 
     private static readonly IReadOnlyList<PhysicalKey> VirtualKeyTargets = [.. ModifierTargets, .. ExtendedTargets];
 
     private static readonly IReadOnlyList<PhysicalKey> NavigationTargets = [.. Navigation, PhysicalKey.Insert];
 
-    // What a key can be remapped to while Fn is held. Any key but the modifiers and Fn/Eject can be
-    // a source; the targets are the keys Apple keyboards lack.
+    // What a key can be remapped to while Fn is held. Any key but the modifiers and Fn/Eject/Lock
+    // can be a source; the targets are the keys Apple keyboards lack.
     private static readonly IReadOnlyList<PhysicalKey> FnLayerTargets = [.. NavigationTargets.Union(ExtendedTargets)];
 
     public static bool CanRemap(PhysicalKey source, bool fnLayer = false) {
@@ -68,16 +70,16 @@ public static class KeyRemapRules {
     }
 
     // Only a key source can send a media usage: the driver has no rule shape for a modifier or
-    // Fn/Eject source with a consumer target.
+    // Fn/Eject/Lock source with a consumer target.
     private static IReadOnlyList<RemapTarget> GetCandidates(PhysicalKey source, bool fnLayer) {
         if (fnLayer) {
-            bool isKey = source != PhysicalKey.None && !Modifiers.Contains(source) && !VirtualKeys.Contains(source);
+            bool isKey = source != PhysicalKey.None && !Modifiers.Contains(source) && !VirtualSources.Contains(source);
             return isKey ? KeysAndMedia(FnLayerTargets) : [];
         }
         if (Modifiers.Contains(source)) {
             return Keys(ModifierTargets);
         }
-        if (VirtualKeys.Contains(source)) {
+        if (VirtualSources.Contains(source)) {
             return Keys(VirtualKeyTargets);
         }
         if (Typing.Contains(source)) {

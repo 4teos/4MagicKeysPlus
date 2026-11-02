@@ -85,6 +85,38 @@ public class DriverConfigParserTests {
         Assert.Equal("0xE0", rule.DescribeTarget());
     }
 
+    [Fact]
+    public void ParseRule_DecodesLockAsASource() {
+        KeyRule toKey = DriverConfigParser.ParseRule(0xF2, 0x49, false)!;
+        KeyRule toModifier = DriverConfigParser.ParseRule(0xF2, 0x00010000, false)!;
+        KeyRule toFn = DriverConfigParser.ParseRule(0xF2, 0xF1, false)!;
+
+        Assert.Equal([PhysicalKey.Lock], toKey.Source);
+        Assert.Equal(PhysicalKey.Insert, toKey.TargetKey);
+        Assert.Equal([PhysicalKey.LeftControl], toModifier.TargetModifiers);
+        Assert.Equal(PhysicalKey.Fn, toFn.TargetKey);
+    }
+
+    [Fact]
+    public void ParseRule_DecodesTheLockCodeAsTouchIdOnATouchIdKeyboard() {
+        KeyRule rule = DriverConfigParser.ParseRule(0xF2, 0x49, false, touchId: true)!;
+
+        Assert.Equal([PhysicalKey.TouchId], rule.Source);
+        Assert.Equal(0xF2u, rule.RawSource);
+    }
+
+    [Fact]
+    public void ParseRule_LeavesTheOtherSourcesAloneOnATouchIdKeyboard() {
+        Assert.Equal([PhysicalKey.Eject], DriverConfigParser.ParseRule(0xF0, 0x49, false, touchId: true)!.Source);
+        Assert.Equal([PhysicalKey.F13], DriverConfigParser.ParseRule(0x68, 0x46, false, touchId: true)!.Source);
+    }
+
+    [Fact]
+    public void ParseRule_DoesNotKnowTheCodeThatOnlyTheAppUsesForTouchId() {
+        Assert.Null(DriverConfigParser.ParseRule(0xF3, 0x46, false));
+        Assert.Null(DriverConfigParser.ParseRule(0xF3, 0x46, false, touchId: true));
+    }
+
     [Theory]
     [InlineData(0x02000068u, 0x46u, "reserved bit in source")]
     [InlineData(0x68u, 0x02000046u, "reserved bit in target")]
@@ -109,6 +141,15 @@ public class DriverConfigParserTests {
     [InlineData(0xE0u, 0x46u, "source key code that is a HID modifier usage")]
     [InlineData(0xF0u, 0x00000000u, "Eject with an empty target")]
     [InlineData(0xF0u, 0x000200F1u, "Fn/Eject target carrying modifiers")]
+    [InlineData(0x68u, 0xF2u, "key targeting Lock")]
+    [InlineData(0x00040000u, 0xF2u, "modifier targeting Lock")]
+    [InlineData(0xF1u, 0xF2u, "Fn targeting Lock")]
+    [InlineData(0xF0u, 0xF2u, "Eject targeting Lock")]
+    [InlineData(0xF2u, 0xF2u, "Lock targeting Lock")]
+    [InlineData(0x010000F2u, 0x49u, "Fn flag on a Lock source")]
+    [InlineData(0xF2u, 0x010000CDu, "consumer target on a Lock source")]
+    [InlineData(0xF2u, 0x00000000u, "Lock with an empty target")]
+    [InlineData(0x000200F2u, 0x49u, "Lock source carrying modifiers")]
     public void ParseRule_RejectsWhatTheDriverIgnores(uint source, uint target, string reason) {
         Assert.True(DriverConfigParser.ParseRule(source, target, false) is null, reason);
     }

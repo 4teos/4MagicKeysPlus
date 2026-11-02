@@ -1,6 +1,6 @@
 namespace _4MagicKeysPlus.Models;
 
-// One rule of the driver's Parameters\Rules list. Source is a single key, a single Fn/Eject, or
+// One rule of the driver's Parameters\Rules list. Source is a single key, a single Fn/Eject/Lock, or
 // the modifiers of a modifier source; FnLayer is the "only with Fn" flag of a key source.
 // The target is a key (TargetKey, or only TargetCode when that has no PhysicalKey), modifiers,
 // or a consumer-control usage.

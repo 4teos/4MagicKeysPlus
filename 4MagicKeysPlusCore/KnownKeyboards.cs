@@ -25,6 +25,24 @@ public static class KnownKeyboards {
             case 0x026C:
                 product = KeyboardProduct.A1843;
                 return true;
+            case 0x029A:
+                product = KeyboardProduct.A2449;
+                return true;
+            case 0x029C:
+                product = KeyboardProduct.A2450;
+                return true;
+            case 0x029F:
+                product = KeyboardProduct.A2520;
+                return true;
+            case 0x0320:
+                product = KeyboardProduct.A3203;
+                return true;
+            case 0x0321:
+                product = KeyboardProduct.A3118;
+                return true;
+            case 0x0322:
+                product = KeyboardProduct.A3119;
+                return true;
             default:
                 product = default;
                 return false;
@@ -35,6 +53,12 @@ public static class KnownKeyboards {
         return product switch {
             KeyboardProduct.A1644 => 0x0267,
             KeyboardProduct.A1843 => 0x026C,
+            KeyboardProduct.A2449 => 0x029A,
+            KeyboardProduct.A2450 => 0x029C,
+            KeyboardProduct.A2520 => 0x029F,
+            KeyboardProduct.A3118 => 0x0321,
+            KeyboardProduct.A3119 => 0x0322,
+            KeyboardProduct.A3203 => 0x0320,
             _ => throw new ArgumentOutOfRangeException(nameof(product), product, null),
         };
     }

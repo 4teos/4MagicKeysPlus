@@ -26,9 +26,9 @@ public static class PhysicalKeyHidMap {
         };
 
     // HID usages 0xE0-0xE7 are the modifiers, whose PhysicalKey values are fake and ordered
-    // differently, so those usages deliberately map to None here.
+    // differently, so those usages deliberately map to None here. So does the fake code of TouchId.
     public static PhysicalKey GetPhysicalKey(byte code) {
-        if (code is >= 0xE0 and <= 0xE7) {
+        if (code is >= 0xE0 and <= 0xE7 || code == (byte)PhysicalKey.TouchId) {
             return PhysicalKey.None;
         }
         if (Enum.IsDefined(typeof(PhysicalKey), code)) {
@@ -42,7 +42,7 @@ public static class PhysicalKeyHidMap {
     }
 
     public static byte GetKeyByte(PhysicalKey physicalKey) {
-        return (byte)physicalKey;
+        return physicalKey == PhysicalKey.TouchId ? (byte)PhysicalKey.Lock : (byte)physicalKey;
     }
 
     public static IReadOnlySet<PhysicalKey> DecodeModifiers(byte mask) {

@@ -4,7 +4,8 @@ namespace _4MagicKeysPlus.Services;
 
 // Decodes one Source/Target pair of Parameters\Rules the way the driver does (ClassifyRule in
 // KeyProcessor.cpp): whatever the driver drops as invalid must not show up here either, or the
-// Keys screen would highlight remaps that do nothing. Keep the two in step.
+// Keys screen would highlight remaps that do nothing. Keep the two in step. The driver has one Lock
+// key for both the Lock and the Touch ID keyboards: touchId says which of the two it is on this one.
 internal static class DriverConfigParser {
     private const uint CodeMask = 0x0000FFFF;
     private const int ModsShift = 16;
@@ -14,9 +15,10 @@ internal static class DriverConfigParser {
     private const uint FlagsMask = 0xFF000000;
     private const uint VirtualEject = 0xF0;
     private const uint VirtualFn = 0xF1;
+    private const uint VirtualLock = 0xF2;
     private const uint MaxConsumerUsage = 0x03FF;
 
-    public static KeyRule? ParseRule(uint source, uint target, bool fnLockAware) {
+    public static KeyRule? ParseRule(uint source, uint target, bool fnLockAware, bool touchId = false) {
         uint sourceFlags = source & FlagsMask;
         uint targetFlags = target & FlagsMask;
         if ((sourceFlags & ~SourceFnFlag) != 0 || (targetFlags & ~TargetConsumerFlag) != 0) {
@@ -45,7 +47,7 @@ internal static class DriverConfigParser {
 
             bool targetIsValid = targetCode == 0
                 ? targetMods != 0
-                : IsVirtual(targetCode) ? targetMods == 0 : sourceIsVirtual && targetCode <= 0xFF;
+                : IsVirtual(targetCode) ? targetMods == 0 && targetCode != VirtualLock : sourceIsVirtual && targetCode <= 0xFF;
             if (!targetIsValid) {
                 return null;
             }
@@ -68,6 +70,9 @@ internal static class DriverConfigParser {
             if (sourceKey == PhysicalKey.None) {
                 return null;
             }
+            if (sourceKey == PhysicalKey.Lock && touchId) {
+                sourceKey = PhysicalKey.TouchId;
+            }
             sourceKeys = new HashSet<PhysicalKey> { sourceKey };
         }
 
@@ -80,6 +85,6 @@ internal static class DriverConfigParser {
     }
 
     private static bool IsVirtual(uint code) {
-        return code is VirtualEject or VirtualFn;
+        return code is VirtualEject or VirtualFn or VirtualLock;
     }
 }

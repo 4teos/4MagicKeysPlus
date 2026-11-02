@@ -48,10 +48,52 @@ internal static class Strings {
         }
     }
 
+    public static string KeyboardModelA2449 {
+        get {
+            return Get(nameof(KeyboardModelA2449));
+        }
+    }
+
+    public static string KeyboardModelA2450 {
+        get {
+            return Get(nameof(KeyboardModelA2450));
+        }
+    }
+
+    public static string KeyboardModelA2520 {
+        get {
+            return Get(nameof(KeyboardModelA2520));
+        }
+    }
+
+    public static string KeyboardModelA3118 {
+        get {
+            return Get(nameof(KeyboardModelA3118));
+        }
+    }
+
+    public static string KeyboardModelA3119 {
+        get {
+            return Get(nameof(KeyboardModelA3119));
+        }
+    }
+
+    public static string KeyboardModelA3203 {
+        get {
+            return Get(nameof(KeyboardModelA3203));
+        }
+    }
+
     public static string ModelName(KeyboardProduct product) {
         return product switch {
             KeyboardProduct.A1644 => KeyboardModelA1644,
             KeyboardProduct.A1843 => KeyboardModelA1843,
+            KeyboardProduct.A2449 => KeyboardModelA2449,
+            KeyboardProduct.A2450 => KeyboardModelA2450,
+            KeyboardProduct.A2520 => KeyboardModelA2520,
+            KeyboardProduct.A3118 => KeyboardModelA3118,
+            KeyboardProduct.A3119 => KeyboardModelA3119,
+            KeyboardProduct.A3203 => KeyboardModelA3203,
             _ => product.ToString(),
         };
     }

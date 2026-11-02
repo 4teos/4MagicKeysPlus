@@ -86,15 +86,51 @@ public static class Strings {
         }
     }
 
-    public static string KeysModel_MagicKeyboard {
+    public static string KeysModel_A1644 {
         get {
-            return Get(nameof(KeysModel_MagicKeyboard));
+            return Get(nameof(KeysModel_A1644));
         }
     }
 
-    public static string KeysModel_MagicKeyboardWithNumpad {
+    public static string KeysModel_A1843 {
         get {
-            return Get(nameof(KeysModel_MagicKeyboardWithNumpad));
+            return Get(nameof(KeysModel_A1843));
+        }
+    }
+
+    public static string KeysModel_A2449 {
+        get {
+            return Get(nameof(KeysModel_A2449));
+        }
+    }
+
+    public static string KeysModel_A2450 {
+        get {
+            return Get(nameof(KeysModel_A2450));
+        }
+    }
+
+    public static string KeysModel_A2520 {
+        get {
+            return Get(nameof(KeysModel_A2520));
+        }
+    }
+
+    public static string KeysModel_A3118 {
+        get {
+            return Get(nameof(KeysModel_A3118));
+        }
+    }
+
+    public static string KeysModel_A3119 {
+        get {
+            return Get(nameof(KeysModel_A3119));
+        }
+    }
+
+    public static string KeysModel_A3203 {
+        get {
+            return Get(nameof(KeysModel_A3203));
         }
     }
 

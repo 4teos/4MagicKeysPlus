@@ -67,7 +67,39 @@ public class KeyRemapRulesTests {
         Assert.False(KeyRemapRules.CanRemap(PhysicalKey.LeftShift, fnLayer: true));
         Assert.False(KeyRemapRules.CanRemap(PhysicalKey.Fn, fnLayer: true));
         Assert.False(KeyRemapRules.CanRemap(PhysicalKey.Eject, fnLayer: true));
+        Assert.False(KeyRemapRules.CanRemap(PhysicalKey.Lock, fnLayer: true));
+        Assert.False(KeyRemapRules.CanRemap(PhysicalKey.TouchId, fnLayer: true));
         Assert.False(KeyRemapRules.CanRemap(PhysicalKey.None, fnLayer: true));
+    }
+
+    [Theory]
+    [InlineData(PhysicalKey.Lock)]
+    [InlineData(PhysicalKey.TouchId)]
+    public void TheLockKeys_AreRemappedLikeEject(PhysicalKey lockKey) {
+        IReadOnlyList<RemapTarget> targets = KeyRemapRules.GetAllowedTargets(lockKey);
+
+        Assert.Contains((RemapTarget)PhysicalKey.LeftControl, targets);
+        Assert.Contains((RemapTarget)PhysicalKey.Fn, targets);
+        Assert.Contains((RemapTarget)PhysicalKey.Eject, targets);
+        Assert.Contains((RemapTarget)PhysicalKey.F13, targets);
+    }
+
+    [Theory]
+    [MemberData(nameof(Layers))]
+    public void TheLockKeys_AreNoTargetOfAnything(bool fnLayer) {
+        foreach (PhysicalKey source in Enum.GetValues<PhysicalKey>()) {
+            IReadOnlyList<RemapTarget> targets = KeyRemapRules.GetAllowedTargets(source, fnLayer);
+
+            Assert.DoesNotContain((RemapTarget)PhysicalKey.Lock, targets);
+            Assert.DoesNotContain((RemapTarget)PhysicalKey.TouchId, targets);
+        }
+    }
+
+    [Fact]
+    public void TheMenuKey_IsRemappedLikeTheExtendedKeys() {
+        Assert.Contains((RemapTarget)PhysicalKey.PrintScreen, KeyRemapRules.GetAllowedTargets(PhysicalKey.Menu));
+        Assert.Contains(RemapTarget.Media(0xE9), KeyRemapRules.GetAllowedTargets(PhysicalKey.Menu));
+        Assert.True(KeyRemapRules.CanRemap(PhysicalKey.Menu, fnLayer: true));
     }
 
     [Fact]
@@ -84,6 +116,21 @@ public class KeyRemapRulesTests {
         Assert.Equal((0x00040000u, 0x00080000u), DriverRuleEncoder.Encode(PhysicalKey.LeftOption, PhysicalKey.LeftCommand, fnLayer: false));
         Assert.Equal((0x000000F0u, 0x000000F1u), DriverRuleEncoder.Encode(PhysicalKey.Eject, PhysicalKey.Fn, fnLayer: false));
         Assert.Equal((0x01000050u, 0x0000004Au), DriverRuleEncoder.Encode(PhysicalKey.Left, PhysicalKey.Home, fnLayer: true));
+    }
+
+    [Fact]
+    public void Encode_SendsTheLockAndTheTouchIdKeysAsTheLockCode() {
+        Assert.Equal((0x000000F2u, 0x00000049u), DriverRuleEncoder.Encode(PhysicalKey.Lock, PhysicalKey.Insert, fnLayer: false));
+        Assert.Equal((0x000000F2u, 0x00000049u), DriverRuleEncoder.Encode(PhysicalKey.TouchId, PhysicalKey.Insert, fnLayer: false));
+    }
+
+    [Fact]
+    public void CreateRule_KeepsTheTouchIdKeyAsTheSource() {
+        KeyRule rule = DriverRuleEncoder.CreateRule(PhysicalKey.TouchId, PhysicalKey.Insert, fnLayer: false, fnLockAware: false)!;
+
+        Assert.Equal([PhysicalKey.TouchId], rule.Source);
+        Assert.Equal(0xF2u, rule.RawSource);
+        Assert.Equal("Touch ID -> Insert", rule.Describe());
     }
 
     [Theory]

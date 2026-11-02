@@ -33,6 +33,10 @@ public static class Glyphs {
     // Drag handle of a Quick launch card.
     public const string Grip = "\uE76F";
 
+    // The Touch ID key: a fingerprint inside a ring (checked by rendering).
+    public const string Fingerprint = "\uE928";
+    public const string Ring = "\uEA3A";
+
     // Outcome of applying a mapping (filled circle with a check, warning triangle, filled circle with a cross).
     public const string ResultSuccess = "\uEC61";
     public const string ResultWarning = "\uE814";
