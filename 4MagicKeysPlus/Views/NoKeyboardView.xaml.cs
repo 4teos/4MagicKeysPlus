@@ -3,7 +3,8 @@ using System.Windows.Controls;
 namespace _4MagicKeysPlus.Views;
 
 public partial class NoKeyboardView : UserControl {
-    public NoKeyboardView() {
+    public NoKeyboardView(string message) {
         InitializeComponent();
+        Message.Text = message;
     }
 }

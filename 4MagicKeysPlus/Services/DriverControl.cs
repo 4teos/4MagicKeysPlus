@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using _4MagicKeysPlus.Core;
 
 namespace _4MagicKeysPlus.Services;
 
@@ -16,7 +17,6 @@ internal interface IDriverControl {
 // closed right after the request: an open handle keeps the device alive after the last
 // keyboard has gone, which blocks unloading the driver.
 internal sealed class DriverControl : IDriverControl {
-    private const string DevicePath = @"\\.\4MagicKeysPlus";
     private const uint GenericWrite = 0x40000000;
     private const uint ShareReadWrite = 3;
     private const uint OpenExisting = 3;
@@ -32,15 +32,8 @@ internal sealed class DriverControl : IDriverControl {
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool DeviceIoControl(SafeFileHandle device, uint code, IntPtr input, uint inputSize, uint[] output, uint outputSize, out uint returned, IntPtr overlapped);
 
-    // The control device exists while at least one keyboard is filtered. Opening it without any
-    // access asks nothing of the driver; a device that cannot be opened is still there.
-    internal static bool DeviceExists() {
-        using SafeFileHandle device = CreateFile(DevicePath, 0, ShareReadWrite, IntPtr.Zero, OpenExisting, 0, IntPtr.Zero);
-        return !device.IsInvalid || Marshal.GetLastWin32Error() is not (ErrorFileNotFound or ErrorPathNotFound);
-    }
-
     public DriverReloadResult? Reload() {
-        using SafeFileHandle device = CreateFile(DevicePath, GenericWrite, ShareReadWrite, IntPtr.Zero, OpenExisting, 0, IntPtr.Zero);
+        using SafeFileHandle device = CreateFile(DriverControlDevice.DevicePath, GenericWrite, ShareReadWrite, IntPtr.Zero, OpenExisting, 0, IntPtr.Zero);
         if (device.IsInvalid) {
             int error = Marshal.GetLastWin32Error();
             return error is ErrorFileNotFound or ErrorPathNotFound ? null : throw new Win32Exception(error);
