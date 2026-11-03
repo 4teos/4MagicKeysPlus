@@ -40,8 +40,10 @@ public sealed class KeyboardSessionTests {
     private readonly FakeDriver driver = new();
     private List<KeyboardEndpoint> endpoints = [];
 
+    private bool driverRunning = true;
+
     private KeyboardSession Session() {
-        return new KeyboardSession(store, () => endpoints, driver);
+        return new KeyboardSession(store, () => endpoints, driver, isDriverRunning: () => driverRunning);
     }
 
     private static KeyboardEndpoint Endpoint(string identity, bool isLive = true) {
@@ -63,6 +65,50 @@ public sealed class KeyboardSessionTests {
         Assert.Equal(profile.Id, session.SelectedId);
         Assert.Empty(session.Catalog.Unowned);
         Assert.Equal(0, driver.Reloads);
+    }
+
+    [Fact]
+    public void WhileTheDriverIsNotRunning_AKeyboardGetsNoProfileAndIsNotShown() {
+        endpoints = [Endpoint(Bluetooth)];
+        driverRunning = false;
+        KeyboardSession session = Session();
+
+        session.Refresh();
+
+        Assert.Empty(store.Profiles);
+        Assert.Null(session.SelectedId);
+        Assert.Empty(session.Catalog.Unowned);
+        Assert.Single(session.Catalog.WithoutDriver);
+    }
+
+    [Fact]
+    public void WhenTheDriverStarts_TheKeyboardGetsItsProfile() {
+        endpoints = [Endpoint(Bluetooth)];
+        driverRunning = false;
+        KeyboardSession session = Session();
+        session.Refresh();
+
+        driverRunning = true;
+        session.Refresh();
+
+        Assert.Single(store.Profiles);
+        Assert.NotNull(session.SelectedId);
+        Assert.Empty(session.Catalog.WithoutDriver);
+    }
+
+    [Fact]
+    public void ARunningDriverWithoutAKeyboardOfThatProfile_LeavesTheProfileDimmed() {
+        KeyboardProfile desk = KeyboardTestData.Profile(Bluetooth);
+        store.Profiles.Add(desk);
+        endpoints = [Endpoint(Bluetooth)];
+        driverRunning = false;
+        KeyboardSession session = Session();
+
+        session.Refresh();
+
+        Assert.False(Assert.Single(session.Catalog.Keyboards).IsConnected);
+        Assert.Null(session.SelectedId);
+        Assert.Equal([desk], store.Profiles);
     }
 
     [Fact]

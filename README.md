@@ -87,9 +87,11 @@ The app looks at the keyboards when it starts and every few seconds, and gives a
 
 Until a keyboard has a profile the driver gives it the default settings of its model, and no rules when the model has none.
 
+While the driver is not running, that is while its control device `\\.\4MagicKeysPlus` is missing (the **Control device** paragraph below), the app shows no keyboard and gives none a profile; when a keyboard is connected, the Keys screen says that the driver is not installed. The key of the driver's service in the registry says nothing about that: the app writes profiles and default settings under it too, and it can outlast the driver.
+
 #### New keyboards and the agent
 
-The configuration app is almost never open, so the agent watches for the keyboards no profile lists. Every 10 seconds (the first time 10 seconds after it starts) it looks at the connected keyboards and, when one is connected over a way that no profile has (a new keyboard, or a known one over its other connection), it starts the configuration app, which settles it as described above. Windows asks for permission first, because the app runs as administrator. The agent does this once for every way of connecting per session of the agent (starting it again asks again for a keyboard that still has no profile), not while the app is running, and not for a paired Bluetooth keyboard that is out of reach. The **Open the app for a new keyboard** switch of the Settings screen turns it off.
+The configuration app is almost never open, so the agent watches for the keyboards no profile lists. Every 10 seconds (the first time 10 seconds after it starts) it looks at the connected keyboards and, when one is connected over a way that no profile has (a new keyboard, or a known one over its other connection), it starts the configuration app, which settles it as described above. Windows asks for permission first, because the app runs as administrator. The agent does this once for every way of connecting per session of the agent (starting it again asks again for a keyboard that still has no profile), not while the app is running, not for a paired Bluetooth keyboard that is out of reach, and not while the driver is not running (the keyboard counts once it is). The **Open the app for a new keyboard** switch of the Settings screen turns it off.
 
 #### Editing rules in the configuration app
 

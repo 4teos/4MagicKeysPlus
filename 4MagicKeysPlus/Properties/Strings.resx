@@ -402,6 +402,9 @@
   <data name="KeysNoKeyboard" xml:space="preserve">
     <value>No keyboard is connected. Connect one to set it up.</value>
   </data>
+  <data name="KeysNoDriver" xml:space="preserve">
+    <value>The 4MagicKeys+ keyboard driver is not installed</value>
+  </data>
   <data name="OptionsOpenForNewKeyboard" xml:space="preserve">
     <value>Open the app for a new keyboard</value>
   </data>

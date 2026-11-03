@@ -578,6 +578,12 @@ public static class Strings {
         }
     }
 
+    public static string KeysNoDriver {
+        get {
+            return Get(nameof(KeysNoDriver));
+        }
+    }
+
     public static string OptionsOpenForNewKeyboard {
         get {
             return Get(nameof(OptionsOpenForNewKeyboard));

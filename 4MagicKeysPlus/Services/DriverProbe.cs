@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
+using _4MagicKeysPlus.Core;
 
 namespace _4MagicKeysPlus.Services;
 
@@ -37,7 +38,7 @@ internal sealed partial class DriverProbe : IDriverProbe {
         if (service is null) {
             return DriverState.NotInstalled;
         }
-        return DriverControl.DeviceExists() ? DriverState.Active : DriverState.Idle;
+        return DriverControlDevice.Exists() ? DriverState.Active : DriverState.Idle;
     }
 
     // Windows installs the service with a display name like "@oem157.inf,%HIDKbFlt.SvcDesc%;4MagicKeys+",

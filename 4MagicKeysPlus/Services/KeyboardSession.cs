@@ -12,14 +12,16 @@ internal sealed class KeyboardSession {
     private readonly Func<IReadOnlyList<KeyboardEndpoint>> enumerate;
     private readonly IDriverControl driver;
     private readonly IDefaultSettings? defaults;
+    private readonly Func<bool> isDriverRunning;
     private readonly object access = new();
     private int refreshing;
 
-    public KeyboardSession(IKeyboardProfileStore store, Func<IReadOnlyList<KeyboardEndpoint>> enumerate, IDriverControl driver, IDefaultSettings? defaults = null) {
+    public KeyboardSession(IKeyboardProfileStore store, Func<IReadOnlyList<KeyboardEndpoint>> enumerate, IDriverControl driver, IDefaultSettings? defaults = null, Func<bool>? isDriverRunning = null) {
         this.store = store;
         this.enumerate = enumerate;
         this.driver = driver;
         this.defaults = defaults;
+        this.isDriverRunning = isDriverRunning ?? (() => true);
     }
 
     // Also raised by a refresh that found nothing new, on the thread that asked.
@@ -103,6 +105,10 @@ internal sealed class KeyboardSession {
     // Creating one profile may change the answer for the next keyboard (the two ways of one new keyboard), so each is looked at again afterwards.
     private KeyboardCatalog Gather() {
         lock (access) {
+            if (!isDriverRunning()) {
+                return KeyboardCatalog.Build(store.Load(), enumerate(), driverRunning: false);
+            }
+
             KeyboardCatalog catalog;
             for (int attempts = 0; ; attempts++) {
                 IReadOnlyList<KeyboardProfile> profiles = store.Load();

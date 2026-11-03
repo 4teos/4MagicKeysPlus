@@ -402,6 +402,9 @@
   <data name="KeysNoKeyboard" xml:space="preserve">
     <value>Клавиатура не подключена. Подключите её, чтобы настроить.</value>
   </data>
+  <data name="KeysNoDriver" xml:space="preserve">
+    <value>Драйвер клавиатуры 4MagicKeys+ не установлен</value>
+  </data>
   <data name="OptionsOpenForNewKeyboard" xml:space="preserve">
     <value>Открывать приложение для новой клавиатуры</value>
   </data>

@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using Microsoft.Win32;
 using _4MagicKeysPlus.Core;
+using _4MagicKeysPlus.Properties;
 using _4MagicKeysPlus.Services;
 using _4MagicKeysPlus.ViewModels;
 using _4MagicKeysPlus.Views;
@@ -18,13 +19,14 @@ public partial class MainWindow : Window {
     private readonly HotkeyEditor hotkeyEditor = new();
     private readonly OptionsViewModel options;
     private Guid? shownKeyboard;
+    private string? shownNoKeyboardText;
 
     // launched is what the app was started with: a language chosen since then waits for a restart.
     internal MainWindow(IAppSettingsStore settings, AppSettings launched, IThemeApplier themes) : this(settings, launched, themes, new DriverControl()) {
     }
 
     private MainWindow(IAppSettingsStore settings, AppSettings launched, IThemeApplier themes, IDriverControl driver)
-        : this(settings, launched, themes, driver, new KeyboardSession(new RegistryKeyboardProfileStore(), KeyboardEnumerator.Enumerate, driver, new RegistryDefaultSettings())) {
+        : this(settings, launched, themes, driver, new KeyboardSession(new RegistryKeyboardProfileStore(), KeyboardEnumerator.Enumerate, driver, new RegistryDefaultSettings(), DriverControlDevice.Exists)) {
     }
 
     internal MainWindow(IAppSettingsStore settings, AppSettings launched, IThemeApplier themes, IDriverControl driver, KeyboardSession keyboards) {
@@ -67,12 +69,17 @@ public partial class MainWindow : Window {
     private void ShowKeys() {
         KeyboardEntry? selected = keyboards.Selected;
         shownKeyboard = selected?.Profile.Id;
-        MainContent.Content = selected is null ? new NoKeyboardView() : new KeysView(EditorsOf(selected.Profile.Id, selected.Profile.Product), selected.Profile.Product);
+        shownNoKeyboardText = selected is null ? NoKeyboardText() : null;
+        MainContent.Content = selected is null ? new NoKeyboardView(shownNoKeyboardText!) : new KeysView(EditorsOf(selected.Profile.Id, selected.Profile.Product), selected.Profile.Product);
     }
 
-    // The screen is built anew only for another keyboard: a refresh that changes nothing must not undo what is being edited.
+    private string NoKeyboardText() {
+        return keyboards.Catalog.WithoutDriver.Count > 0 ? Strings.KeysNoDriver : Strings.KeysNoKeyboard;
+    }
+
+    // The screen is built anew only for another keyboard (or another reason for having none): a refresh that changes nothing must not undo what is being edited.
     private void OnKeyboardsChanged() {
-        if (NavKeys.IsChecked == true && keyboards.SelectedId != shownKeyboard) {
+        if (NavKeys.IsChecked == true && (keyboards.SelectedId != shownKeyboard || (shownKeyboard is null && NoKeyboardText() != shownNoKeyboardText))) {
             ShowKeys();
         }
     }

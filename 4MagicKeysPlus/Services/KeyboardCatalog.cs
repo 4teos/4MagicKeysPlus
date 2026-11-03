@@ -13,11 +13,12 @@ internal sealed record KeyboardEntry(KeyboardProfile Profile, KeyboardEndpoint? 
 internal sealed record UnownedKeyboard(KeyboardEndpoint Endpoint, IReadOnlyList<KeyboardProfile> Candidates);
 
 internal sealed class KeyboardCatalog {
-    public static readonly KeyboardCatalog Empty = new([], []);
+    public static readonly KeyboardCatalog Empty = new([], [], []);
 
-    private KeyboardCatalog(IReadOnlyList<KeyboardEntry> keyboards, IReadOnlyList<UnownedKeyboard> unowned) {
+    private KeyboardCatalog(IReadOnlyList<KeyboardEntry> keyboards, IReadOnlyList<UnownedKeyboard> unowned, IReadOnlyList<KeyboardEndpoint> withoutDriver) {
         Keyboards = keyboards;
         Unowned = unowned;
+        WithoutDriver = withoutDriver;
     }
 
     public IReadOnlyList<KeyboardEntry> Keyboards {
@@ -28,10 +29,20 @@ internal sealed class KeyboardCatalog {
         get;
     }
 
-    public static KeyboardCatalog Build(IReadOnlyList<KeyboardProfile> profiles, IReadOnlyList<KeyboardEndpoint> endpoints) {
+    // The connected keyboards while the driver is not running: nothing set for them would work, so none is connected or unowned.
+    public IReadOnlyList<KeyboardEndpoint> WithoutDriver {
+        get;
+    }
+
+    public static KeyboardCatalog Build(IReadOnlyList<KeyboardProfile> profiles, IReadOnlyList<KeyboardEndpoint> endpoints, bool driverRunning = true) {
+        if (!driverRunning) {
+            return new KeyboardCatalog([.. profiles.Select(profile => new KeyboardEntry(profile, null))], [], [.. endpoints.Where(endpoint => endpoint.IsLive)]);
+        }
+
         return new KeyboardCatalog(
             [.. profiles.Select(profile => new KeyboardEntry(profile, LiveEndpoint(profile, endpoints)))],
-            [.. KeyboardOwnership.UnownedLiveEndpoints(endpoints, profiles).Select(endpoint => new UnownedKeyboard(endpoint, Candidates(endpoint, profiles)))]);
+            [.. KeyboardOwnership.UnownedLiveEndpoints(endpoints, profiles).Select(endpoint => new UnownedKeyboard(endpoint, Candidates(endpoint, profiles)))],
+            []);
     }
 
     // Nothing of the name is stored but the index (shown when above 1): the model is named in the language of the app.

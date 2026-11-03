@@ -39,6 +39,29 @@ public sealed class KeyboardCatalogTests {
 
         Assert.Empty(catalog.Keyboards);
         Assert.Empty(catalog.Unowned);
+        Assert.Empty(catalog.WithoutDriver);
+    }
+
+    [Fact]
+    public void WhileTheDriverIsNotRunning_NoKeyboardIsConnectedOrUnowned_AndTheLiveOnesAreListed() {
+        KeyboardProfile desk = KeyboardTestData.Profile(Bluetooth);
+        KeyboardEndpoint live = KeyboardTestData.Endpoint(Bluetooth);
+        KeyboardEndpoint other = KeyboardTestData.Endpoint(Usb);
+        KeyboardEndpoint away = KeyboardTestData.Endpoint("bt:001122334455", isLive: false);
+
+        KeyboardCatalog catalog = KeyboardCatalog.Build([desk], [live, other, away], driverRunning: false);
+
+        Assert.False(Assert.Single(catalog.Keyboards).IsConnected);
+        Assert.Empty(catalog.Unowned);
+        Assert.Equal([live, other], catalog.WithoutDriver);
+    }
+
+    [Fact]
+    public void WhileTheDriverIsRunning_NothingIsListedAsWithoutDriver() {
+        KeyboardCatalog catalog = KeyboardCatalog.Build([], [KeyboardTestData.Endpoint(Bluetooth)]);
+
+        Assert.Empty(catalog.WithoutDriver);
+        Assert.Single(catalog.Unowned);
     }
 
     [Fact]

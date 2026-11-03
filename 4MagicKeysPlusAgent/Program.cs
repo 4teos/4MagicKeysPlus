@@ -86,7 +86,7 @@ internal static class Program {
         using NewKeyboardWatcher newKeyboards = new NewKeyboardWatcher(
             KeyboardEnumerator.Enumerate,
             () => new RegistryKeyboardProfileStore().Load(),
-            AppSettingsRegistry.ReadOpenAppForNewKeyboard,
+            () => AppSettingsRegistry.ReadOpenAppForNewKeyboard() && DriverControlDevice.Exists(),
             AppLauncher.IsRunning,
             AppLauncher.Open,
             NewKeyboardWatcher.DefaultInterval);
