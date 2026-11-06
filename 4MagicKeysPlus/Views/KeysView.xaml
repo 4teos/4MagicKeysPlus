@@ -82,9 +82,9 @@
         </Border>
 
         <Grid Grid.Row="5">
-            <StackPanel Orientation="Horizontal" Margin="16">
+            <StackPanel Orientation="Horizontal" Margin="16" Visibility="Collapsed">
                 <TextBlock Text="{x:Static properties:Strings.KeysModelLabel}" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="8"/>
-                <ComboBox x:Name="ModelSelector" Width="370" FontSize="11" SelectionChanged="ModelSelector_SelectionChanged" DisplayMemberPath="DisplayName" />
+                <ComboBox x:Name="DebugModelSelector" Width="380" SelectionChanged="DebugModelSelector_SelectionChanged" DisplayMemberPath="DisplayName"/>
             </StackPanel>
 
             <Grid x:Name="Footer" HorizontalAlignment="Center" VerticalAlignment="Center">

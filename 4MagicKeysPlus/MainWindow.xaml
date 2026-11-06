@@ -9,11 +9,12 @@
         xmlns:views="clr-namespace:_4MagicKeysPlus.Views"
         mc:Ignorable="d"
         Title="4MagicKeys+"
-        Height="800"
+        Height="700"
         Width="1120"
-        MinHeight="420"
+        MinHeight="630"
+        MaxHeight="800"
         MinWidth="1100"
-        MaxWidth="1600"
+        MaxWidth="1300"
         WindowStyle="None"
         Background="{DynamicResource WindowBackground}">
 

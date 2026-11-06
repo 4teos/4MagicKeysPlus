@@ -53,22 +53,33 @@ public partial class KeysView : UserControl {
             hostWindow = null;
         };
 
-        foreach (KeyboardProduct known in Enum.GetValues<KeyboardProduct>()) {
-            foreach (LayoutStandard each in Enum.GetValues<LayoutStandard>()) {
-                ModelSelector.Items.Add(new LayoutVariant(KeyboardModel.From(known), each));
-            }
-        }
 
-        ModelSelector.SelectedValue = new LayoutVariant(KeyboardModel.From(product), layout.Standard);
+        model = KeyboardModel.From(product);
+        standard = layout.Standard;
+        LayoutToggle.IsChecked = standard == LayoutStandard.Iso;
+        selectedKey = null;
+        isPicking = false;
+        Refresh();
+
+        if (DebugModelSelector.IsVisible) {
+            foreach (KeyboardProduct known in Enum.GetValues<KeyboardProduct>()) {
+                foreach (LayoutStandard each in Enum.GetValues<LayoutStandard>()) {
+                    DebugModelSelector.Items.Add(new LayoutVariant(KeyboardModel.From(known), each));
+                }
+            }
+
+            DebugModelSelector.SelectedValue = new LayoutVariant(model, standard);
+        }
     }
 
-    private void ModelSelector_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-        if (e.AddedItems.OfType<LayoutVariant>().FirstOrDefault() is not { } variant) {
+    private void DebugModelSelector_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+        LayoutVariant? selectedLayout = e.AddedItems.OfType<LayoutVariant>().FirstOrDefault();
+        if (selectedLayout is not { } || (selectedLayout.Model == model && selectedLayout.Standard == standard)) {
             return;
         }
 
-        model = variant.Model;
-        standard = variant.Standard;
+        model = selectedLayout.Model;
+        standard = selectedLayout.Standard;
         LayoutToggle.IsChecked = standard == LayoutStandard.Iso;
         selectedKey = null;
         isPicking = false;
@@ -187,7 +198,12 @@ public partial class KeysView : UserControl {
 
         LayoutResult.Visibility = Visibility.Hidden;
         LayoutResult.ToolTip = null;
-        ModelSelector.SelectedValue = new LayoutVariant(model!, wanted);
+        standard = wanted;
+        Refresh();
+
+        if (DebugModelSelector.IsVisible) {
+            DebugModelSelector.SelectedValue = new LayoutVariant(model!, wanted);
+        }
     }
 
     private void ResetButton_Click(object sender, RoutedEventArgs e) {
