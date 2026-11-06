@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   driver:
@@ -55,3 +55,70 @@ jobs:
         run: ./scripts/ci-run.ps1 { dotnet test 4MagicKeysPlusAgentTests --nologo }
       - name: Test configuration app
         run: ./scripts/ci-run.ps1 { dotnet test 4MagicKeysPlusTests --nologo }
+
+  package:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.archive.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Restore WDK packages
+        run: nuget restore 4MagicKeysPlusDriver\packages.config -PackagesDirectory 4MagicKeysPlusDriver\packages
+      - name: Build release files
+        run: ./scripts/ci-run.ps1 { pwsh -NoProfile -File ./scripts/package-release.ps1 }
+      - name: Create archive
+        id: archive
+        run: ./scripts/archive-release.ps1
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-archive
+          path: bin/4MagicKeysPlus-*-win-x64.zip*
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+
+  release:
+    needs: [driver, dotnet, package]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: v${{ needs.package.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-archive
+          path: archive
+      - name: Remove the previous draft
+        id: previous
+        run: |
+          gh api "repos/$GH_REPO/releases" --paginate --jq ".[] | select(.tag_name == \"$TAG\" or .name == \"$TAG\") | \"\(.id) \(.draft)\"" > matches.txt
+          while read -r id draft; do
+            if [ "$draft" = true ]; then
+              gh api -X DELETE "repos/$GH_REPO/releases/$id"
+            else
+              echo "::notice::$TAG is already published, no draft is created. Raise MkpAppVersion for a new release."
+              echo "published=true" >> "$GITHUB_OUTPUT"
+            fi
+          done < matches.txt
+      - uses: actions/attest@v4
+        if: steps.previous.outputs.published != 'true'
+        with:
+          subject-path: archive/*.zip
+      - name: Create draft release
+        if: steps.previous.outputs.published != 'true'
+        run: |
+          zip=$(basename archive/*.zip)
+          gh release create "$TAG" archive/*.zip archive/*.zip.sha256 --draft --target "$GITHUB_SHA" --title "$TAG" --generate-notes --notes "The archive holds unsigned files. Unpack it and start sign.cmd, it signs them on your computer.
+
+          Check the download: the SHA-256 is in the .sha256 file, the origin is verified with \`gh attestation verify $zip --repo $GH_REPO\`."

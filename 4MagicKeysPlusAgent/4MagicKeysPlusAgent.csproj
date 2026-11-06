@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <!-- Signs the apphost in obj, so the copies in bin and in the publish folder are both signed. -->
-  <Target Name="SignAgentExe" AfterTargets="_CreateAppHost" Condition="'$(Configuration)' == 'Release'">
+  <Target Name="SignAgentExe" AfterTargets="_CreateAppHost" Condition="'$(Configuration)' == 'Release' And '$(MkpSignAgent)' != 'false'">
     <ItemGroup>
       <SignToolCandidate Include="$(MSBuildProgramFiles32)\Windows Kits\10\bin\*\x64\signtool.exe" />
     </ItemGroup>

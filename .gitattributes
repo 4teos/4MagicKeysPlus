@@ -67,3 +67,5 @@
 ###############################################################################
 *.sh text eol=lf
 .githooks/* text eol=lf
+# Batch files keep CRLF endings, cmd.exe misparses LF-only ones.
+*.cmd text eol=crlf
