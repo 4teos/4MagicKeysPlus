@@ -112,13 +112,16 @@ jobs:
             fi
           done < matches.txt
       - uses: actions/attest@v4
+        id: attest
         if: steps.previous.outputs.published != 'true'
         with:
           subject-path: archive/*.zip
       - name: Create draft release
         if: steps.previous.outputs.published != 'true'
+        env:
+          ATTESTATION_URL: ${{ steps.attest.outputs.attestation-url }}
         run: |
           zip=$(basename archive/*.zip)
           gh release create "$TAG" archive/*.zip archive/*.zip.sha256 --draft --target "$GITHUB_SHA" --title "$TAG" --generate-notes --notes "The archive holds unsigned files. Unpack it and start sign.cmd, it signs them on your computer.
 
-          Check the download: the SHA-256 is in the .sha256 file, the origin is verified with \`gh attestation verify $zip --repo $GH_REPO\`."
+          Check the download: the SHA-256 is in the .sha256 file, the origin is verified with \`gh attestation verify $zip --repo $GH_REPO\`, the attestation itself is at $ATTESTATION_URL"
