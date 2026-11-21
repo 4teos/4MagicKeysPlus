@@ -380,7 +380,7 @@ public partial class KeysView : UserControl {
         // be the target are switched off.
         IReadOnlySet<PhysicalKey> remappedKeys = isPicking ? new HashSet<PhysicalKey>() : remapConfig.GetRemappedKeys();
         IReadOnlyList<RemapTarget> allowedTargets = isPicking && selectedKey is PhysicalKey source
-            ? KeyRemapRules.GetAllowedTargets(source, withFn)
+            ? KeyRemapRules.GetAllowedTargets(source, model, withFn)
             : [];
 
         foreach (RowLayoutEntry row in keysLayout) {

@@ -1,3 +1,5 @@
+using _4MagicKeysPlus.Core;
+
 namespace _4MagicKeysPlus.Models;
 
 public static class KeyRemapRules {
@@ -24,27 +26,28 @@ public static class KeyRemapRules {
 
     private static readonly IReadOnlyList<PhysicalKey> ExtendedSources = [.. KeysInRange(PhysicalKey.F13, PhysicalKey.F19), PhysicalKey.Menu];
 
+    private static readonly IReadOnlyList<PhysicalKey> FunctionKeyTargets = KeysInRange(PhysicalKey.F13, PhysicalKey.F24);
+
     private static readonly IReadOnlyList<PhysicalKey> ExtendedTargets = [
-        .. KeysInRange(PhysicalKey.F13, PhysicalKey.F24),
         PhysicalKey.PrintScreen, PhysicalKey.ScrollLock, PhysicalKey.PauseBreak, PhysicalKey.Insert, PhysicalKey.Application
     ];
 
     private static readonly IReadOnlyList<PhysicalKey> ModifierTargets = [.. Modifiers, .. VirtualTargets];
 
-    private static readonly IReadOnlyList<PhysicalKey> VirtualKeyTargets = [.. ModifierTargets, .. ExtendedTargets];
-
     private static readonly IReadOnlyList<PhysicalKey> NavigationTargets = [.. Navigation, PhysicalKey.Insert];
 
-    // What a key can be remapped to while Fn is held. Any key but the modifiers and Fn/Eject/Lock
-    // can be a source; the targets are the keys Apple keyboards lack.
-    private static readonly IReadOnlyList<PhysicalKey> FnLayerTargets = [.. NavigationTargets.Union(ExtendedTargets)];
-
+    // F13-F24 are only ever extra targets: every list that offers them offers other keys too.
     public static bool CanRemap(PhysicalKey source, bool fnLayer = false) {
-        return GetCandidates(source, fnLayer).Count > 0;
+        return GetCandidates(source, fnLayer, FunctionKeyTargets).Count > 0;
     }
 
-    public static IReadOnlyList<RemapTarget> GetAllowedTargets(PhysicalKey source, bool fnLayer = false) {
-        return GetCandidates(source, fnLayer).Where(target => target != source).ToList();
+    // The keyboards without F13-F19 declare key usages only up to Application (0x65): Windows drops a higher key in their reports.
+    public static IReadOnlyList<RemapTarget> GetAllowedTargets(PhysicalKey source, KeyboardModel model, bool fnLayer = false) {
+        IReadOnlyList<PhysicalKey> functionKeys = model.Product switch {
+            KeyboardProduct.A1843 or KeyboardProduct.A2520 or KeyboardProduct.A3119 => FunctionKeyTargets,
+            _ => [],
+        };
+        return GetCandidates(source, fnLayer, functionKeys).Where(target => target != source).ToList();
     }
 
     // Null also when the target is not a single key (key + modifiers, several modifiers, a media usage).
@@ -69,16 +72,18 @@ public static class KeyRemapRules {
 
     // Only a key source can send a media usage: the driver has no rule shape for a modifier or
     // Fn/Eject/Lock source with a consumer target.
-    private static IReadOnlyList<RemapTarget> GetCandidates(PhysicalKey source, bool fnLayer) {
+    private static IReadOnlyList<RemapTarget> GetCandidates(PhysicalKey source, bool fnLayer, IReadOnlyList<PhysicalKey> functionKeys) {
+        // What a key can be remapped to while Fn is held. Any key but the modifiers and Fn/Eject/Lock
+        // can be a source; the targets are the keys Apple keyboards lack.
         if (fnLayer) {
             bool isKey = source != PhysicalKey.None && !Modifiers.Contains(source) && !VirtualSources.Contains(source);
-            return isKey ? KeysAndMedia(FnLayerTargets) : [];
+            return isKey ? KeysAndMedia(NavigationTargets.Union(functionKeys).Union(ExtendedTargets)) : [];
         }
         if (Modifiers.Contains(source)) {
             return Keys(ModifierTargets);
         }
         if (VirtualSources.Contains(source)) {
-            return Keys(VirtualKeyTargets);
+            return Keys([.. ModifierTargets, .. functionKeys, .. ExtendedTargets]);
         }
         if (Typing.Contains(source)) {
             return KeysAndMedia(Typing);
@@ -87,7 +92,7 @@ public static class KeyRemapRules {
             return KeysAndMedia(NavigationTargets);
         }
         if (ExtendedSources.Contains(source)) {
-            return KeysAndMedia(ExtendedTargets);
+            return KeysAndMedia([.. functionKeys, .. ExtendedTargets]);
         }
         if (source == PhysicalKey.NumPadEquals) {
             return [PhysicalKey.EqualsKey];
