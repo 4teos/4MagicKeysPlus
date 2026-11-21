@@ -1,6 +1,6 @@
-# 4MagicKeys+
+<img src="assets/icon/icon.svg" alt="4MagicKeys+ icon" width="96" align="right">
 
-<img src="assets/icon/icon.svg" alt="4MagicKeys+ icon" width="256">
+# 4MagicKeys+
 
 Windows driver and apps for Apple Magic Keyboards. They make the keyboard behave like a Windows one: any key can be remapped, the Fn layer gives Home, End, Page Up/Down, Insert and Print Screen, the F-row works as media keys or as function keys, and a notice warns when the battery runs low. Every keyboard has settings of its own, the same over USB and over Bluetooth.
 
