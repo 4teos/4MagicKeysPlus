@@ -1,5 +1,7 @@
 # 4MagicKeys+
 
+<img src="assets/icon/icon.svg" alt="4MagicKeys+ icon" width="256">
+
 Windows driver and apps for Apple Magic Keyboards. They make the keyboard behave like a Windows one: any key can be remapped, the Fn layer gives Home, End, Page Up/Down, Insert and Print Screen, the F-row works as media keys or as function keys, and a notice warns when the battery runs low. Every keyboard has settings of its own, the same over USB and over Bluetooth.
 
 ![The configuration app showing a Magic Keyboard with Touch ID](docs/images/app.png)
@@ -66,63 +68,7 @@ Checking the download, updating and uninstalling are described on the [Installat
 
 ## Uninstallation
 
-Keep the order. The driver is registered as a filter on every keyboard device it was installed for, so when its registry key or its file is deleted while a keyboard still lists it, Windows cannot start that keyboard.
-
-1. Close the configuration app and the agent (Task Manager → `4MagicKeysPlusAgent` → End task). Turn **Start with Windows** off on the Settings screen of the app first.
-2. Take the driver off the keyboards (PowerShell as administrator). This removes the entry that the driver added to each keyboard device, also for keyboards that are not connected now, and prints the devices it changed:
-
-   ```powershell
-   $roots = 'HKLM:\SYSTEM\CurrentControlSet\Enum\HID', 'HKLM:\SYSTEM\CurrentControlSet\Enum\BTHENUM', 'HKLM:\SYSTEM\CurrentControlSet\Enum\USB'
-   Get-ChildItem $roots -Recurse | ForEach-Object {
-       $filters = (Get-ItemProperty -LiteralPath $_.PSPath).LowerFilters
-       if ($filters -contains '4MagicKeysPlus') {
-           $others = @($filters | Where-Object { $_ -notin 'vhf', '4MagicKeysPlus' })
-           if ($others) { Set-ItemProperty -LiteralPath $_.PSPath -Name LowerFilters -Value ([string[]]$others) } else { Remove-ItemProperty -LiteralPath $_.PSPath -Name LowerFilters }
-           $_.Name
-       }
-   }
-   ```
-
-3. Remove the driver packages from the driver store (PowerShell as administrator). Every version that was installed is a package of its own, and Windows gives each one a name of its own (`oemNN.inf`, the number differs from computer to computer), so this finds them by the original name of the file, `4magickeysplus.inf`, and deletes them all:
-
-   ```powershell
-   Get-WindowsDriver -Online | Where-Object { $_.OriginalFileName -like '*\4magickeysplus.inf' } | ForEach-Object { pnputil /delete-driver $_.Driver /uninstall /force }
-   ```
-
-4. Turn TESTSIGNING off (skip this if you need it for something else) and restart the computer. The keyboards work with the Windows drivers again.
-
-   ```
-   bcdedit.exe -set TESTSIGNING OFF
-   ```
-
-5. After the restart delete what is left of 4MagicKeys+ (Administrative command prompt):
-
-   | What | Where |
-   |------|-------|
-   | the service of the driver, with the settings of all keyboards under it: profiles (`Parameters\Keyboards`), default settings (`Parameters\Defaults`) and launch entries (`Parameters\Hotkeys`) | `HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus` |
-   | the driver file, if it is still there | `C:\Windows\System32\drivers\4MagicKeysPlus.sys` |
-   | the apps | `C:\Program Files\4MagicKeysPlus`, or the folder under Program Files that you chose |
-   | the signing key and its `README.txt` | `C:\ProgramData\4MagicKeysPlusSigning` |
-   | the signing certificate `CN=4MagicKeysPlus local signing` | the Local Machine stores **Trusted Root Certification Authorities** and **Trusted Publishers** |
-
-   ```
-   reg delete "HKLM\SYSTEM\CurrentControlSet\Services\4MagicKeysPlus" /f
-   del "%SystemRoot%\System32\drivers\4MagicKeysPlus.sys"
-   rd /s /q "C:\Program Files\4MagicKeysPlus"
-   rd /s /q "C:\ProgramData\4MagicKeysPlusSigning"
-   powershell -NoProfile -Command "Get-ChildItem Cert:\LocalMachine\Root, Cert:\LocalMachine\TrustedPublisher | Where-Object Subject -eq 'CN=4MagicKeysPlus local signing' | Remove-Item"
-   ```
-
-6. For every Windows user who started the app or the agent, in a command prompt of that user: the settings of the app, the autostart entries and the agent log.
-
-   ```
-   reg delete "HKCU\Software\4MagicKeysPlus" /f
-   reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v 4MagicKeysPlusAgent /f
-   reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" /v 4MagicKeysPlusAgent /f
-   rd /s /q "%LOCALAPPDATA%\4MagicKeysPlus"
-   ```
-
-The unpacked release archive and the downloaded zip are ordinary files, delete them wherever they are.
+Removing 4MagicKeys+ by hand, step by step and in the order that matters, is described on the [Manual Uninstall](https://github.com/4teos/4MagicKeysPlus/wiki/Manual-Uninstall) page of the wiki.
 
 ## Building and contributing
 

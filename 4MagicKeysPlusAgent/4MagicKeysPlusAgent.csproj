@@ -8,6 +8,7 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationIcon>..\assets\icon\4MagicKeysPlus.ico</ApplicationIcon>
     <AssemblyTitle>4MagicKeys+ agent</AssemblyTitle>
   </PropertyGroup>
 
