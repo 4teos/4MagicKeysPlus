@@ -1,3 +1,4 @@
+using _4MagicKeysPlus.Core;
 using _4MagicKeysPlus.Models;
 using _4MagicKeysPlus.Services;
 
@@ -35,6 +36,10 @@ public class KeyRemapRulesTests {
 
     public static TheoryData<bool> Layers => [false, true];
 
+    private static readonly KeyboardModel FullSize = KeyboardModel.A1843;
+
+    private static IEnumerable<KeyboardModel> AllModels => Enum.GetValues<KeyboardProduct>().Select(KeyboardModel.From);
+
     // What the editor offers must be what the driver accepts: a rule it would drop is a mapping
     // that silently does nothing.
     [Theory]
@@ -42,7 +47,7 @@ public class KeyRemapRulesTests {
     public void EveryOfferedMapping_IsAcceptedByTheDriverParser(bool fnLayer) {
         int checkedPairs = 0;
         foreach (PhysicalKey source in Enum.GetValues<PhysicalKey>()) {
-            foreach (RemapTarget target in KeyRemapRules.GetAllowedTargets(source, fnLayer)) {
+            foreach (RemapTarget target in KeyRemapRules.GetAllowedTargets(source, FullSize, fnLayer)) {
                 KeyRule? rule = DriverRuleEncoder.CreateRule(source, target, fnLayer, fnLockAware: false);
 
                 Assert.True(rule is not null, $"{source} -> {target} (Fn layer: {fnLayer}) is dropped by the driver");
@@ -76,7 +81,7 @@ public class KeyRemapRulesTests {
     [InlineData(PhysicalKey.Lock)]
     [InlineData(PhysicalKey.TouchId)]
     public void TheLockKeys_AreRemappedLikeEject(PhysicalKey lockKey) {
-        IReadOnlyList<RemapTarget> targets = KeyRemapRules.GetAllowedTargets(lockKey);
+        IReadOnlyList<RemapTarget> targets = KeyRemapRules.GetAllowedTargets(lockKey, FullSize);
 
         Assert.Contains((RemapTarget)PhysicalKey.LeftControl, targets);
         Assert.Contains((RemapTarget)PhysicalKey.Fn, targets);
@@ -87,18 +92,64 @@ public class KeyRemapRulesTests {
     [Theory]
     [MemberData(nameof(Layers))]
     public void TheLockKeys_AreNoTargetOfAnything(bool fnLayer) {
-        foreach (PhysicalKey source in Enum.GetValues<PhysicalKey>()) {
-            IReadOnlyList<RemapTarget> targets = KeyRemapRules.GetAllowedTargets(source, fnLayer);
+        foreach (KeyboardModel model in AllModels) {
+            foreach (PhysicalKey source in Enum.GetValues<PhysicalKey>()) {
+                IReadOnlyList<RemapTarget> targets = KeyRemapRules.GetAllowedTargets(source, model, fnLayer);
 
-            Assert.DoesNotContain((RemapTarget)PhysicalKey.Lock, targets);
-            Assert.DoesNotContain((RemapTarget)PhysicalKey.TouchId, targets);
+                Assert.DoesNotContain((RemapTarget)PhysicalKey.Lock, targets);
+                Assert.DoesNotContain((RemapTarget)PhysicalKey.TouchId, targets);
+            }
         }
     }
 
     [Fact]
+    public void F13ToF24_AreOfferedOnlyByTheKeyboardsThatHaveF13() {
+        foreach (KeyboardModel model in AllModels) {
+            Assert.Equal(HasF13(model), KeyRemapRules.GetAllowedTargets(PhysicalKey.Eject, model).Contains((RemapTarget)PhysicalKey.F13));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Layers))]
+    public void CompactKeyboards_GetNoF13ToF24ButStillCanRemapEveryKey(bool fnLayer) {
+        foreach (KeyboardModel model in AllModels.Where(model => !HasF13(model))) {
+            foreach (PhysicalKey source in Enum.GetValues<PhysicalKey>()) {
+                IReadOnlyList<RemapTarget> targets = KeyRemapRules.GetAllowedTargets(source, model, fnLayer);
+
+                Assert.DoesNotContain(targets, target => !target.IsMedia && target.Key >= PhysicalKey.F13 && target.Key <= PhysicalKey.F24);
+                if (KeyRemapRules.GetAllowedTargets(source, FullSize, fnLayer).Count > 0) {
+                    Assert.NotEmpty(targets);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void CompactKeyboards_KeepTheOtherExtendedTargets() {
+        IReadOnlyList<RemapTarget> fnLayer = KeyRemapRules.GetAllowedTargets(PhysicalKey.F3, KeyboardModel.A3118, fnLayer: true);
+        IReadOnlyList<RemapTarget> touchId = KeyRemapRules.GetAllowedTargets(PhysicalKey.TouchId, KeyboardModel.A3118);
+
+        Assert.DoesNotContain((RemapTarget)PhysicalKey.F16, fnLayer);
+        Assert.Contains((RemapTarget)PhysicalKey.PrintScreen, fnLayer);
+        Assert.Contains((RemapTarget)PhysicalKey.Application, fnLayer);
+        Assert.Contains((RemapTarget)PhysicalKey.Home, fnLayer);
+        Assert.Contains(RemapTarget.Media(0xE9), fnLayer);
+        Assert.DoesNotContain((RemapTarget)PhysicalKey.F13, touchId);
+        Assert.Contains((RemapTarget)PhysicalKey.Insert, touchId);
+        Assert.Contains((RemapTarget)PhysicalKey.LeftControl, touchId);
+    }
+
+    [Fact]
+    public void FullSizeKeyboards_GetF13ToF24() {
+        Assert.Contains((RemapTarget)PhysicalKey.F16, KeyRemapRules.GetAllowedTargets(PhysicalKey.F3, FullSize, fnLayer: true));
+        Assert.Contains((RemapTarget)PhysicalKey.F24, KeyRemapRules.GetAllowedTargets(PhysicalKey.F13, FullSize));
+        Assert.Contains((RemapTarget)PhysicalKey.F20, KeyRemapRules.GetAllowedTargets(PhysicalKey.Eject, FullSize));
+    }
+
+    [Fact]
     public void TheMenuKey_IsRemappedLikeTheExtendedKeys() {
-        Assert.Contains((RemapTarget)PhysicalKey.PrintScreen, KeyRemapRules.GetAllowedTargets(PhysicalKey.Menu));
-        Assert.Contains(RemapTarget.Media(0xE9), KeyRemapRules.GetAllowedTargets(PhysicalKey.Menu));
+        Assert.Contains((RemapTarget)PhysicalKey.PrintScreen, KeyRemapRules.GetAllowedTargets(PhysicalKey.Menu, FullSize));
+        Assert.Contains(RemapTarget.Media(0xE9), KeyRemapRules.GetAllowedTargets(PhysicalKey.Menu, FullSize));
         Assert.True(KeyRemapRules.CanRemap(PhysicalKey.Menu, fnLayer: true));
     }
 
@@ -106,11 +157,11 @@ public class KeyRemapRulesTests {
     public void TheApplicationKey_IsATargetOfTheExtendedKeysTheLockKeysAndTheFnLayer() {
         RemapTarget application = PhysicalKey.Application;
 
-        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.Menu));
-        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.F13));
-        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.Eject));
-        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.TouchId));
-        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.A, fnLayer: true));
+        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.Menu, FullSize));
+        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.F13, FullSize));
+        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.Eject, FullSize));
+        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.TouchId, FullSize));
+        Assert.Contains(application, KeyRemapRules.GetAllowedTargets(PhysicalKey.A, FullSize, fnLayer: true));
     }
 
     [Fact]
@@ -152,9 +203,9 @@ public class KeyRemapRulesTests {
     [Theory]
     [MemberData(nameof(Layers))]
     public void MediaTargets_AreOfferedToKeysOnly(bool fnLayer) {
-        Assert.Contains(RemapTarget.Media(0xE9), KeyRemapRules.GetAllowedTargets(PhysicalKey.F13, fnLayer: fnLayer));
-        Assert.DoesNotContain(KeyRemapRules.GetAllowedTargets(PhysicalKey.LeftShift, fnLayer: fnLayer), target => target.IsMedia);
-        Assert.DoesNotContain(KeyRemapRules.GetAllowedTargets(PhysicalKey.Eject, fnLayer: fnLayer), target => target.IsMedia);
+        Assert.Contains(RemapTarget.Media(0xE9), KeyRemapRules.GetAllowedTargets(PhysicalKey.F13, FullSize, fnLayer: fnLayer));
+        Assert.DoesNotContain(KeyRemapRules.GetAllowedTargets(PhysicalKey.LeftShift, FullSize, fnLayer: fnLayer), target => target.IsMedia);
+        Assert.DoesNotContain(KeyRemapRules.GetAllowedTargets(PhysicalKey.Eject, FullSize, fnLayer: fnLayer), target => target.IsMedia);
     }
 
     [Fact]
@@ -169,6 +220,10 @@ public class KeyRemapRulesTests {
             Assert.NotNull(_4MagicKeysPlus.Views.Glyphs.ForConsumerUsage(usage));
             Assert.DoesNotContain("Consumer 0x", ConsumerUsageNames.Get(usage));
         }
+    }
+
+    private static bool HasF13(KeyboardModel model) {
+        return KeyboardLayout.GetKeys(model, LayoutStandard.Ansi).SelectMany(row => row.RowKeys).Any(key => key.Kind == PhysicalKey.F13);
     }
 
     private static RemapTarget TargetOf(KeyRule rule) {
