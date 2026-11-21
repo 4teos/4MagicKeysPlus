@@ -83,7 +83,8 @@
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-            <TextBlock Text="4MagicKeys+" VerticalAlignment="Center" Margin="15,0,10,0"
+            <Image Source="{StaticResource AppIcon}" Width="24" Height="24" Margin="12,0,0,0" VerticalAlignment="Center" />
+            <TextBlock Text="4MagicKeys+" VerticalAlignment="Center" Margin="6,0,10,0"
                        FontSize="12" Foreground="{DynamicResource TextPrimary}" />
 
             <ListBox x:Name="KeyboardSelector" ItemContainerStyle="{StaticResource KeyboardTabStyle}" VerticalAlignment="Center"

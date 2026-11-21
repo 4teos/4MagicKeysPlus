@@ -10,6 +10,7 @@
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\assets\icon\4MagicKeysPlus.ico</ApplicationIcon>
     <AssemblyTitle>4MagicKeys+ configuration app</AssemblyTitle>
   </PropertyGroup>
 
@@ -19,6 +20,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\4MagicKeysPlusCore\4MagicKeysPlusCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Include="..\assets\icon\AppIcon.xaml" Link="Resources\AppIcon.xaml" />
   </ItemGroup>
 
   <ItemGroup>

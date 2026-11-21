@@ -1,0 +1,230 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <DrawingImage x:Key="AppIcon">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Brush="Transparent" Geometry="M0,0 H512 V512 H0 Z"/>
+                <GeometryDrawing Geometry="F1 M6.96,236.01 L5.97,237.64 L55.32,168.66 L56.07,167.44 Z" Brush="#C1C3C7">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#C1C3C7" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M5.97,237.64 L5.35,239.29 L54.86,169.90 L55.32,168.66 Z" Brush="#C6C9CD">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#C6C9CD" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M5.35,239.29 L5.12,240.96 L54.69,171.16 L54.86,169.90 Z" Brush="#CCCED3">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#CCCED3" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M5.12,240.96 L5.28,242.64 L54.81,172.41 L54.69,171.16 Z" Brush="#D0D3D7">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#D0D3D7" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M5.28,242.64 L5.83,244.30 L55.22,173.66 L54.81,172.41 Z" Brush="#D5D7DC">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#D5D7DC" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M5.83,244.30 L6.76,245.93 L55.91,174.88 L55.22,173.66 Z" Brush="#D8DBDF">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#D8DBDF" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M6.76,245.93 L8.06,247.51 L56.89,176.07 L55.91,174.88 Z" Brush="#DBDEE3">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#DBDEE3" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M8.06,247.51 L129.19,374.21 L155.31,279.01 L56.89,176.07 Z" Brush="#DCDFE4">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#DCDFE4" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M506.17,313.44 L505.24,311.81 L456.09,229.01 L456.78,230.23 Z" Brush="#7A7C7E">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#7A7C7E" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M506.72,315.10 L506.17,313.44 L456.78,230.23 L457.19,231.48 Z" Brush="#7A7C7E">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#7A7C7E" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M506.88,316.77 L506.72,315.10 L457.19,231.48 L457.31,232.73 Z" Brush="#7A7C7E">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#7A7C7E" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M506.65,318.45 L506.88,316.77 L457.31,232.73 L457.14,233.99 Z" Brush="#7A7C7E">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#7A7C7E" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M506.03,320.10 L506.65,318.45 L457.14,233.99 L456.68,235.23 Z" Brush="#818285">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#818285" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M505.04,321.73 L506.03,320.10 L456.68,235.23 L455.93,236.45 Z" Brush="#87898C">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#87898C" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M503.67,323.30 L505.04,321.73 L455.93,236.45 L454.91,237.63 Z" Brush="#8E9093">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#8E9093" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M501.94,324.81 L503.67,323.30 L454.91,237.63 L453.61,238.76 Z" Brush="#949699">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#949699" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M499.87,326.24 L501.94,324.81 L453.61,238.76 L452.06,239.83 Z" Brush="#9B9DA0">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#9B9DA0" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M497.48,327.58 L499.87,326.24 L452.06,239.83 L450.27,240.83 Z" Brush="#A1A3A6">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#A1A3A6" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M494.79,328.81 L497.48,327.58 L450.27,240.83 L448.25,241.76 Z" Brush="#A7A9AD">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#A7A9AD" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M491.83,329.92 L494.79,328.81 L448.25,241.76 L446.03,242.59 Z" Brush="#ADAFB3">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#ADAFB3" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M488.62,330.91 L491.83,329.92 L446.03,242.59 L443.62,243.33 Z" Brush="#B3B5B9">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#B3B5B9" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M485.20,331.76 L488.62,330.91 L443.62,243.33 L441.06,243.97 Z" Brush="#B8BABE">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#B8BABE" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M481.60,332.46 L485.20,331.76 L441.06,243.97 L438.36,244.50 Z" Brush="#BDBFC3">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#BDBFC3" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M181.80,383.65 L481.60,332.46 L438.36,244.50 L194.77,286.09 Z" Brush="#BFC2C6">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#BFC2C6" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M129.19,374.21 L130.85,375.74 L156.56,280.15 L155.31,279.01 Z" Brush="#DEE1E6">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#DEE1E6" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M130.85,375.74 L132.86,377.18 L158.06,281.24 L156.56,280.15 Z" Brush="#E2E5EA">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#E2E5EA" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M132.86,377.18 L135.20,378.54 L159.81,282.25 L158.06,281.24 Z" Brush="#E5E8ED">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#E5E8ED" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M135.20,378.54 L137.84,379.79 L161.79,283.19 L159.81,282.25 Z" Brush="#E7EAEF">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#E7EAEF" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M137.84,379.79 L140.75,380.92 L163.98,284.04 L161.79,283.19 Z" Brush="#E8EBF0">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#E8EBF0" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M140.75,380.92 L143.92,381.93 L166.35,284.80 L163.98,284.04 Z" Brush="#E8EBF0">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#E8EBF0" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M143.92,381.93 L147.30,382.81 L168.89,285.46 L166.35,284.80 Z" Brush="#E8EBF0">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#E8EBF0" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M147.30,382.81 L150.87,383.54 L171.57,286.00 L168.89,285.46 Z" Brush="#E7EAEF">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#E7EAEF" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M150.87,383.54 L154.59,384.12 L174.36,286.44 L171.57,286.00 Z" Brush="#E5E8ED">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#E5E8ED" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M178.06,384.20 L181.80,383.65 L194.77,286.09 L191.96,286.50 Z" Brush="#C3C6CA">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#C3C6CA" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M154.59,384.12 L158.43,384.54 L177.24,286.75 L174.36,286.44 Z" Brush="#E2E5EA">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#E2E5EA" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M174.20,384.60 L178.06,384.20 L191.96,286.50 L189.07,286.80 Z" Brush="#CACDD1">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#CACDD1" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M158.43,384.54 L162.35,384.80 L180.18,286.95 L177.24,286.75 Z" Brush="#DFE2E7">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#DFE2E7" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M170.27,384.83 L174.20,384.60 L189.07,286.80 L186.12,286.97 Z" Brush="#D1D3D8">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#D1D3D8" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M162.35,384.80 L166.31,384.90 L183.15,287.02 L180.18,286.95 Z" Brush="#DBDEE2">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#DBDEE2" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M166.31,384.90 L170.27,384.83 L186.12,286.97 L183.15,287.02 Z" Brush="#D6D9DD">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#D6D9DD" Thickness="2.4" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M382.81,183.52 L381.15,182.00 L379.14,180.56 L376.80,179.20 L374.16,177.95 L371.25,176.81 L368.08,175.80 L364.70,174.93 L361.13,174.20 L357.41,173.62 L353.57,173.20 L349.65,172.94 L345.69,172.84 L341.73,172.91 L337.80,173.14 L333.94,173.53 L330.20,174.09 L30.40,225.28 L26.80,225.98 L23.38,226.83 L20.17,227.82 L17.21,228.93 L14.52,230.16 L12.13,231.50 L10.06,232.93 L8.33,234.44 L6.96,236.01 L5.97,237.64 L5.35,239.29 L5.12,240.96 L5.28,242.64 L5.83,244.30 L6.76,245.93 L8.06,247.51 L129.19,374.21 L130.85,375.74 L132.86,377.18 L135.20,378.54 L137.84,379.79 L140.75,380.92 L143.92,381.93 L147.30,382.81 L150.87,383.54 L154.59,384.12 L158.43,384.54 L162.35,384.80 L166.31,384.90 L170.27,384.83 L174.20,384.60 L178.06,384.20 L181.80,383.65 L481.60,332.46 L485.20,331.76 L488.62,330.91 L491.83,329.92 L494.79,328.81 L497.48,327.58 L499.87,326.24 L501.94,324.81 L503.67,323.30 L505.04,321.73 L506.03,320.10 L506.65,318.45 L506.88,316.77 L506.72,315.10 L506.17,313.44 L505.24,311.81 L503.94,310.23 Z">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#8E96A3" Thickness="12" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="F1 M356.69,124.88 L355.44,123.73 L353.94,122.65 L352.19,121.63 L350.21,120.70 L348.02,119.84 L345.65,119.09 L343.11,118.43 L340.43,117.88 L337.64,117.45 L334.76,117.13 L331.82,116.94 L328.85,116.86 L325.88,116.92 L322.93,117.09 L320.04,117.38 L317.23,117.80 L73.64,159.39 L70.94,159.92 L68.38,160.55 L65.97,161.29 L63.75,162.13 L61.73,163.05 L59.94,164.06 L58.39,165.13 L57.09,166.26 L56.07,167.44 L55.32,168.66 L54.86,169.90 L54.69,171.16 L54.81,172.41 L55.22,173.66 L55.91,174.88 L56.89,176.07 L155.31,279.01 L156.56,280.15 L158.06,281.24 L159.81,282.25 L161.79,283.19 L163.98,284.04 L166.35,284.80 L168.89,285.46 L171.57,286.00 L174.36,286.44 L177.24,286.75 L180.18,286.95 L183.15,287.02 L186.12,286.97 L189.07,286.80 L191.96,286.50 L194.77,286.09 L438.36,244.50 L441.06,243.97 L443.62,243.33 L446.03,242.59 L448.25,241.76 L450.27,240.83 L452.06,239.83 L453.61,238.76 L454.91,237.63 L455.93,236.45 L456.68,235.23 L457.14,233.99 L457.31,232.73 L457.19,231.48 L456.78,230.23 L456.09,229.01 L455.11,227.82 Z">
+                    <GeometryDrawing.Brush>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Offset="0" Color="#FFFFFF"/>
+                            <GradientStop Offset="1" Color="#E9ECF1"/>
+                        </LinearGradientBrush>
+                    </GeometryDrawing.Brush>
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#A3AAB5" Thickness="8" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <DrawingGroup Transform="2.9980,-0.5119,1.2113,1.2670,45.5365,164.1883">
+                    <GeometryDrawing Geometry="F1 M52.62822823192453 58.140718706655456V68.70207828425607H12.319145311502268L11.749130258641511 60.42774927416764L34.17037308073907 16.999999999999986H44.22783663611582L33.97886946446627 36.326705551444434L24.16331718076213 58.140718706655456ZM47.004809422775764 16.999999999999986V83.0H34.26865320420725V16.999999999999986Z" Brush="#1E2228"/>
+                    <GeometryDrawing Geometry="F1 M88.25086974135849 31.70289058786406V41.540986101054585H56.628228231924524V31.70289058786406ZM77.5233105862907 16.999999999999986V56.999999999999986H67.52013236399712V16.999999999999986Z" Brush="#2F7BF6"/>
+                </DrawingGroup>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+</ResourceDictionary>
