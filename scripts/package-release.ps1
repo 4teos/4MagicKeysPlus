@@ -30,3 +30,4 @@ Remove-Item "$output\app\*.pdb"
 
 Copy-Item "$root\packaging\*" $output
 Write-Host "Release files are in $output"
+Write-Host "The driver and the agent are not signed yet: run sign.cmd in that folder before installing them." -ForegroundColor Yellow
