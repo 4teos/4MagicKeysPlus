@@ -42,7 +42,11 @@ Windows 11 24H2 or newer, x64. Installing the driver and starting the configurat
 
 ## Installation
 
-**DISCLAIMER:** The driver is signed with a self-signed (test) certificate that `sign.cmd` makes on your computer. Windows will not allow the driver installation unless running in **TESTSIGNING** mode. Permanently running Windows in TESTSIGNING mode leaves your system open to potential security risks. Any consequence is solely your own responsibility. 4MagicKeys+ is ***free software*** that you build and/or use completely ***at your own risk.*** If your system runs UEFI with **Secure Boot** enabled, you will need to disable **Secure Boot** in BIOS first.
+**DISCLAIMER:** The driver is signed with a self-signed (test) certificate that the installer (or `sign.cmd`) makes on your computer. Windows will not load the driver unless running in **TESTSIGNING** mode ([what it is](https://github.com/4teos/4MagicKeysPlus/wiki/Test-Signing)). Permanently running Windows in TESTSIGNING mode leaves your system open to potential security risks. Any consequence is solely your own responsibility. 4MagicKeys+ is ***free software*** that you build and/or use completely ***at your own risk.*** If your system runs UEFI with **Secure Boot** enabled, you will need to disable **Secure Boot** in BIOS first.
+
+### With the installer
+
+Download `4MagicKeysPlus-<version>-setup.exe` from [Releases](https://github.com/4teos/4MagicKeysPlus/releases) and start it. It is not signed, so Windows SmartScreen may warn about an unknown publisher (**More info** → **Run anyway**). Setup turns TESTSIGNING on when it is off, signs the driver and the agent on your computer, installs the driver and the apps, and asks for a restart when the driver needs one. Uninstall through **Settings → Apps → 4MagicKeys+**.
 
 ### From the release archive
 
@@ -68,7 +72,7 @@ Checking the download, updating and uninstalling are described on the [Installat
 
 ## Uninstallation
 
-Removing 4MagicKeys+ by hand, step by step and in the order that matters, is described on the [Manual Uninstall](https://github.com/4teos/4MagicKeysPlus/wiki/Manual-Uninstall) page of the wiki.
+Installed with the installer: **Settings → Apps → 4MagicKeys+** removes everything. Removing 4MagicKeys+ by hand, step by step and in the order that matters, is described on the [Manual Uninstall](https://github.com/4teos/4MagicKeysPlus/wiki/Manual-Uninstall) page of the wiki.
 
 ## Building and contributing
 

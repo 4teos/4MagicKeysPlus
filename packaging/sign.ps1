@@ -1,3 +1,8 @@
+param(
+    [string]$DriverFolder = (Join-Path $PSScriptRoot 'driver'),
+    [string]$AgentPath = (Join-Path $PSScriptRoot 'app\4MagicKeysPlusAgent.exe')
+)
+
 $ErrorActionPreference = 'Stop'
 
 $subject = 'CN=4MagicKeysPlus local signing'
@@ -11,8 +16,7 @@ if (-not ([Security.Principal.WindowsPrincipal]$identity).IsInRole([Security.Pri
     throw 'Administrator rights are needed, start sign.cmd instead of this script.'
 }
 
-$files = @(Get-ChildItem (Join-Path $PSScriptRoot 'driver') -Include '*.sys', '*.cat' -Recurse -ErrorAction Ignore) +
-    @(Get-Item (Join-Path $PSScriptRoot 'app\4MagicKeysPlusAgent.exe') -ErrorAction Ignore)
+$files = @(Get-ChildItem $DriverFolder -Include '*.sys', '*.cat' -Recurse -ErrorAction Ignore) + @(Get-Item $AgentPath -ErrorAction Ignore)
 if ($files.Count -ne 3) {
     throw 'driver\*.sys, driver\*.cat and app\4MagicKeysPlusAgent.exe must be next to sign.ps1. Start sign.cmd from the folder where you unpacked the release archive and keep its folders as they are.'
 }
@@ -56,7 +60,7 @@ foreach ($file in $files) {
     if ($result.Status -ne 'Valid') {
         throw "Signing $($file.Name) failed: $($result.StatusMessage)"
     }
-    Write-Host "Signed $($file.FullName.Substring($PSScriptRoot.Length + 1))"
+    Write-Host "Signed $($file.FullName)"
 }
 
 if (-not (bcdedit /enum '{current}' | Select-String -Quiet 'testsigning\s+Yes')) {
