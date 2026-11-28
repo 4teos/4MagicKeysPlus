@@ -1,7 +1,7 @@
 namespace _4MagicKeysPlusAgent;
 
-// A small always-on-top notice that never takes focus, so it can't swallow keystrokes
-// the user is typing while it appears.
+// A small always-on-top notice that never takes focus, so it can't swallow keystrokes the user is typing while it appears.
+// It stays until clicked: the user may not be looking at the screen when it shows up.
 internal abstract class NoticeForm : Form {
     private const int WS_EX_TOOLWINDOW = 0x00000080;
     private const int WS_EX_NOACTIVATE = 0x08000000;
@@ -14,7 +14,7 @@ internal abstract class NoticeForm : Form {
     protected static readonly Color Background = Color.FromArgb(0x2B, 0x2B, 0x2B);
     protected static readonly Color CriticalColor = Color.FromArgb(0xE8, 0x11, 0x23);
 
-    protected NoticeForm() {
+    protected NoticeForm(Color accent, string glyph, Control content) {
         AutoScaleMode = AutoScaleMode.Dpi;
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
@@ -23,6 +23,45 @@ internal abstract class NoticeForm : Form {
         StartPosition = FormStartPosition.Manual;
         TopMost = true;
         Padding = new Padding(1);
+        BackColor = accent;
+
+        Label glyphLabel = new Label {
+            AutoSize = true,
+            Anchor = AnchorStyles.Top | AnchorStyles.Left,
+            Font = new Font("Segoe MDL2 Assets", 20f),
+            ForeColor = accent,
+            Margin = new Padding(14, 10, 8, 10),
+            Text = glyph,
+        };
+
+        content.Anchor = AnchorStyles.Left;
+        content.BackColor = Background;
+        content.Margin = new Padding(0, 10, 18, 4);
+
+        Label dismiss = new Label {
+            AutoSize = true,
+            Anchor = AnchorStyles.Left,
+            Font = new Font("Segoe UI", 9f),
+            ForeColor = Color.Gray,
+            Margin = new Padding(0, 0, 18, 10),
+            Text = Strings.NoticeDismissHint,
+        };
+
+        TableLayoutPanel layout = new TableLayoutPanel {
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            BackColor = Background,
+            ColumnCount = 2,
+            Dock = DockStyle.Fill,
+            RowCount = 2,
+        };
+        layout.Controls.Add(glyphLabel, 0, 0);
+        layout.SetRowSpan(glyphLabel, 2);
+        layout.Controls.Add(content, 1, 0);
+        layout.Controls.Add(dismiss, 1, 1);
+        Controls.Add(layout);
+
+        CloseOnClick(this);
     }
 
     protected override bool ShowWithoutActivation => true;
@@ -37,6 +76,17 @@ internal abstract class NoticeForm : Form {
 
     // Zero: as wide as the content. Notices that can be on the screen together are better of one width, so that they make a column.
     protected virtual int FixedWidthDip => 0;
+
+    protected static FlowLayoutPanel Column(IEnumerable<Control> rows) {
+        FlowLayoutPanel column = new FlowLayoutPanel {
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+        };
+        column.Controls.AddRange([.. rows]);
+        return column;
+    }
 
     protected override void OnLoad(EventArgs e) {
         base.OnLoad(e);
@@ -60,5 +110,12 @@ internal abstract class NoticeForm : Form {
 #if DEBUG
         Logger.Info($"Popup topmost: {result}");
 #endif
+    }
+
+    private void CloseOnClick(Control control) {
+        control.Click += (_, _) => Close();
+        foreach (Control child in control.Controls) {
+            CloseOnClick(child);
+        }
     }
 }
