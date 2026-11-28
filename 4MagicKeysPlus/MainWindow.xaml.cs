@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using System.ComponentModel;
+using System.Windows;
+using System.Windows.Interop;
 using Microsoft.Win32;
 using _4MagicKeysPlus.Core;
 using _4MagicKeysPlus.Properties;
@@ -18,6 +20,7 @@ public partial class MainWindow : Window {
     private readonly Dictionary<Guid, ProfileEditors> editors = [];
     private readonly HotkeyEditor hotkeyEditor = new();
     private readonly OptionsViewModel options;
+    private readonly RegistryWindowPlacementStore placement = new();
     private Guid? shownKeyboard;
     private string? shownNoKeyboardText;
 
@@ -50,6 +53,20 @@ public partial class MainWindow : Window {
             typeof(MainWindow).Assembly.GetName().Version?.ToString() ?? "—");
         ShowKeys();
         deviceStatus.Start();
+    }
+
+    protected override void OnSourceInitialized(EventArgs e) {
+        base.OnSourceInitialized(e);
+        if (placement.Read() is WindowBounds bounds) {
+            WindowPlacement.Set(new WindowInteropHelper(this).Handle, bounds);
+        }
+    }
+
+    protected override void OnClosing(CancelEventArgs e) {
+        base.OnClosing(e);
+        if (!e.Cancel && WindowPlacement.Get(new WindowInteropHelper(this).Handle) is WindowBounds bounds) {
+            placement.Write(bounds);
+        }
     }
 
     private static bool ReadFnLock(Guid profileId) {
